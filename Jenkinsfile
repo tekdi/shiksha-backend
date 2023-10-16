@@ -3,7 +3,7 @@ pipeline {
         stages {
         stage('Checkout'){
             steps{
-                git branch: 'uatnew' , url: 'https://github.com/transform1234/alt-backend.git'   
+                git branch: 'uatnew' , url: 'https://github.com/tekdi/shiksha-backend.git'   
           }
         }
         

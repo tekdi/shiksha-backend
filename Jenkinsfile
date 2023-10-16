@@ -6,7 +6,7 @@ pipeline {
                 git branch: 'main' , url: 'https://github.com/tekdi/shiksha-backend.git'   
           }
         }
-        
+    
         stage ('Build') {
             steps {
                         sh 'docker rm -f shiksha-backend'

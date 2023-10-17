@@ -17,6 +17,7 @@ services:
       - .env
     networks:
       - webnet
+    restart: always
     # depends_on:
     #   - redis
     #   - postgres

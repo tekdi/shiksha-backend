@@ -5,7 +5,6 @@ import { EsamwadGroupService } from "./group.adapter";
 import { EsamwadSchoolService } from "./school.adapter";
 import { EsamwadStudentService } from "./student.adapter";
 import { EsamwadUserService } from "./user.adapter";
-import { EsamwadCohortService } from "./cohort.adapter";
 
 @Module({
   imports: [HttpModule],
@@ -15,7 +14,6 @@ import { EsamwadCohortService } from "./cohort.adapter";
     EsamwadUserService,
     EsamwadSchoolService,
     EsamwadGroupService,
-    EsamwadCohortService,
   ],
   exports: [
     AttendanceEsamwadService,
@@ -23,7 +21,6 @@ import { EsamwadCohortService } from "./cohort.adapter";
     EsamwadUserService,
     EsamwadSchoolService,
     EsamwadGroupService,
-    EsamwadCohortService,
   ],
 })
 export class EsmwadModule {}

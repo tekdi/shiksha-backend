@@ -31,6 +31,7 @@ import { WorkHistoryModule } from "./workHistory/workHistory.module";
 import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
+import { FieldsModule } from "./fields/fields.module";
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
     WorkHistoryModule,
     GroupMembershipModule,
     CohortMembersModule,
+    FieldsModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,6 +9,7 @@ import { SunbirdLikeService } from "./like.adapter";
 import { SchoolService } from "./school.adapter";
 import { StudentService } from "./student.adapter";
 import { UserService } from "./user.adapter";
+import { SunbirdCohortService } from "./cohort.adapter";
 
 @Module({
   imports: [HttpModule],
@@ -18,6 +19,7 @@ import { UserService } from "./user.adapter";
     UserService,
     SchoolService,
     SunbirdGroupService,
+    SunbirdCohortService,
     SunbirdCommentService,
     SunbirdConfigService,
     SunbirdLikeService,
@@ -29,6 +31,7 @@ import { UserService } from "./user.adapter";
     UserService,
     SchoolService,
     SunbirdGroupService,
+    SunbirdCohortService,
     SunbirdCommentService,
     SunbirdConfigService,
     SunbirdLikeService,

@@ -29,6 +29,8 @@ import { AnnouncementsModule } from "./announcements/announcements.module";
 import { RoleModule } from "./role/role.module";
 import { WorkHistoryModule } from "./workHistory/workHistory.module";
 import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
+import { CohortModule } from "./cohort/cohort.module";
+import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { GroupMembershipModule } from "./groupMembership/groupMembership.module"
     UserModule,
     SchoolModule,
     GroupModule,
+    CohortModule,
     RoleModule,
     AttendanceModule,
     HolidayModule,
@@ -62,6 +65,7 @@ import { GroupMembershipModule } from "./groupMembership/groupMembership.module"
     AnnouncementsModule,
     WorkHistoryModule,
     GroupMembershipModule,
+    CohortMembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -39,21 +39,6 @@ import { CohortAdapter } from "./cohortadapter";
 export class CohortController {
   constructor(private cohortAdapter: CohortAdapter) {}
 
-  //test
-  @Get("/test")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort Test API" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async testCohort(@Req() request: Request, @Res() response: Response) {
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .testCohort(request, response);
-  }
-
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")

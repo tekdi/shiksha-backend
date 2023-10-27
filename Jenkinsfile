@@ -3,7 +3,8 @@ pipeline {
         stages {
         stage('Checkout'){
             steps{
-                git branch: 'main' , url: 'https://github.com/tekdi/shiksha-backend.git'   
+               // git branch: 'main' , url: 'https://github.com/tekdi/shiksha-backend.git'
+                echo "Clone repository"
           }
         }
     

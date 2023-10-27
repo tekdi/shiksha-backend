@@ -17,20 +17,6 @@ export class HasuraCohortService implements IServicelocatorcohort {
   constructor(private httpService: HttpService) {}
 
   url = `${process.env.BASEAPIURL}`;
-  public async testCohort(request: any, response: any) {
-    //not working in SuccessResponse
-    /*return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.d",
-      data: { 1: ["obj", [{ hi: "hi" }], ["hi", "hello"], "hi"] },
-    });*/
-    //working without SuccessResponse
-    return response.status(200).send({
-      statusCode: 200,
-      message: "Ok.",
-      data: { 1: ["obj", [{ hi: "hi" }], ["hi", "hello"], "hi"] },
-    });
-  }
 
   public async createCohort(request: any, cohortDto: CohortDto) {
     var axios = require("axios");

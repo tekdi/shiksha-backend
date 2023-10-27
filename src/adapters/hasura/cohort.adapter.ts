@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CohortInterface } from "../../cohort/interfaces/cohort.interface";
 import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
+import { ErrorResponse } from "src/error-response";
 const resolvePath = require("object-resolve-path");
 import { CohortDto } from "src/cohort/dto/cohort.dto";
 import { CohortSearchDto } from "src/cohort/dto/cohort-search.dto";
@@ -16,54 +17,18 @@ export class HasuraCohortService implements IServicelocatorcohort {
   constructor(private httpService: HttpService) {}
 
   url = `${process.env.BASEAPIURL}`;
-
-  public async getCohort(cohortId: any, request: any) {
-    var axios = require("axios");
-
-    var data = {
-      query: `query GetCohort($cohortId:uuid!) {
-        cohort_by_pk(cohortId: $cohortId) {
-        cohortId
-        deactivationReason
-        created_at
-        image
-        mediumOfInstruction
-        metaData
-        name
-        option
-        schoolId
-        section
-        teacherId
-        gradeLevel
-        status
-        type
-        updated_at
-        parentId
-      }
-    }`,
-      variables: {
-        cohortId: cohortId,
-      },
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = [response?.data?.data?.cohort_by_pk];
-    const cohortResponse = await this.mappedResponse(result);
-    return new SuccessResponse({
+  public async testCohort(request: any, response: any) {
+    //not working in SuccessResponse
+    /*return new SuccessResponse({
+      statusCode: 200,
+      message: "Ok.d",
+      data: { 1: ["obj", [{ hi: "hi" }], ["hi", "hello"], "hi"] },
+    });*/
+    //working without SuccessResponse
+    return response.status(200).send({
       statusCode: 200,
       message: "Ok.",
-      data: cohortResponse[0],
+      data: { 1: ["obj", [{ hi: "hi" }], ["hi", "hello"], "hi"] },
     });
   }
 
@@ -83,7 +48,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
 
     var data = {
       query: `mutation CreateCohort {
-        insert_cohort_one(object: {${query}}) {
+        insert_Cohort_one(object: {${query}}) {
          cohortId
         }
       }
@@ -102,17 +67,171 @@ export class HasuraCohortService implements IServicelocatorcohort {
     };
 
     const response = await axios(config);
-
-    const result = response.data.data.insert_cohort_one;
-
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: result,
-    });
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      const result = response.data.data.insert_Cohort_one;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: result,
+      });
+    }
   }
 
-  public async updateCohort(cohortId: string, request: any, cohortDto: CohortDto) {
+  public async getCohort(tenantId: string, cohortId: any, request: any) {
+    var axios = require("axios");
+
+    var data = {
+      query: `query GetCohort($cohortId:uuid!, $tenantId:String!) {
+        Cohort(
+          where:{
+            TenantId:{
+              _eq:$tenantId
+            }
+            cohortId:{
+              _eq:$cohortId
+            },
+          }
+        ){
+          TenantId
+          ProgramId
+          cohortId
+          parentId
+          referenceId
+          name
+          type
+          status
+          image
+          metadata
+          created_at
+          updated_at
+          createdBy
+          updatedBy
+        }
+    }`,
+      variables: {
+        cohortId: cohortId,
+        tenantId: tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response?.data?.data?.Cohort;
+      console.log(result);
+      const cohortResponse = await this.mappedResponse(result);
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: cohortResponse[0],
+      });
+    }
+  }
+
+  public async searchCohort(
+    tenantId: string,
+    request: any,
+    cohortSearchDto: CohortSearchDto
+  ) {
+    var axios = require("axios");
+
+    let offset = 0;
+    if (cohortSearchDto.page > 1) {
+      offset = parseInt(cohortSearchDto.limit) * (cohortSearchDto.page - 1);
+    }
+
+    let temp_filters = cohortSearchDto.filters;
+    //add tenantid
+    let filters = new Object(temp_filters);
+    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+
+    Object.keys(cohortSearchDto.filters).forEach((item) => {
+      Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          filters[item][`_${e}`] = filters[item][e];
+          delete filters[item][e];
+        }
+      });
+    });
+    var data = {
+      query: `query SearchCohort($filters:Cohort_bool_exp,$limit:Int, $offset:Int) {
+           Cohort(where:$filters, limit: $limit, offset: $offset,) {
+              TenantId
+              ProgramId
+              cohortId
+              parentId
+              referenceId
+              name
+              type
+              status
+              image
+              metadata
+              created_at
+              updated_at
+              createdBy
+              updatedBy
+            }
+          }`,
+      variables: {
+        limit: parseInt(cohortSearchDto.limit),
+        offset: offset,
+        filters: cohortSearchDto.filters,
+      },
+    };
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data.Cohort;
+      const cohortResponse = await this.mappedResponse(result);
+      const count = cohortResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: cohortResponse,
+      });
+    }
+  }
+
+  public async updateCohort(
+    cohortId: string,
+    request: any,
+    cohortDto: CohortDto
+  ) {
     var axios = require("axios");
 
     let query = "";
@@ -157,80 +276,11 @@ export class HasuraCohortService implements IServicelocatorcohort {
     });
   }
 
-  public async searchCohort(request: any, cohortSearchDto: CohortSearchDto) {
-    var axios = require("axios");
-
-    let offset = 0;
-    if (cohortSearchDto.page > 1) {
-      offset = parseInt(cohortSearchDto.limit) * (cohortSearchDto.page - 1);
-    }
-
-    let filters = cohortSearchDto.filters;
-
-    Object.keys(cohortSearchDto.filters).forEach((item) => {
-      Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
-      });
-    });
-    var data = {
-      query: `query SearchCohort($filters:cohort_bool_exp,$limit:Int, $offset:Int) {
-        cohort_aggregate {
-          aggregate {
-            count
-          }
-        }
-           cohort(where:$filters, limit: $limit, offset: $offset,) {
-                cohortId
-                deactivationReason
-                created_at
-                image
-                mediumOfInstruction
-                metaData
-                name
-                option
-                schoolId
-                section
-                status
-                teacherId
-                gradeLevel
-                type
-                updated_at
-                parentId
-            }
-          }`,
-      variables: {
-        limit: parseInt(cohortSearchDto.limit),
-        offset: offset,
-        filters: cohortSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = response.data.data.cohort;
-    const cohortResponse = await this.mappedResponse(result);
-    const count = response?.data?.data?.cohort_aggregate?.aggregate?.count;
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      totalCount: count,
-      data: cohortResponse,
-    });
-  }
-
-  public async findMembersOfCohort(cohortId: string, role: string, request: any) {
+  public async findMembersOfCohort(
+    cohortId: string,
+    role: string,
+    request: any
+  ) {
     let axios = require("axios");
     let userData = [];
     var findMember = {
@@ -471,27 +521,20 @@ export class HasuraCohortService implements IServicelocatorcohort {
   public async mappedResponse(result: any) {
     const cohortResponse = result.map((item: any) => {
       const cohortMapping = {
-        id: item?.cohortId ? `${item.cohortId}` : "",
+        TenantId: item?.TenantId ? `${item.TenantId}` : "",
+        ProgramId: item?.ProgramId ? `${item.ProgramId}` : "",
         cohortId: item?.cohortId ? `${item.cohortId}` : "",
-        schoolId: item?.schoolId ? `${item.schoolId}` : "",
+        parentId: item?.parentId ? `${item.parentId}` : "",
         name: item?.name ? `${item.name}` : "",
         type: item?.type ? `${item.type}` : "",
-        section: item?.section ? `${item.section}` : "",
         status: item?.status ? `${item.status}` : "",
-        deactivationReason: item?.deactivationReason
-          ? `${item.deactivationReason}`
-          : "",
-        mediumOfInstruction: item?.mediumOfInstruction
-          ? `${item.mediumOfInstruction}`
-          : "",
-        teacherId: item?.teacherId ? `${item.teacherId}` : "",
-        parentId: item?.parentId ? `${item.parentId}` : "",
         image: item?.image ? `${item.image}` : "",
-        metaData: item?.metaData ? item.metaData : [],
-        option: item?.option ? item.option : [],
-        gradeLevel: item?.gradeLevel ? `${item.gradeLevel}` : "",
-        createdAt: item?.created_at ? `${item.created_at}` : "",
-        updatedAt: item?.updated_at ? `${item.updated_at}` : "",
+        created_at: item?.created_at ? `${item.created_at}` : "",
+        updated_at: item?.updated_at ? `${item.updated_at}` : "",
+        createdBy: item?.createdBy ? `${item.createdBy}` : "",
+        updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+        referenceId: item?.referenceId ? `${item.referenceId}` : "",
+        metadata: item?.metadata ? `${item.metadata}` : "",
       };
       return new CohortDto(cohortMapping);
     });

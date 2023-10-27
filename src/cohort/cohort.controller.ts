@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiConsumes,
+  ApiHeader,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -21,6 +22,8 @@ import {
   Query,
   CacheInterceptor,
   UploadedFile,
+  Res,
+  Headers,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -36,18 +39,22 @@ import { CohortAdapter } from "./cohortadapter";
 export class CohortController {
   constructor(private cohortAdapter: CohortAdapter) {}
 
-  @Get("/:id")
+  //test
+  @Get("/test")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort detail" })
+  @ApiCreatedResponse({ description: "Cohort Test API" })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  public async getCohort(@Param("id") cohortId: string, @Req() request: Request) {
-    return this.cohortAdapter.buildCohortAdapter().getCohort(cohortId, request);
+  public async testCohort(@Req() request: Request, @Res() response: Response) {
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .testCohort(request, response);
   }
 
+  //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -64,19 +71,74 @@ export class CohortController {
   @ApiBody({ type: CohortDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
   public async createCohort(
+    @Headers() headers,
     @Req() request: Request,
     @Body() cohortDto: CohortDto,
     @UploadedFile() image
   ) {
-    const response = {
+    let tenantid = headers["tenantid"];
+    const payload = {
       image: image?.filename,
+      TenantId: tenantid,
     };
-    Object.assign(cohortDto, response);
+    Object.assign(cohortDto, payload);
 
-    return this.cohortAdapter.buildCohortAdapter().createCohort(request, cohortDto);
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .createCohort(request, cohortDto);
   }
 
+  //get cohort
+  @Get("/:id")
+  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort detail" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getCohort(
+    @Headers() headers,
+    @Param("id") cohortId: string,
+    @Req() request: Request
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .getCohort(tenantid, cohortId, request);
+  }
+
+  //search
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort list." })
+  @ApiBody({ type: CohortSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchCohort(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortSearchDto: CohortSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .searchCohort(tenantid, request, cohortSearchDto);
+  }
+  /*
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -107,24 +169,6 @@ export class CohortController {
     return this.cohortAdapter
       .buildCohortAdapter()
       .updateCohort(cohortId, request, cohortDto);
-  }
-
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort list." })
-  @ApiBody({ type: CohortSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async searchCohort(
-    @Req() request: Request,
-    @Body() cohortSearchDto: CohortSearchDto
-  ) {
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .searchCohort(request, cohortSearchDto);
   }
 
   @Get(":cohortId/participants")
@@ -170,5 +214,5 @@ export class CohortController {
     return this.cohortAdapter
       .buildCohortAdapter()
       .findMembersOfChildCohort(id, role, request);
-  }
+  }*/
 }

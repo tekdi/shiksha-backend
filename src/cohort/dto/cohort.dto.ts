@@ -9,96 +9,92 @@ import {
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CohortDto {
-  @Expose()
-  id: string;
 
-  @Expose()
-  cohortId: string;
-
+  //ProgramId
   @ApiPropertyOptional({
     type: String,
-    description: "The schoolId of the cohort",
+    description: "The ProgramId of the cohort",
+    default: "",
   })
   @Expose()
-  schoolId: string;
+  ProgramId: string;
 
+  //parentId
   @ApiPropertyOptional({
     type: String,
-    description: "The name of the cohort",
-  })
-  @Expose()
-  name: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "The type of the cohort",
-  })
-  @Expose()
-  type: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "The section of the cohort",
-  })
-  @Expose()
-  section: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "The status of the cohort",
-  })
-  @Expose()
-  status: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "Teacher Id of Cohort",
-  })
-  @Expose()
-  teacherId: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "Parent Id of Cohort",
+    description: "The parentId of the cohort",
+    default: "",
   })
   @Expose()
   parentId: string;
 
-  @ApiPropertyOptional()
-  @Expose()
-  deactivationReason: string;
-
+  //referenceId
   @ApiPropertyOptional({
     type: String,
-    description: "The mediumOfInstruction of the cohort",
+    description: "The referenceId of the cohort",
+    default: "",
   })
   @Expose()
-  mediumOfInstruction: string;
+  referenceId: string;
 
-  @ApiPropertyOptional({ type: "string", format: "binary" })
+  //name
+  @ApiProperty({
+    type: String,
+    description: "The name of the cohort",
+    default: "",
+  })
   @Expose()
+  name: string;
+
+  //type
+  @ApiProperty({
+    type: String,
+    description: "The type of the cohort",
+    default: "",
+  })
+  @Expose()
+  type: string;
+
+  //status
+  @ApiPropertyOptional({
+    type: String,
+    description: "The status of the cohort",
+    default: "publish",
+  })
+  @Expose()
+  status: string;
+
+  //image
+  @Expose()
+  @ApiPropertyOptional({ type: "string", format: "binary" })
   image: string;
 
-  @ApiPropertyOptional()
-  @Expose()
-  metaData: [string];
-
-  @ApiPropertyOptional()
-  @Expose()
-  option: [string];
-
+  //metadata
   @ApiPropertyOptional({
-    description: "Grade against cohort",
+    type: String,
+    description: "The metadata of cohort",
+    default: "",
   })
   @Expose()
-  gradeLevel: string;
+  metadata: string;
 
+  //createdBy
   @Expose()
-  createdAt: string;
+  @ApiPropertyOptional({
+    type: String,
+    description: "The cohort is createdBy",
+    default: "",
+  })
+  createdBy: string;
 
+  //updatedBy
+  @ApiProperty({
+    type: String,
+    description: "The cohort is updatedBy",
+    default: "",
+  })
   @Expose()
-  updatedAt: string;
-
+  updatedBy: string;
   constructor(obj: any) {
     Object.assign(this, obj);
   }

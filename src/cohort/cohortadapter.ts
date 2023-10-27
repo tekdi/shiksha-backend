@@ -4,9 +4,7 @@ import { HasuraCohortService } from "src/adapters/hasura/cohort.adapter";
 
 @Injectable()
 export class CohortAdapter {
-  constructor(
-    private hasuraProvider: HasuraCohortService
-  ) {}
+  constructor(private hasuraProvider: HasuraCohortService) {}
   buildCohortAdapter(): IServicelocatorcohort {
     let adapter: IServicelocatorcohort;
 

@@ -7,5 +7,4 @@ export interface IServicelocator {
   createUser(request: any, teacherDto: UserDto);
   updateUser(id: string, request: any, teacherDto: UserDto);
   searchUser(request: any, teacherSearchDto: UserSearchDto);
-  teacherSegment(schoolId: string, templateId: string, request: any);
 }

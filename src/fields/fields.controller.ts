@@ -34,7 +34,7 @@ import { FieldsAdapter } from "./fieldsadapter";
 @Controller("fields")
 export class FieldsController {
   constructor(private fieldsAdapter: FieldsAdapter) {}
-
+/*
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
@@ -153,5 +153,5 @@ export class FieldsController {
     return this.fieldsAdapter
       .buildFieldsAdapter()
       .findMembersOfChildFields(id, role, request);
-  }
+  }*/
 }

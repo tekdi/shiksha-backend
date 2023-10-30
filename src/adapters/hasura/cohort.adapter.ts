@@ -124,7 +124,6 @@ export class HasuraCohortService implements IServicelocatorcohort {
       });
     } else {
       let result = response?.data?.data?.Cohort;
-      console.log(result);
       const cohortResponse = await this.mappedResponse(result);
       return new SuccessResponse({
         statusCode: 200,

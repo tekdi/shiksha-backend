@@ -1,63 +1,25 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
+import { ErrorResponse } from "src/error-response";
 const resolvePath = require("object-resolve-path");
 import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
 import { CohortMembersSearchDto } from "src/cohortMembers/dto/cohortMembers-search.dto";
+import { IServicelocatorcohortMembers } from "../cohortMembersservicelocator";
 
 @Injectable()
-export class CohortMembersService {
+export class HasuraCohortMembersService
+  implements IServicelocatorcohortMembers
+{
   constructor(private httpService: HttpService) {}
 
   url = `${process.env.BASEAPIURL}`;
-
-  public async getCohortMembers(cohortMembersId: any, request: any) {
-    var axios = require("axios");
-
-    var data = {
-      query: `query GetCohortMembers($cohortMembersId:uuid!) {
-        groupmembership_by_pk(cohortMembersId: $cohortMembersId) {
-            created_at
-            groupId
-            cohortMembersId
-            schoolId
-            role
-            updated_at
-            userId
-      }
-    }`,
-      variables: {
-        cohortMembersId: cohortMembersId,
-      },
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = [response?.data?.data?.groupmembership_by_pk];
-    let cohortMembersResponse = await this.mappedResponse(result);
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: cohortMembersResponse[0],
-    });
-  }
 
   public async createCohortMembers(
     request: any,
     cohortMembers: CohortMembersDto
   ) {
     var axios = require("axios");
-
     let query = "";
     Object.keys(cohortMembers).forEach((e) => {
       if (cohortMembers[e] && cohortMembers[e] != "") {
@@ -71,8 +33,8 @@ export class CohortMembersService {
 
     var data = {
       query: `mutation CreateCohortMembers {
-        insert_groupmembership_one(object: {${query}}) {
-         cohortMembersId
+        insert_CohortMembers_one(object: {${query}}) {
+         cohortMembershipId
         }
       }
       `,
@@ -90,14 +52,159 @@ export class CohortMembersService {
     };
 
     const response = await axios(config);
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      const result = response.data.data.insert_CohortMembers_one;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: result,
+      });
+    }
+  }
 
-    const result = response.data.data.insert_groupmembership_one;
+  public async getCohortMembers(
+    tenantId: string,
+    cohortMembershipId: any,
+    request: any
+  ) {
+    var axios = require("axios");
 
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: result,
+    var data = {
+      query: `query GetCohortMembers($cohortMembershipId:uuid!, $tenantId:String!) {
+        CohortMembers(
+          where:{
+            TenantId:{
+              _eq:$tenantId
+            }
+            cohortMembershipId:{
+              _eq:$cohortMembershipId
+            },
+          }
+        ){
+          TenantId
+          cohortMembershipId
+          cohortId
+          userId
+          role
+          created_at
+          updated_at
+          createdBy
+          updatedBy
+      }
+    }`,
+      variables: {
+        cohortMembershipId: cohortMembershipId,
+        tenantId: tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response?.data?.data?.CohortMembers;
+      const cohortMembersResponse = await this.mappedResponse(result);
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: cohortMembersResponse[0],
+      });
+    }
+  }
+
+  public async searchCohortMembers(
+    tenantId: string,
+    request: any,
+    cohortMembersSearchDto: CohortMembersSearchDto
+  ) {
+    var axios = require("axios");
+
+    let offset = 0;
+    if (cohortMembersSearchDto.page > 1) {
+      offset =
+        parseInt(cohortMembersSearchDto.limit) *
+        (cohortMembersSearchDto.page - 1);
+    }
+
+    let temp_filters = cohortMembersSearchDto.filters;
+    //add tenantid
+    let filters = new Object(temp_filters);
+    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+
+    Object.keys(cohortMembersSearchDto.filters).forEach((item) => {
+      Object.keys(cohortMembersSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          filters[item][`_${e}`] = filters[item][e];
+          delete filters[item][e];
+        }
+      });
     });
+    var data = {
+      query: `query SearchCohortMembers($filters:CohortMembers_bool_exp,$limit:Int, $offset:Int) {
+          CohortMembers(where:$filters, limit: $limit, offset: $offset,) {
+            TenantId
+            cohortMembershipId
+            cohortId
+            userId
+            role
+            created_at
+            updated_at
+            createdBy
+            updatedBy
+            }
+          }`,
+      variables: {
+        limit: parseInt(cohortMembersSearchDto.limit),
+        offset: offset,
+        filters: cohortMembersSearchDto.filters,
+      },
+    };
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data.CohortMembers;
+      const cohortMembersResponse = await this.mappedResponse(result);
+      const count = cohortMembersResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: cohortMembersResponse,
+      });
+    }
   }
 
   public async updateCohortMembers(
@@ -120,7 +227,7 @@ export class CohortMembersService {
 
     var data = {
       query: `mutation UpdateCohortMembers($cohortMembersId:uuid) {
-          update_groupmembership(where: { cohortMembersId: {_eq: $ cohortMembersId}}, _set: {${query}}) {
+          update_CohortMembers(where: { cohortMembersId: {_eq: $ cohortMembersId}}, _set: {${query}}) {
           affected_rows
         }
 }`,
@@ -150,89 +257,20 @@ export class CohortMembersService {
     });
   }
 
-  public async searchCohortMembers(
-    request: any,
-    cohortMembersSearchDto: CohortMembersSearchDto
-  ) {
-    var axios = require("axios");
-
-    let offset = 0;
-    if (cohortMembersSearchDto.page > 1) {
-      offset =
-        parseInt(cohortMembersSearchDto.limit) *
-        (cohortMembersSearchDto.page - 1);
-    }
-
-    let filters = cohortMembersSearchDto.filters;
-
-    Object.keys(cohortMembersSearchDto.filters).forEach((item) => {
-      Object.keys(cohortMembersSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
-      });
-    });
-    var data = {
-      query: `query SearchCohortMembers($filters:groupmembership_bool_exp,$limit:Int, $offset:Int) {
-       groupmembership_aggregate {
-          aggregate {
-            count
-          }
-        }
-           groupmembership(where:$filters, limit: $limit, offset: $offset,) {
-            created_at
-            groupId
-            cohortMembersId
-            schoolId
-            role
-            updated_at
-            userId
-            }
-          }`,
-      variables: {
-        limit: parseInt(cohortMembersSearchDto.limit),
-        offset: offset,
-        filters: cohortMembersSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = response.data.data.groupmembership;
-    let cohortMembersResponse = await this.mappedResponse(result);
-    const count =
-      response?.data?.data?.groupmembership_aggregate?.aggregate?.count;
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      totalCount: count,
-      data: cohortMembersResponse,
-    });
-  }
-
   public async mappedResponse(result: any) {
     const cohortMembersResponse = result.map((obj: any) => {
       const cohortMembersMapping = {
-        id: obj?.cohortMembersId ? `${obj.cohortMembersId}` : "",
-        cohortMembersId: obj?.cohortMembersId
-          ? `${obj.cohortMembersId}`
+        TenantId: obj?.TenantId ? `${obj.TenantId}` : "",
+        cohortMembershipId: obj?.cohortMembershipId
+          ? `${obj.cohortMembershipId}`
           : "",
-        groupId: obj?.groupId ? `${obj.groupId}` : "",
-        schoolId: obj?.schoolId ? `${obj.schoolId}` : "",
+        cohortId: obj?.cohortId ? `${obj.cohortId}` : "",
         userId: obj?.userId ? `${obj.userId}` : "",
         role: obj?.role ? `${obj.role}` : "",
         created_at: obj?.created_at ? `${obj.created_at}` : "",
         updated_at: obj?.updated_at ? `${obj.updated_at}` : "",
+        createdBy: obj?.createdBy ? `${obj.createdBy}` : "",
+        updatedBy: obj?.updatedBy ? `${obj.updatedBy}` : "",
       };
       return new CohortMembersDto(cohortMembersMapping);
     });

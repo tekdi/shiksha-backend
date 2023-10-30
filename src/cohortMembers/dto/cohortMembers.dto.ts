@@ -2,33 +2,60 @@ import { Exclude, Expose } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CohortMembersDto {
+  //generated fields
   @Expose()
-  id: string;
-
+  TenantId: string;
   @Expose()
-  cohortMembersId: string;
-
-  @ApiProperty()
+  cohortMembershipId: string;
   @Expose()
-  groupId: string;
-
-  @ApiProperty()
+  createdAt: string;
   @Expose()
-  schoolId: string;
+  updatedAt: string;
 
-  @ApiProperty()
+  //cohortId
+  @ApiProperty({
+    type: String,
+    description: "The cohortId of the cohort members",
+    default: "",
+  })
+  @Expose()
+  cohortId: string;
+
+  //userId
+  @ApiProperty({
+    type: String,
+    description: "The userId of the cohort members",
+    default: "",
+  })
   @Expose()
   userId: string;
 
-  @ApiProperty()
+  //role
+  @ApiProperty({
+    type: String,
+    description: "The role of the cohort members",
+    default: "",
+  })
   @Expose()
   role: string;
 
+  //createdBy
+  @ApiProperty({
+    type: String,
+    description: "The createdBy of the cohort members",
+    default: "",
+  })
   @Expose()
-  created_at: string;
+  createdBy: string;
 
+  //updatedBy
+  @ApiProperty({
+    type: String,
+    description: "The updatedBy of the cohort members",
+    default: "",
+  })
   @Expose()
-  updated_at: string;
+  updatedBy: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

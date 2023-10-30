@@ -8,6 +8,7 @@ import { HasuraHolidayService } from "./holiday.adapter";
 import { HasuraLikeService } from "./like.adapter";
 import { SchoolHasuraService } from "./school.adapter";
 import { HasuraCohortService } from "./cohort.adapter";
+import { HasuraCohortMembersService } from "./cohortMembers.adapter";
 import { HasuraFieldsService } from "./fields.adapter";
 
 @Module({
@@ -17,6 +18,7 @@ import { HasuraFieldsService } from "./fields.adapter";
     SchoolHasuraService,
     HasuraGroupService,
     HasuraCohortService,
+    HasuraCohortMembersService,
     HasuraCommentService,
     HasuraConfigService,
     HasuraLikeService,
@@ -28,6 +30,7 @@ import { HasuraFieldsService } from "./fields.adapter";
     SchoolHasuraService,
     HasuraGroupService,
     HasuraCohortService,
+    HasuraCohortMembersService,
     HasuraCommentService,
     HasuraConfigService,
     HasuraLikeService,

@@ -9,6 +9,16 @@ import {
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CohortDto {
+  
+  //generated fields
+  @Expose()
+  TenantId: string;
+  @Expose()
+  cohortId: string;
+  @Expose()
+  createdAt: string;
+  @Expose()
+  updatedAt: string;
 
   //ProgramId
   @ApiPropertyOptional({
@@ -95,6 +105,7 @@ export class CohortDto {
   })
   @Expose()
   updatedBy: string;
+
   constructor(obj: any) {
     Object.assign(this, obj);
   }

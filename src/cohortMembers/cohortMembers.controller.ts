@@ -4,6 +4,8 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiHeader,
+  ApiConsumes,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -17,52 +19,98 @@ import {
   SerializeOptions,
   Req,
   CacheInterceptor,
-  Request,
+  Headers,
 } from "@nestjs/common";
-
-import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
-import { CohortMembersService } from "src/adapters/hasura/cohortMembers.adapter";
+import { Request } from "@nestjs/common";
+import { CohortMembersDto } from "./dto/cohortMembers.dto";
+import { CohortMembersAdapter } from "./cohortMembersadapter";
 
-@ApiTags("Group Membership")
-@Controller("groupmembership")
+@ApiTags("Cohort Members")
+@Controller("cohortmembers")
 export class CohortMembersController {
-  constructor(private service: CohortMembersService) {}
+  constructor(private cohortMembersAdapter: CohortMembersAdapter) {}
 
-  @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group Membership detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async getCohortMembers(
-    @Param("id") cohortMembersId: string,
-    @Req() request: Request
-  ) {
-    return this.service.getCohortMembers(cohortMembersId, request);
-  }
-
+  //create cohort members
   @Post()
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
-    description: "Group Membership has been created successfully.",
+    description: "Cohort Members has been created successfully.",
   })
   @ApiBody({ type: CohortMembersDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
   public async createCohortMembers(
+    @Headers() headers,
     @Req() request: Request,
     @Body() cohortMembersDto: CohortMembersDto
   ) {
-    return this.service.createCohortMembers(request, cohortMembersDto);
+    let tenantid = headers["tenantid"];
+    const payload = {
+      TenantId: tenantid,
+    };
+    Object.assign(cohortMembersDto, payload);
+
+    return this.cohortMembersAdapter
+      .buildCohortMembersAdapter()
+      .createCohortMembers(request, cohortMembersDto);
   }
 
+  //get cohort members
+  @Get("/:id")
+  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort Members detail" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getCohortMembers(
+    @Headers() headers,
+    @Param("id") cohortMembersId: string,
+    @Req() request: Request
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortMembersAdapter
+      .buildCohortMembersAdapter()
+      .getCohortMembers(tenantid, cohortMembersId, request);
+  }
+
+  //search
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort Members list." })
+  @ApiBody({ type: CohortMembersSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchCohortMembers(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortMembersSearchDto: CohortMembersSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortMembersAdapter
+      .buildCohortMembersAdapter()
+      .searchCohortMembers(tenantid, request, cohortMembersSearchDto);
+  }
+
+  /*
   @Put("/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
-    description: "Group Membership has been updated successfully.",
+    description: "Cohort Members has been updated successfully.",
   })
   @ApiBody({ type: CohortMembersDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -70,31 +118,12 @@ export class CohortMembersController {
   public async updateCohortMembers(
     @Param("id") cohortMembersId: string,
     @Req() request: Request,
-    @Body() groupMembersipDto: CohortMembersDto
+    @Body() cohortMembersipDto: CohortMembersDto
   ) {
-    return this.service.updateCohortMembers(
+    return this.cohortMembersAdapter.buildCohortMembersAdapter().updateCohortMembers(
       cohortMembersId,
       request,
-      groupMembersipDto
+      cohortMembersipDto
     );
-  }
-
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group Membership list." })
-  @ApiBody({ type: CohortMembersSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async searchCohortMembers(
-    @Req() request: Request,
-    @Body() cohortMembersSearchDto: CohortMembersSearchDto
-  ) {
-    return this.service.searchCohortMembers(
-      request,
-      cohortMembersSearchDto
-    );
-  }
+  }*/
 }

@@ -24,168 +24,183 @@ export class HasuraUserService implements IServicelocator {
   }
 
   public async getUser(userId: string, request: any) {
-    console.log(request.headers);
-    const decoded: any = jwt_decode(request.headers.authorization);
-    const altUserRoles =
-      decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const altUserRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    const data = {
-      query: `query GetUser($userId:uuid!) {
+      const data = {
+        query: `query GetUser($userId:uuid!) {
         Users_by_pk(userId: $userId) {
             userId
             name
             username
             email
+            district
+            state 
+            address
+            pincode
             mobile
             dob
             role
             createdAt
             updatedAt
+            createdBy
+            updatedBy
         }
       }
       `,
-      variables: { userId: userId },
-    };
+        variables: { userId: userId },
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        Authorization: request.headers.authorization,
-        "x-hasura-role": getUserRole(altUserRoles),
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-role": getUserRole(altUserRoles),
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
     const response = await this.axios(config);
-    console.log(response, "res");
 
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message,
-      });
-    } else {
-      const result = [response.data.data.Users_by_pk];
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      } else {
+        const result = [response.data.data.Users_by_pk];
 
-      const userData = await this.mappedResponse(result);
-      return new SuccessResponse({
-        statusCode: response.status,
-        message: "Ok.",
-        data: userData[0],
-      });
+        const userData = await this.mappedResponse(result);
+        return new SuccessResponse({
+          statusCode: response.status,
+          message: "Ok.",
+          data: userData[0],
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
   }
 
   public async createUser(request: any, userDto: UserDto) {
-    const decoded: any = jwt_decode(request.headers.authorization);
-    const altUserRoles =
-      decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const altUserRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    const userId = decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-    userDto.createdBy = userId;
-    userDto.updatedBy = userId;
+      const userId =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      userDto.createdBy = userId;
+      userDto.updatedBy = userId;
 
-    userDto.username = userDto.username.toLocaleLowerCase();
+      userDto.username = userDto.username.toLocaleLowerCase();
 
-    const userSchema = new UserDto(userDto);
+      const userSchema = new UserDto(userDto);
 
-    let query = "";
-    let errKeycloak = "";
-    let resKeycloak = "";
+      let query = "";
+      let errKeycloak = "";
+      let resKeycloak = "";
 
-    if (altUserRoles.includes("systemAdmin")) {
-      const response = await getKeycloakAdminToken();
-      const token = response.data.access_token;
+      if (altUserRoles.includes("systemAdmin")) {
+        const response = await getKeycloakAdminToken();
+        const token = response.data.access_token;
 
-      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userDto.username,
-        token
-      );
+        const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+          userDto.username,
+          token
+        );
 
-      if (usernameExistsInKeycloak?.data[0]?.username) {
-        // console.log("check in db", usernameExistsInKeycloak?.data[0]?.id);
+        if (usernameExistsInKeycloak?.data[0]?.username) {
+          // console.log("check in db", usernameExistsInKeycloak?.data[0]?.id);
+          return new ErrorResponse({
+            errorCode: "400",
+            errorMessage: "Username already exists",
+          });
+        }
+
+        resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+          (error) => {
+            errKeycloak = error.response?.data.errorMessage;
+            console.log(errKeycloak);
+            return new ErrorResponse({
+              errorCode: "500",
+              errorMessage: "Someting went wrong",
+            });
+          }
+        );
+      } else {
         return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: "Username already exists",
+          errorCode: "401",
+          errorMessage: "Unauthorized",
         });
       }
 
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-          console.log(errKeycloak);
-          return new ErrorResponse({
-            errorCode: "500",
-            errorMessage: "Someting went wrong",
-          });
+      Object.keys(userDto).forEach((e) => {
+        if (
+          userDto[e] &&
+          userDto[e] !== "" &&
+          e != "password" &&
+          Object.keys(userSchema).includes(e)
+        ) {
+          if (e === "role") {
+            query += `${e}: ${userDto[e]},`;
+          } else if (Array.isArray(userDto[e])) {
+            query += `${e}: ${JSON.stringify(userDto[e])}, `;
+          } else {
+            query += `${e}: ${JSON.stringify(userDto[e])}, `;
+          }
         }
-      );
-    } else {
-      return new ErrorResponse({
-        errorCode: "401",
-        errorMessage: "Unauthorized",
       });
-    }
 
-    Object.keys(userDto).forEach((e) => {
-      if (
-        userDto[e] &&
-        userDto[e] !== "" &&
-        e != "password" &&
-        Object.keys(userSchema).includes(e)
-      ) {
-        if (e === "role") {
-          query += `${e}: ${userDto[e]},`;
-        } else if (Array.isArray(userDto[e])) {
-          query += `${e}: ${JSON.stringify(userDto[e])}, `;
-        } else {
-          query += `${e}: ${JSON.stringify(userDto[e])}, `;
-        }
-      }
-    });
-
-    // Add userId created in keycloak as user Id of ALT user
-    query += `userId: "${resKeycloak}"`;
-    const data = {
-      query: `mutation CreateUser {
+      // Add userId created in keycloak as user Id of ALT user
+      query += `userId: "${resKeycloak}"`;
+      const data = {
+        query: `mutation CreateUser {
         insert_Users_one(object: {${query}}) {
           userId
         }
       }
       `,
-      variables: {},
-    };
+        variables: {},
+      };
 
-    const headers = {
-      Authorization: request.headers.authorization,
-      "x-hasura-role": getUserRole(altUserRoles),
-      "Content-Type": "application/json",
-    };
+      const headers = {
+        Authorization: request.headers.authorization,
+        "x-hasura-role": getUserRole(altUserRoles),
+        "Content-Type": "application/json",
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: headers,
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: headers,
+        data: data,
+      };
 
-    const response = await this.axios(config);
+      const response = await this.axios(config);
 
-    if (response?.data?.errors || resKeycloak == undefined) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message + errKeycloak,
-      });
-    } else {
-      const result = response.data.data.insert_Users_one;
+      if (response?.data?.errors || resKeycloak == undefined) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message + errKeycloak,
+        });
+      } else {
+        const result = response.data.data.insert_Users_one;
 
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
   }
 
@@ -351,6 +366,9 @@ export class HasuraUserService implements IServicelocator {
         mobile: item?.mobile ? item.mobile : "",
         dob: item?.dob ? `${item.dob}` : "",
         state: item?.state ? `${item.state}` : "",
+        address: item?.address ? `${item.address}` : "",
+        pincode: item?.pincode ? `${item.pincode}` : "",
+        district: item?.district ? `${item.district}` : "",
         role: item?.role ? `${item.role}` : "",
         createdAt: item?.createdAt ? `${item.createdAt}` : "",
         updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
@@ -365,8 +383,11 @@ export class HasuraUserService implements IServicelocator {
 
   public async getUserByAuth(request: any) {
     try {
-      const authToken = request.headers.authorization;
-      const decoded: any = jwt_decode(authToken);
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const altUserRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+
+      console.log(altUserRoles, "altuserroles");
 
       const username = decoded.preferred_username;
 
@@ -397,17 +418,14 @@ export class HasuraUserService implements IServicelocator {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          Authorization: request.headers.authorization,
+          "x-hasura-role": getUserRole(altUserRoles),
           "Content-Type": "application/json",
         },
         data: data,
       };
 
-      console.log(config, "config");
-
       const response = await this.axios(config);
-
-      console.log(JSON.stringify(response.data), "res");
 
       const result = response.data.data.Users;
 
@@ -419,6 +437,7 @@ export class HasuraUserService implements IServicelocator {
       });
     } catch (e) {
       console.log(e);
+      return e;
     }
   }
 

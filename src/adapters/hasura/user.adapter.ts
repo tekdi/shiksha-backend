@@ -11,7 +11,7 @@ import {
   getUserRole,
   getKeycloakAdminToken,
   createUserInKeyCloak,
-  checkIfUsernameExistsInKeycloak
+  checkIfUsernameExistsInKeycloak,
 } from "./keycloak.adapter.util";
 
 @Injectable()
@@ -87,12 +87,13 @@ export class HasuraUserService implements IServicelocator {
     userDto.createdBy = userId;
     userDto.updatedBy = userId;
 
+    userDto.username = userDto.username.toLocaleLowerCase();
+
     const userSchema = new UserDto(userDto);
 
     let query = "";
     let errKeycloak = "";
     let resKeycloak = "";
-
 
     if (altUserRoles.includes("systemAdmin")) {
       const response = await getKeycloakAdminToken();
@@ -102,14 +103,14 @@ export class HasuraUserService implements IServicelocator {
         userDto.username,
         token
       );
-  
+
       if (usernameExistsInKeycloak?.data[0]?.username) {
         // console.log("check in db", usernameExistsInKeycloak?.data[0]?.id);
         return new ErrorResponse({
           errorCode: "400",
           errorMessage: "Username already exists",
         });
-        }
+      }
 
       resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
         (error) => {
@@ -363,66 +364,62 @@ export class HasuraUserService implements IServicelocator {
   }
 
   public async getUserByAuth(request: any) {
-    const authToken = request.headers.authorization;
-    const decoded: any = jwt_decode(authToken);
+    try {
+      const authToken = request.headers.authorization;
+      const decoded: any = jwt_decode(authToken);
 
-    const username = decoded.preferred_username;
+      const username = decoded.preferred_username;
 
-    const data = {
-      query: `query searchUser($username:String) {
+      const data = {
+        query: `query userByAuth($username:String) {
         Users(where: {username: {_eq: $username}}) {
           userId
-            name
-            username
-            father
-            mother
-            uniqueId
-            email
-            mobileNumber
-            birthDate
-            bloodGroup
-            udise
-            school
-            board
-            grade
-            medium
-            state
-            district
-            block
-            role
-            gender
-            section
-            status
-            image
-            created_at
-            createdBy
-            updated_at
-            updatedBy
+          name
+          username
+          role
+          email
+          mobile
+          dob
+          state
+          district
+          address
+          pincode
+          createdAt
+          createdBy
+          updatedAt
+          updatedBy
         }
       }`,
-      variables: { username: username },
-    };
+        variables: { username: username },
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await this.axios(config);
+      console.log(config, "config");
 
-    const result = response.data.data.Users;
+      const response = await this.axios(config);
 
-    const userData = await this.mappedResponse(result);
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: userData,
-    });
+      console.log(JSON.stringify(response.data), "res");
+
+      const result = response.data.data.Users;
+
+      const userData = await this.mappedResponse(result);
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: userData,
+      });
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   public async resetUserPassword(
@@ -495,9 +492,6 @@ export class HasuraUserService implements IServicelocator {
             userId
             name
             username
-            father
-            mother
-            uniqueId
             email
             mobileNumber
             birthDate
@@ -550,14 +544,6 @@ export class HasuraUserService implements IServicelocator {
   }
 
   searchUser(request: any, teacherSearchDto: UserSearchDto) {
-    throw new Error("Method not implemented.");
-  }
-
-  public async teacherSegment(
-    schoolId: string,
-    templateId: string,
-    request: any
-  ) {
     throw new Error("Method not implemented.");
   }
 }

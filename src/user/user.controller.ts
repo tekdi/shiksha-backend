@@ -106,20 +106,4 @@ export class UserController {
       .buildUserAdapter()
       .searchUser(request, userSearchDto);
   }
-
-  @Get("teachersegment/:schoolId")
-  // @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "User list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "templateId", required: false })
-  public async teacherSegment(
-    @Param("schoolId") schoolId: string,
-    @Query("templateId") templateId: string,
-    @Req() request: Request
-  ) {
-    return await this.userAdapter
-      .buildUserAdapter()
-      .teacherSegment(schoolId, templateId, request);
-  }
 }

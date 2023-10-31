@@ -10,6 +10,9 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UserDto {
   @Expose()
+  tenantId: string;
+
+  @Expose()
   userId: string;
 
   @ApiProperty({
@@ -26,25 +29,28 @@ export class UserDto {
   @Expose()
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    type: String,
+    description: "The role of the user",
+  })
   @Expose()
   role: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The date of Birth of the user",
   })
   @Expose()
   dob: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The contact number of the user",
   })
   @Expose()
   mobile: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The email of the user",
   })
@@ -80,7 +86,7 @@ export class UserDto {
   @Expose()
   address: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The pincode of the user",
   })

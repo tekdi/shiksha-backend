@@ -23,81 +23,93 @@ export class HasuraUserService implements IServicelocator {
     throw new Error("Method not implemented.");
   }
 
-  public async getUser(userId: string, request: any) {
-    console.log(request.headers);
-    const decoded: any = jwt_decode(request.headers.authorization);
-    const altUserRoles =
-      decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+  public async getUser(tenantId: string, userId: string, request: any) {
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    const data = {
-      query: `query GetUser($userId:uuid!) {
+      const data = {
+        query: `query GetUser($userId:uuid!) {
         Users_by_pk(userId: $userId) {
             userId
             name
             username
             email
+            district
+            state 
+            address
+            pincode
             mobile
             dob
             role
+            tenantId
             createdAt
             updatedAt
+            createdBy
+            updatedBy
         }
       }
       `,
-      variables: { userId: userId },
-    };
+        variables: { userId: userId },
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        Authorization: request.headers.authorization,
-        "x-hasura-role": getUserRole(altUserRoles),
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-role": getUserRole(userRoles),
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await this.axios(config);
-    console.log(response, "res");
+      const response = await this.axios(config);
 
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message,
-      });
-    } else {
-      const result = [response.data.data.Users_by_pk];
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      } else {
+        const result = [response.data.data.Users_by_pk];
 
-      const userData = await this.mappedResponse(result);
-      return new SuccessResponse({
-        statusCode: response.status,
-        message: "Ok.",
-        data: userData[0],
-      });
+        const userData = await this.mappedResponse(result);
+        return new SuccessResponse({
+          statusCode: response.status,
+          message: "Ok.",
+          data: userData[0],
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
   }
 
   public async createUser(request: any, userDto: UserDto) {
-    const decoded: any = jwt_decode(request.headers.authorization);
-    const altUserRoles =
-      decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    const userId = decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-    userDto.createdBy = userId;
-    userDto.updatedBy = userId;
+      const userId =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      userDto.createdBy = userId;
+      userDto.updatedBy = userId;
 
-    userDto.username = userDto.username.toLocaleLowerCase();
+      userDto.username = userDto.username.toLocaleLowerCase();
 
-    const userSchema = new UserDto(userDto);
+      const userSchema = new UserDto(userDto);
 
-    let query = "";
-    let errKeycloak = "";
-    let resKeycloak = "";
+      let query = "";
+      let errKeycloak = "";
+      let resKeycloak = "";
 
-    if (altUserRoles.includes("systemAdmin")) {
-      const response = await getKeycloakAdminToken();
-      const token = response.data.access_token;
+      // if (altUserRoles.includes("systemAdmin")) {
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
 
       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
         userDto.username,
@@ -105,7 +117,6 @@ export class HasuraUserService implements IServicelocator {
       );
 
       if (usernameExistsInKeycloak?.data[0]?.username) {
-        // console.log("check in db", usernameExistsInKeycloak?.data[0]?.id);
         return new ErrorResponse({
           errorCode: "400",
           errorMessage: "Username already exists",
@@ -122,70 +133,74 @@ export class HasuraUserService implements IServicelocator {
           });
         }
       );
-    } else {
-      return new ErrorResponse({
-        errorCode: "401",
-        errorMessage: "Unauthorized",
-      });
-    }
+      // } else {
+      //   return new ErrorResponse({
+      //     errorCode: "401",
+      //     errorMessage: "Unauthorized",
+      //   });
+      // }
 
-    Object.keys(userDto).forEach((e) => {
-      if (
-        userDto[e] &&
-        userDto[e] !== "" &&
-        e != "password" &&
-        Object.keys(userSchema).includes(e)
-      ) {
-        if (e === "role") {
-          query += `${e}: ${userDto[e]},`;
-        } else if (Array.isArray(userDto[e])) {
-          query += `${e}: ${JSON.stringify(userDto[e])}, `;
-        } else {
-          query += `${e}: ${JSON.stringify(userDto[e])}, `;
+      Object.keys(userDto).forEach((e) => {
+        if (
+          userDto[e] &&
+          userDto[e] !== "" &&
+          e != "password" &&
+          Object.keys(userSchema).includes(e)
+        ) {
+          if (e === "role") {
+            query += `${e}: ${userDto[e]},`;
+          } else if (Array.isArray(userDto[e])) {
+            query += `${e}: ${JSON.stringify(userDto[e])}, `;
+          } else {
+            query += `${e}: ${JSON.stringify(userDto[e])}, `;
+          }
         }
-      }
-    });
+      });
 
-    // Add userId created in keycloak as user Id of ALT user
-    query += `userId: "${resKeycloak}"`;
-    const data = {
-      query: `mutation CreateUser {
+      // Add userId created in keycloak as user Id of ALT user
+      query += `userId: "${resKeycloak}"`;
+      const data = {
+        query: `mutation CreateUser {
         insert_Users_one(object: {${query}}) {
           userId
         }
       }
       `,
-      variables: {},
-    };
+        variables: {},
+      };
 
-    const headers = {
-      Authorization: request.headers.authorization,
-      "x-hasura-role": getUserRole(altUserRoles),
-      "Content-Type": "application/json",
-    };
+      const headers = {
+        Authorization: request.headers.authorization,
+        "x-hasura-role": getUserRole(userRoles),
+        "Content-Type": "application/json",
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: headers,
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: headers,
+        data: data,
+      };
 
-    const response = await this.axios(config);
+      const response = await this.axios(config);
 
-    if (response?.data?.errors || resKeycloak == undefined) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message + errKeycloak,
-      });
-    } else {
-      const result = response.data.data.insert_Users_one;
+      if (response?.data?.errors || resKeycloak == undefined) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message + errKeycloak,
+        });
+      } else {
+        const result = response.data.data.insert_Users_one;
 
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
   }
 
@@ -250,96 +265,101 @@ export class HasuraUserService implements IServicelocator {
   //     }
   //   }
 
-  //   public async searchUser(request: any, userSearchDto: UserSearchDto) {
-  //     let offset = 0;
-  //     if (userSearchDto.page > 1) {
-  //       offset = userSearchDto.limit * (userSearchDto.page - 1);
-  //     }
+  public async searchUser(
+    tenantId: string,
+    request: any,
+    userSearchDto: UserSearchDto
+  ) {
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-  //     const filters = userSearchDto.filters;
+      let offset = 0;
+      if (userSearchDto.page > 1) {
+        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
+      }
 
-  //     let query = "";
-  //     Object.keys(userSearchDto.filters).forEach((e) => {
-  //       if (userSearchDto.filters[e] && userSearchDto.filters[e] != "") {
-  //         if (e === "name" || e === "username") {
-  //           query += `${e}:{_ilike: "%${userSearchDto.filters[e]}%"}`;
-  //         } else {
-  //           query += `${e}:{_eq:"${userSearchDto.filters[e]}"}`;
-  //         }
-  //       }
-  //     });
+      const filters = userSearchDto.filters;
 
-  //     const data = {
-  //       query: `query SearchUser($limit:Int, $offset:Int) {
-  //         Users_aggregate {
-  //           aggregate {
-  //             count
-  //           }
-  //         }
-  //         Users(where:{${query}}, limit: $limit, offset: $offset,) {
-  //             userId
-  //             name
-  //             username
-  //             father
-  //             mother
-  //             uniqueId
-  //             email
-  //             mobileNumber
-  //             birthDate
-  //             bloodGroup
-  //             udise
-  //             school
-  //             board
-  //             grade
-  //             medium
-  //             state
-  //             district
-  //             block
-  //             role
-  //             gender
-  //             section
-  //             status
-  //             image
-  //             createdBy
-  //             updatedBy
-  //             createdAt
-  //             updatedAt
-  //             }
-  //           }`,
-  //       variables: {
-  //         limit: userSearchDto.limit,
-  //         offset: offset,
-  //       },
-  //     };
-  //     const config = {
-  //       method: "post",
-  //       url: process.env.REGISTRYHASURA,
-  //       headers: {
-  //         "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-  //         "Content-Type": "application/json",
-  //       },
-  //       data: data,
-  //     };
+      Object.keys(userSearchDto.filters).forEach((item) => {
+        Object.keys(userSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
+      });
 
-  //     const response = await this.axios(config);
+      const data = {
+        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
+          Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
+            aggregate {
+              count
+            }
+          }
+          Users(where:$filters, limit: $limit, offset: $offset,) {
+            userId
+            name
+            username
+            email
+            district
+            state 
+            address
+            pincode
+            mobile
+            dob
+            role
+            tenantId
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
+              }
+            }`,
+        variables: {
+          limit: parseInt(userSearchDto.limit),
+          offset: offset,
+          filters: userSearchDto.filters,
+        },
+      };
 
-  //     if (response?.data?.errors) {
-  //       return new ErrorResponse({
-  //         errorCode: response.data.errors[0].extensions,
-  //         errorMessage: response.data.errors[0].message,
-  //       });
-  //     } else {
-  //       const result = response.data.data.Users;
-  //       const userData = await this.mappedResponse(result);
-  //       const count = response?.data?.data?.user_aggregate?.aggregate?.count;
+      const headers = {
+        Authorization: request.headers.authorization,
+        "x-hasura-role": getUserRole(userRoles),
+        "Content-Type": "application/json",
+      };
 
-  //       return new SuccessResponse({
-  //         statusCode: 200,
-  //         message: "Ok.",
-  //         data: userData,
-  //       });
-  //     }
-  //   }
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: headers,
+        data: data,
+      };
+
+      const response = await this.axios(config);
+
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      } else {
+        const result = response.data.data.Users;
+        const userData = await this.mappedResponse(result);
+        const count = response?.data?.data?.Users_aggregate?.aggregate?.count;
+
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok. Found " + count + " records",
+          data: userData,
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
+    }
+  }
 
   public async mappedResponse(result: any) {
     const userResponse = result.map((item: any) => {
@@ -351,7 +371,11 @@ export class HasuraUserService implements IServicelocator {
         mobile: item?.mobile ? item.mobile : "",
         dob: item?.dob ? `${item.dob}` : "",
         state: item?.state ? `${item.state}` : "",
+        address: item?.address ? `${item.address}` : "",
+        pincode: item?.pincode ? `${item.pincode}` : "",
+        district: item?.district ? `${item.district}` : "",
         role: item?.role ? `${item.role}` : "",
+        tenantId: item?.tenantId ? `${item.tenantId}` : "",
         createdAt: item?.createdAt ? `${item.createdAt}` : "",
         updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
         createdBy: item?.createdBy ? `${item.createdBy}` : "",
@@ -363,16 +387,18 @@ export class HasuraUserService implements IServicelocator {
     return userResponse;
   }
 
-  public async getUserByAuth(request: any) {
+  public async getUserByAuth(tenantId: string, request: any) {
     try {
-      const authToken = request.headers.authorization;
-      const decoded: any = jwt_decode(authToken);
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
       const username = decoded.preferred_username;
 
       const data = {
         query: `query userByAuth($username:String) {
         Users(where: {username: {_eq: $username}}) {
+          tenantId
           userId
           name
           username
@@ -397,17 +423,14 @@ export class HasuraUserService implements IServicelocator {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          Authorization: request.headers.authorization,
+          "x-hasura-role": getUserRole(userRoles),
           "Content-Type": "application/json",
         },
         data: data,
       };
 
-      console.log(config, "config");
-
       const response = await this.axios(config);
-
-      console.log(JSON.stringify(response.data), "res");
 
       const result = response.data.data.Users;
 
@@ -419,6 +442,7 @@ export class HasuraUserService implements IServicelocator {
       });
     } catch (e) {
       console.log(e);
+      return e;
     }
   }
 
@@ -427,123 +451,136 @@ export class HasuraUserService implements IServicelocator {
     username: string,
     newPassword: string
   ) {
-    const userData: any = await this.getUserByUsername(username, request);
-    let userId;
-
-    if (userData?.data?.userId) {
-      userId = userData.data.userId;
-    } else {
-      return new ErrorResponse({
-        errorCode: `404`,
-        errorMessage: "User with given username not found",
-      });
-    }
-
-    const data = JSON.stringify({
-      temporary: "false",
-      type: "password",
-      value: newPassword,
-    });
-
-    const response = await getKeycloakAdminToken();
-    const res = response.data.access_token;
-    let apiResponse;
-
-    const config = {
-      method: "put",
-      url:
-        "https://alt-shiksha.uniteframework.io/auth/admin/realms/hasura/users/" +
-        userId +
-        "/reset-password",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + res,
-      },
-      data: data,
-    };
-
     try {
-      apiResponse = await this.axios(config);
-    } catch (e) {
-      return new ErrorResponse({
-        errorCode: `${e.response.status}`,
-        errorMessage: e.response.data.error,
-      });
-    }
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    if (apiResponse.status === 204) {
-      return new SuccessResponse({
-        statusCode: apiResponse.status,
-        message: apiResponse.statusText,
-        data: { msg: "Password reset successful!" },
+      const userData: any = await this.getUserByUsername(username, request);
+      let userId;
+
+      if (userData?.data?.userId) {
+        userId = userData.data.userId;
+      } else {
+        return new ErrorResponse({
+          errorCode: `404`,
+          errorMessage: "User with given username not found",
+        });
+      }
+
+      const data = JSON.stringify({
+        temporary: "false",
+        type: "password",
+        value: newPassword,
       });
-    } else {
-      return new ErrorResponse({
-        errorCode: "400",
-        errorMessage: apiResponse.errors,
-      });
+
+      const keycloakResponse = await getKeycloakAdminToken();
+      const res = keycloakResponse.data.access_token;
+      let apiResponse;
+
+      const config = {
+        method: "put",
+        url:
+          process.env.KEYCLOAK +
+          process.env.KEYCLOAK_ADMIN +
+          "/" +
+          userId +
+          "/reset-password",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + res,
+        },
+        data: data,
+      };
+
+      try {
+        apiResponse = await this.axios(config);
+      } catch (e) {
+        return new ErrorResponse({
+          errorCode: `${e.response.status}`,
+          errorMessage: e.response.data.error,
+        });
+      }
+
+      if (apiResponse.status === 204) {
+        return new SuccessResponse({
+          statusCode: apiResponse.status,
+          message: apiResponse.statusText,
+          data: { msg: "Password reset successful!" },
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: apiResponse.errors,
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
   }
 
   public async getUserByUsername(username: string, request: any) {
-    const data = {
-      query: `query GetUserByUsername($username:String) {
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const userRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+
+      const data = {
+        query: `query GetUserByUsername($username:String) {
         Users(where: {username: {_eq: $username}}){
-            userId
-            name
-            username
-            email
-            mobileNumber
-            birthDate
-            bloodGroup
-            udise
-            school
-            board
-            grade
-            medium
-            state
-            district
-            block
-            role
-            gender
-            section
-            status
-            image
+          tenantId
+          userId
+          name
+          username
+          role
+          email
+          mobile
+          dob
+          state
+          district
+          address
+          pincode
+          createdAt
+          createdBy
+          updatedAt
+          updatedBy
         }
       }
       `,
-      variables: { username: username },
-    };
+        variables: { username: username },
+      };
 
-    const config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-role": getUserRole(userRoles),
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await this.axios(config);
+      const response = await this.axios(config);
 
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message,
-      });
-    } else {
-      const result = response.data.data.Users;
-      const userData = await this.mappedResponse(result);
-      return new SuccessResponse({
-        statusCode: response.status,
-        message: "Ok.",
-        data: userData[0],
-      });
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      } else {
+        const result = response.data.data.Users;
+        const userData = await this.mappedResponse(result);
+        return new SuccessResponse({
+          statusCode: response.status,
+          message: "Ok.",
+          data: userData[0],
+        });
+      }
+    } catch (e) {
+      console.log(e);
+      return e;
     }
-  }
-
-  searchUser(request: any, teacherSearchDto: UserSearchDto) {
-    throw new Error("Method not implemented.");
   }
 }

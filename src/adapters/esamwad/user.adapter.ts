@@ -11,7 +11,7 @@ export class EsamwadUserService implements IServicelocator {
   constructor(private httpService: HttpService) {}
   url = `${process.env.BASEAPIURL}/User`;
 
-  public async getUserByAuth(request: any) {
+  public async getUserByAuth(tenantId: string, request: any) {
     const response = [
       {
         userId: "85",
@@ -64,10 +64,10 @@ export class EsamwadUserService implements IServicelocator {
       data: teacherResponse,
     });
   }
-  getUser(id: any, request: any) {}
+  getUser(tenantId: string, id: any, request: any) {}
   createUser(request: any, teacherDto: UserDto) {}
   updateUser(id: string, request: any, teacherDto: UserDto) {}
-  searchUser(request: any, teacherSearchDto: UserSearchDto) {}
+  searchUser(tenantId: string,request: any, teacherSearchDto: UserSearchDto) {}
   teacherSegment(schoolId: string, templateId: string, request: any) {}
 
   public async mappedResponse(result: any) {
@@ -128,5 +128,9 @@ export class EsamwadUserService implements IServicelocator {
     });
 
     return userResponse;
+  }
+
+  resetUserPassword(request: any, username: string, newPassword: string) {
+    throw new Error("Method not implemented.");
   }
 }

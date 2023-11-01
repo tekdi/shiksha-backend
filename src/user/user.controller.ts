@@ -12,6 +12,7 @@ import {
   CacheInterceptor,
   Inject,
   Query,
+  Headers,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -26,12 +27,12 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiConsumes,
+  ApiHeader,
 } from "@nestjs/swagger";
 
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
-import { IServicelocator } from "src/adapters/userservicelocator";
-import { EsamwadUserToken } from "src/adapters/esamwad/user.adapter";
 import { UserAdapter } from "./useradapter";
 @ApiTags("User")
 @Controller("user")
@@ -49,8 +50,18 @@ export class UserController {
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  public async getUser(@Param("id") id: string, @Req() request: Request) {
-    return this.userAdapter.buildUserAdapter().getUser(id, request);
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getUser(
+    @Headers() headers,
+    @Param("id") userId: string,
+    @Req() request: Request
+  ) {
+    const tenantId = headers["tenantid"];
+    return this.userAdapter
+      .buildUserAdapter()
+      .getUser(tenantId, userId, request);
   }
 
   @Get()
@@ -61,17 +72,30 @@ export class UserController {
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  public async getUserByAuth(@Req() request: Request) {
-    return this.userAdapter.buildUserAdapter().getUserByAuth(request);
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getUserByAuth(@Headers() headers, @Req() request: Request) {
+    const tenantId = headers["tenantid"];
+    return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
   }
 
   @Post()
+  @ApiConsumes("application/x-www-form-urlencoded")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
-  public async createUser(@Req() request: Request, @Body() userDto: UserDto) {
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async createUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userDto: UserDto
+  ) {
+    userDto.tenantId = headers["tenantid"];
     return this.userAdapter.buildUserAdapter().createUser(request, userDto);
   }
 
@@ -89,6 +113,7 @@ export class UserController {
       .buildUserAdapter()
       .updateUser(id, request, userDto);
   }
+
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User list." })
@@ -98,12 +123,36 @@ export class UserController {
   @SerializeOptions({
     strategy: "excludeAll",
   })
+  @ApiHeader({
+    name: "tenantid",
+  })
   public async searchUser(
+    @Headers() headers,
     @Req() request: Request,
     @Body() userSearchDto: UserSearchDto
   ) {
+    const tenantId = headers["tenantid"];
     return await this.userAdapter
       .buildUserAdapter()
-      .searchUser(request, userSearchDto);
+      .searchUser(tenantId, request, userSearchDto);
+  }
+
+  @Post("/reset-password")
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Password reset successfully." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiBody({ type: Object })
+  @UseInterceptors(ClassSerializerInterceptor)
+  public async resetUserPassword(
+    @Req() request: Request,
+    @Body()
+    reqBody: {
+      username: string;
+      newPassword: string;
+    }
+  ) {
+    return await this.userAdapter
+      .buildUserAdapter()
+      .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
 }

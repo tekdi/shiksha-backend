@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
+import { ErrorResponse } from "src/error-response";
 const resolvePath = require("object-resolve-path");
 import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldsSearchDto } from "src/fields/dto/fields-search.dto";
@@ -10,60 +11,9 @@ import { StudentDto } from "src/student/dto/student.dto";
 export const HasuraFieldsToken = "HasuraFields";
 @Injectable()
 export class HasuraFieldsService implements IServicelocatorfields {
-
   constructor(private httpService: HttpService) {}
 
   url = `${process.env.BASEAPIURL}`;
-
-  public async getFields(fieldsId: any, request: any) {
-    var axios = require("axios");
-
-    var data = {
-      query: `query GetFields($fieldsId:uuid!) {
-        fields_by_pk(fieldsId: $fieldsId) {
-        fieldsId
-        deactivationReason
-        created_at
-        image
-        mediumOfInstruction
-        metaData
-        name
-        option
-        schoolId
-        section
-        teacherId
-        gradeLevel
-        status
-        type
-        updated_at
-        parentId
-      }
-    }`,
-      variables: {
-        fieldsId: fieldsId,
-      },
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = [response?.data?.data?.fields_by_pk];
-    const fieldsResponse = await this.mappedResponse(result);
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: fieldsResponse[0],
-    });
-  }
 
   public async createFields(request: any, fieldsDto: FieldsDto) {
     var axios = require("axios");
@@ -82,7 +32,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
     var data = {
       query: `mutation CreateFields {
         insert_fields_one(object: {${query}}) {
-         fieldsId
+          field_id
         }
       }
       `,
@@ -100,17 +50,176 @@ export class HasuraFieldsService implements IServicelocatorfields {
     };
 
     const response = await axios(config);
-
-    const result = response.data.data.insert_fields_one;
-
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: result,
-    });
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      const result = response.data.data.insert_fields_one;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: result,
+      });
+    }
   }
 
-  public async updateFields(fieldsId: string, request: any, fieldsDto: FieldsDto) {
+  public async getFields(tenantId: string, fieldsId: any, request: any) {
+    var axios = require("axios");
+
+    var data = {
+      query: `query GetFields($fieldsId:uuid!, $tenantId:String!) {
+        fields(
+          where:{
+            TenantId:{
+              _eq:$tenantId
+            }
+            field_id:{
+              _eq:$fieldsId
+            },
+          }
+        ){
+          TenantId
+          field_id
+          asset_id
+          context
+          group_id
+          name
+          label
+          default_value
+          type
+          note
+          description
+          state
+          required
+          ordering
+          metadata
+          access
+          only_use_in_subform
+      }
+    }`,
+      variables: {
+        fieldsId: fieldsId,
+        tenantId: tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response?.data?.data?.fields;
+      const fieldsResponse = await this.mappedResponse(result);
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: fieldsResponse[0],
+      });
+    }
+  }
+
+  public async searchFields(
+    tenantId: string,
+    request: any,
+    fieldsSearchDto: FieldsSearchDto
+  ) {
+    var axios = require("axios");
+
+    let offset = 0;
+    if (fieldsSearchDto.page > 1) {
+      offset = parseInt(fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
+    }
+
+    let temp_filters = fieldsSearchDto.filters;
+    //add tenantid
+    let filters = new Object(temp_filters);
+    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+
+    Object.keys(fieldsSearchDto.filters).forEach((item) => {
+      Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          filters[item][`_${e}`] = filters[item][e];
+          delete filters[item][e];
+        }
+      });
+    });
+    var data = {
+      query: `query SearchFields($filters:fields_bool_exp,$limit:Int, $offset:Int) {
+           fields(where:$filters, limit: $limit, offset: $offset,) {
+              TenantId
+              field_id
+              asset_id
+              context
+              group_id
+              name
+              label
+              default_value
+              type
+              note
+              description
+              state
+              required
+              ordering
+              metadata
+              access
+              only_use_in_subform
+            }
+          }`,
+      variables: {
+        limit: parseInt(fieldsSearchDto.limit),
+        offset: offset,
+        filters: fieldsSearchDto.filters,
+      },
+    };
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data.fields;
+      const fieldsResponse = await this.mappedResponse(result);
+      const count = fieldsResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: fieldsResponse,
+      });
+    }
+  }
+
+  public async updateFields(
+    fieldsId: string,
+    request: any,
+    fieldsDto: FieldsDto
+  ) {
     var axios = require("axios");
 
     let query = "";
@@ -155,80 +264,11 @@ export class HasuraFieldsService implements IServicelocatorfields {
     });
   }
 
-  public async searchFields(request: any, fieldsSearchDto: FieldsSearchDto) {
-    var axios = require("axios");
-
-    let offset = 0;
-    if (fieldsSearchDto.page > 1) {
-      offset = parseInt(fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
-    }
-
-    let filters = fieldsSearchDto.filters;
-
-    Object.keys(fieldsSearchDto.filters).forEach((item) => {
-      Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
-      });
-    });
-    var data = {
-      query: `query SearchFields($filters:fields_bool_exp,$limit:Int, $offset:Int) {
-        fields_aggregate {
-          aggregate {
-            count
-          }
-        }
-           fields(where:$filters, limit: $limit, offset: $offset,) {
-                fieldsId
-                deactivationReason
-                created_at
-                image
-                mediumOfInstruction
-                metaData
-                name
-                option
-                schoolId
-                section
-                status
-                teacherId
-                gradeLevel
-                type
-                updated_at
-                parentId
-            }
-          }`,
-      variables: {
-        limit: parseInt(fieldsSearchDto.limit),
-        offset: offset,
-        filters: fieldsSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    let result = response.data.data.fields;
-    const fieldsResponse = await this.mappedResponse(result);
-    const count = response?.data?.data?.fields_aggregate?.aggregate?.count;
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      totalCount: count,
-      data: fieldsResponse,
-    });
-  }
-
-  public async findMembersOfFields(fieldsId: string, role: string, request: any) {
+  public async findMembersOfFields(
+    fieldsId: string,
+    role: string,
+    request: any
+  ) {
     let axios = require("axios");
     let userData = [];
     var findMember = {
@@ -469,27 +509,25 @@ export class HasuraFieldsService implements IServicelocatorfields {
   public async mappedResponse(result: any) {
     const fieldsResponse = result.map((item: any) => {
       const fieldsMapping = {
-        id: item?.fieldsId ? `${item.fieldsId}` : "",
-        fieldsId: item?.fieldsId ? `${item.fieldsId}` : "",
-        schoolId: item?.schoolId ? `${item.schoolId}` : "",
+        TenantId: item?.TenantId ? `${item.TenantId}` : "",
+        field_id: item?.field_id ? `${item.field_id}` : "",
+        asset_id: item?.asset_id ? `${item.asset_id}` : "",
+        context: item?.context ? `${item.context}` : "",
+        group_id: item?.group_id ? `${item.group_id}` : "",
         name: item?.name ? `${item.name}` : "",
+        label: item?.label ? `${item.label}` : "",
+        default_value: item?.default_value ? `${item.default_value}` : "",
         type: item?.type ? `${item.type}` : "",
-        section: item?.section ? `${item.section}` : "",
-        status: item?.status ? `${item.status}` : "",
-        deactivationReason: item?.deactivationReason
-          ? `${item.deactivationReason}`
+        note: item?.note ? `${item.note}` : "",
+        description: item?.description ? `${item.description}` : "",
+        state: item?.state ? `${item.state}` : "",
+        required: item?.required ? `${item.required}` : "",
+        ordering: item?.ordering ? `${item.ordering}` : "",
+        metadata: item?.metadata ? `${item.metadata}` : "",
+        access: item?.access ? `${item.access}` : "",
+        only_use_in_subform: item?.only_use_in_subform
+          ? `${item.only_use_in_subform}`
           : "",
-        mediumOfInstruction: item?.mediumOfInstruction
-          ? `${item.mediumOfInstruction}`
-          : "",
-        teacherId: item?.teacherId ? `${item.teacherId}` : "",
-        parentId: item?.parentId ? `${item.parentId}` : "",
-        image: item?.image ? `${item.image}` : "",
-        metaData: item?.metaData ? item.metaData : [],
-        option: item?.option ? item.option : [],
-        gradeLevel: item?.gradeLevel ? `${item.gradeLevel}` : "",
-        createdAt: item?.created_at ? `${item.created_at}` : "",
-        updatedAt: item?.updated_at ? `${item.updated_at}` : "",
       };
       return new FieldsDto(fieldsMapping);
     });

@@ -3,27 +3,10 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class AttendanceDto {
   @Expose()
-  id: string;
-
-  @Expose()
   attendanceId: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The schoolId of the attendance ",
-    default: "",
-  })
   @Expose()
-  @ApiPropertyOptional()
-  schoolId: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "The userType of the attendance",
-    default: "",
-  })
-  @Expose()
-  userType: string;
+  tenantId: string;
 
   @ApiProperty({
     type: String,
@@ -33,35 +16,9 @@ export class AttendanceDto {
   @Expose()
   userId: string;
 
-  @ApiPropertyOptional({
-    type: String,
-    description: "The groupid of the attendance",
-    default: "",
-  })
-  @Expose()
-  groupId: string;
-
   @ApiProperty({
     type: String,
-    description: "The topicid of the attendance",
-    default: "",
-  })
-  @Expose()
-  @ApiPropertyOptional()
-  topicId: string;
-
-  @ApiProperty({
-    type: String,
-    description: "The eventid of the attendance",
-    default: "",
-  })
-  @Expose()
-  @ApiPropertyOptional()
-  eventId: string;
-
-  @ApiProperty({
-    type: String,
-    description: "The date of the attendance",
+    description: "The date of the attendance in format yyyy-mm-dd",
     default: new Date(),
   })
   @Expose()
@@ -106,7 +63,7 @@ export class AttendanceDto {
     type: "string",
     format: "binary",
     description: "The image of person",
-    default: "",
+    default: "NA",
   })
   @Expose()
   @ApiPropertyOptional()
@@ -114,11 +71,31 @@ export class AttendanceDto {
 
   @ApiPropertyOptional()
   @Expose()
-  metaData: [string];
+  metaData: string;
 
   @ApiPropertyOptional()
   @Expose()
   syncTime: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  session: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "The contextType of the attendance",
+    default: "",
+  })
+  @Expose()
+  contextType: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "The contextId of the attendance",
+    default: "",
+  })
+  @Expose()
+  contextId: string;
 
   @Expose()
   createdAt: string;

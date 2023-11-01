@@ -1,9 +1,9 @@
-function getUserRole(altUserRoles: string[]) {
-  if (altUserRoles.includes("systemAdmin")) {
+function getUserRole(userRoles: string[]) {
+  if (userRoles.includes("systemAdmin")) {
     return "systemAdmin";
-  } else if (altUserRoles.includes("facilitator")) {
+  } else if (userRoles.includes("facilitator")) {
     return "facilitator";
-  } else if (altUserRoles.includes("beneficiary")) {
+  } else if (userRoles.includes("beneficiary")) {
     return "beneficiary";
   } else return "user";
 }

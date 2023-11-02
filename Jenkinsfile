@@ -16,23 +16,12 @@ pipeline {
           }
         }
     
-        stage ('Build') {
+        stage ('Build&Deploy') {
             
             steps {
                                     
-                        sh 'docker build -t shiksha-backend:latest .'
-                        sh 'docker rm -f shiksha-backend'
-                        sh 'docker rmi backend_main:latest'
-                   
-                }
-            }
-         stage ('Deploy') {
-            steps {
-                dir('/root/shiksha-backend/'){
-
+                        sh 'cp -r /root/shiksha-backend/.env .'
                         sh 'docker-compose up -d --force-recreate --no-deps'
-                        sh 'docker images --no-trunc -aqf "dangling=true" | xargs docker rmi'
-                  }
                 }
             }
 

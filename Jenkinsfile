@@ -21,7 +21,7 @@ pipeline {
                    
                 }
             }
-         stage ('Build') {
+         stage ('Deploy') {
             steps {
                 dir('/root/shiksha-backend/'){
 

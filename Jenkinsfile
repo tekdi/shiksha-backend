@@ -2,22 +2,34 @@ pipeline {
     agent any
         stages {
         stage('Checkout'){
+            
             steps{
-               // git branch: 'main' , url: 'https://github.com/tekdi/shiksha-backend.git'
+               sh 'rm -rf *'
+               git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
                 echo "Clone repository"
+            
           }
         }
     
         stage ('Build') {
+            
             steps {
-                dir('/var/lib/jenkins/workspace/backend/'){
-                    
+                                    
+                        sh 'docker build -t shiksha-backend:latest .'
                         sh 'docker rm -f shiksha-backend'
                         sh 'docker rmi backend_main:latest'
-                      //  sh 'cd /var/lib/jenkins/workspace/backend/'
-                        sh 'docker-compose up -d'
-                   }
+                   
                 }
             }
+         stage ('Build') {
+            steps {
+                dir('/root/shiksha-backend/'){
+
+                        sh 'docker-compose up -d --force-recreate --no-deps'
+                        sh 'docker images --no-trunc -aqf "dangling=true" | xargs docker rmi'
+                  }
+                }
+            }
+
        }
 }

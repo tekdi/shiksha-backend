@@ -17,7 +17,7 @@ export class UserService implements IServicelocator {
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 
-  public async getUser(id: any, request: any) {
+  public async getUser(tenantId: string, id: any, request: any) {
     return this.httpService
       .get(`${this.url}/${id}`, {
         headers: {
@@ -89,7 +89,11 @@ export class UserService implements IServicelocator {
       data: response.data,
     });
   }
-  public async searchUser(request: any, teacherSearchDto: UserSearchDto) {
+  public async searchUser(
+    tenantId: string,
+    request: any,
+    teacherSearchDto: UserSearchDto
+  ) {
     let userSearchData = teacherSearchDto;
 
     let searchData: any;
@@ -136,7 +140,7 @@ export class UserService implements IServicelocator {
       );
   }
 
-  public async getUserByAuth(request: any) {
+  public async getUserByAuth(tenantId: string, request: any) {
     const authToken = request.headers.authorization;
     const decoded: any = jwt_decode(authToken);
     let email = decoded.email;
@@ -278,5 +282,9 @@ export class UserService implements IServicelocator {
     });
 
     return userResponse;
+  }
+
+  resetUserPassword(request: any, username: string, newPassword: string) {
+    throw new Error("Method not implemented.");
   }
 }

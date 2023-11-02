@@ -1,23 +1,29 @@
 pipeline {
     agent any
         stages {
-        stage('Checkout'){
+         stage('clean workspace'){
             steps{
-               // git branch: 'main' , url: 'https://github.com/tekdi/shiksha-backend.git'
-                echo "Clone repository"
+                cleanWs()
+            }
+        }
+        stage('Checkout'){
+            
+            steps{
+               
+               git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
+                echo "========================== ***Repository cloned Successfully*** =========================="
+            
           }
         }
     
-        stage ('Build') {
+        stage ('Build&Deploy') {
+            
             steps {
-                dir('/var/lib/jenkins/workspace/backend/'){
-                    
-                        sh 'docker rm -f shiksha-backend'
-                        sh 'docker rmi backend_main:latest'
-                      //  sh 'cd /var/lib/jenkins/workspace/backend/'
-                        sh 'docker-compose up -d'
-                   }
+                                    
+                        sh 'cp -r /shiksha/.env .'
+                        sh 'docker-compose up -d --force-recreate --no-deps'
                 }
             }
+
        }
 }

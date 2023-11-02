@@ -7,7 +7,9 @@ import { SegmentDto } from "src/common-dto/userSegment.dto";
 import moment from "moment";
 
 import { IServicelocator } from "../attendanceservicelocator";
+import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
+import { ErrorResponse } from "src/error-response";
 export const ShikshaAttendanceToken = "ShikshaAttendance";
 
 @Injectable()
@@ -16,28 +18,34 @@ export class AttendanceHasuraService implements IServicelocator {
   url = `${process.env.BASEAPIURL}/Attendance`;
   studentAPIUrl = `${process.env.BASEAPIURL}/Student`;
   baseUrl = process.env.BASEAPIURL;
-  public async getAttendance(attendanceId: any, request: any) {
+
+  public async getAttendance(
+    tenantId: string,
+    attendanceId: string,
+    request: any
+  ) {
     var axios = require("axios");
     var data = {
       query: `query GetAttendance($attendanceId:uuid!) {
-        attendance(where: {attendanceId: {_eq: $attendanceId}}) {
+        Attendance(where: {attendanceId: {_eq: $attendanceId}}) {
             attendance
             attendanceDate
             attendanceId
-            created_at
-            eventId
-            groupId
-            image
+            tenantId
+            userId
+            remark
             latitude
             longitude
+            image
             metaData
-            remark
-            schoolId
             syncTime
-            topicId
-            updated_at
-            userId
-            userType
+            session
+            contextId
+            contextType
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
         }
       }
       `,
@@ -55,7 +63,7 @@ export class AttendanceHasuraService implements IServicelocator {
     };
 
     const response = await axios(config);
-    let result = response?.data?.data?.attendance;
+    let result = response?.data?.data?.Attendance;
     const mappedResponse = await this.mappedResponse(result);
 
     return new SuccessResponse({
@@ -116,6 +124,7 @@ export class AttendanceHasuraService implements IServicelocator {
   }
 
   public async searchAttendance(
+    tenantId: string,
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
@@ -127,46 +136,55 @@ export class AttendanceHasuraService implements IServicelocator {
         parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
     }
 
-    let query = "";
-    Object.keys(attendanceSearchDto.filters).forEach((e) => {
-      if (
-        attendanceSearchDto.filters[e] &&
-        attendanceSearchDto.filters[e] != ""
-      ) {
-        query += `${e}:{_eq:"${attendanceSearchDto.filters[e]}"}`;
-      }
+    attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+    Object.keys(attendanceSearchDto.filters).forEach((item) => {
+      Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          attendanceSearchDto.filters[item][`_${e}`] =
+            attendanceSearchDto.filters[item][e];
+          delete attendanceSearchDto.filters[item][e];
+        }
+      });
     });
 
     var data = {
-      query: `query SearchAttendance($limit:Int, $offset:Int) {
-        attendance_aggregate {
+      query: `query SearchAttendance($filters:Attendance_bool_exp,$limit:Int, $offset:Int) {
+        Attendance_aggregate (where:$filters, limit: $limit, offset: $offset,){
           aggregate {
             count
           }
         }
-            attendance(where:{ ${query}}, limit: $limit, offset: $offset,) {
-              attendance
-              attendanceDate
-              attendanceId
-              created_at
-              eventId
-              groupId
-              image
-              latitude
-              longitude
+          Attendance(where:$filters, limit: $limit, offset: $offset,) {
+            attendance
+            attendanceDate
+            attendanceId
+            tenantId
+            userId
+            remark
+            latitude
+            longitude
+            image
+              metaData
               metaData
               remark
               schoolId
-              syncTime
-              topicId
-              updated_at
-              userId
-              userType
+            metaData
+              remark
+              schoolId
+            syncTime
+            session
+            contextId
+            contextType
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
             }
           }`,
       variables: {
         limit: parseInt(attendanceSearchDto.limit),
         offset: offset,
+        filters: attendanceSearchDto.filters,
       },
     };
     var config = {
@@ -180,10 +198,18 @@ export class AttendanceHasuraService implements IServicelocator {
     };
 
     const response = await axios(config);
-    let result = response?.data?.data?.attendance;
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "500",
+        errorMessage: response.data.errors[0].message,
+      });
+    }
+
+    let result = response?.data?.data?.Attendance;
 
     let mappedResponse = await this.mappedResponse(result);
-    const count = response?.data?.data?.attendance_aggregate?.aggregate?.count;
+    const count = response?.data?.data?.Attendance_aggregate?.aggregate?.count;
 
     return new SuccessResponse({
       statusCode: 200,
@@ -193,6 +219,7 @@ export class AttendanceHasuraService implements IServicelocator {
     });
   }
 
+  // need to figure out this
   public async userSegment(
     groupId: string,
     attendance: string,
@@ -503,7 +530,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
     var data = {
       query: `query SearchAttendance {
-            attendance(where:{ ${query}}) {
+            Attendance(where:{ ${query}}) {
               attendanceId
             }
           }`,
@@ -521,7 +548,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
     const responseData = await axios(config);
 
-    const resData = responseData.data.data.attendance;
+    const resData = responseData.data.data.Attendance;
 
     if (resData.length > 0) {
       let query = "";
@@ -533,7 +560,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
       var updateQuery = {
         query: `mutation UpdateAttendance($attendanceId:uuid) {
-          update_attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
+          update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
           affected_rows
         }
 }`,
@@ -571,7 +598,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
       var data = {
         query: `mutation CreateAttendance {
-        insert_attendance_one(object: {${query}}) {
+        insert_Attendance_one(object: {${query}}) {
          attendanceId
         }
       }
@@ -591,7 +618,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
       const response = await axios(config);
 
-      const result = response.data.data.insert_attendance_one;
+      const result = response.data.data.insert_Attendance_one;
 
       return new SuccessResponse({
         statusCode: 200,
@@ -600,125 +627,82 @@ export class AttendanceHasuraService implements IServicelocator {
       });
     }
   }
-  public async multipleAttendance(request: any, attendanceData: [Object]) {
-    let axios = require("axios");
-    let attendeeData = attendanceData["attendanceData"];
-    const result = Promise.all(
-      attendeeData.map(async (data: any) => {
-        data["schoolId"] = attendanceData["schoolId"]
-          ? attendanceData["schoolId"]
-          : "";
-        data["userType"] = attendanceData["userType"]
-          ? attendanceData["userType"]
-          : "";
-        data["groupId"] = attendanceData["groupId"]
-          ? attendanceData["groupId"]
-          : "";
-        data["topicId"] = attendanceData["topicId"]
-          ? attendanceData["topicId"]
-          : "";
-        data["eventId"] = attendanceData["eventId"]
-          ? attendanceData["eventId"]
-          : "";
-        data["attendanceDate"] = attendanceData["attendanceDate"]
-          ? attendanceData["attendanceDate"]
-          : "";
-        data["latitude"] = attendanceData["latitude"]
-          ? attendanceData["latitude"]
-          : 0;
-        data["longitude"] = attendanceData["longitude"]
-          ? attendanceData["longitude"]
-          : 0;
-        data["image"] = attendanceData["image"] ? attendanceData["image"] : "";
-        data["metaData"] = attendanceData["metaData"]
-          ? attendanceData["metaData"]
-          : [];
-        data["syncTime"] = attendanceData["syncTime"]
-          ? attendanceData["syncTime"]
-          : "";
 
-        let attendanceDto = data;
-        let dataObject = "";
-        const newDataObj = Object.keys(attendanceDto).forEach((e) => {
-          if (attendanceDto[e] && attendanceDto[e] != "") {
-            dataObject += `${e}:{_eq:"${attendanceDto[e]}"}`;
-          }
-        });
+  // bulk attendance api
+  public async multipleAttendance(
+    tenantId: string,
+    request: any,
+    attendanceData: [AttendanceDto]
+  ) {
+    try {
+      let axios = require("axios");
+      // let attendeeData = attendanceData["attendanceData"];
+      const result = Promise.all(
+        attendanceData.map(async (attendanceData: any) => {
+          let data = {};
+          data["tenantId"] = tenantId;
+          data["attendanceId"] = attendanceData["attendanceId"]
+            ? attendanceData["attendanceId"]
+            : "";
+          data["userId"] = attendanceData["userId"]
+            ? attendanceData["userId"]
+            : "";
+          data["attendanceDate"] = attendanceData["attendanceDate"]
+            ? attendanceData["attendanceDate"]
+            : "";
+          data["attendance"] = attendanceData["attendance"]
+            ? attendanceData["attendance"]
+            : "";
+          data["remark"] = attendanceData["remark"]
+            ? attendanceData["remark"]
+            : "";
+          data["latitude"] = attendanceData["latitude"]
+            ? attendanceData["latitude"]
+            : 0;
+          data["longitude"] = attendanceData["longitude"]
+            ? attendanceData["longitude"]
+            : 0;
+          data["image"] = attendanceData["image"]
+            ? attendanceData["image"]
+            : "";
+          data["metaData"] = attendanceData["metaData"]
+            ? attendanceData["metaData"]
+            : [];
+          data["syncTime"] = attendanceData["syncTime"]
+            ? attendanceData["syncTime"]
+            : "";
+          data["session"] = attendanceData["session"]
+            ? attendanceData["session"]
+            : "";
+          data["contextType"] = attendanceData["contextType"]
+            ? attendanceData["contextType"]
+            : "";
+          data["contextId"] = attendanceData["contextId"]
+            ? attendanceData["contextId"]
+            : "";
+          data["createdBy"] = attendanceData["createdBy"]
+            ? attendanceData["createdBy"]
+            : "";
+          data["updatedBy"] = attendanceData["updatedBy"]
+            ? attendanceData["updatedBy"]
+            : "";
 
-        var search = {
-          query: `query SearchAttendance {
-            attendance(where:{ ${dataObject}}) {
+          let attendanceDto = data;
+          let dataObject = "";
+          const newDataObj = Object.keys(attendanceDto).forEach((e) => {
+            if (attendanceDto[e] && attendanceDto[e] != "") {
+              dataObject += `${e}:{_eq:"${attendanceDto[e]}"}`;
+            }
+          });
+
+          var search = {
+            query: `query SearchAttendance {
+            Attendance(where:{ ${dataObject}}) {
               attendanceId
             }
           }`,
-          variables: {},
-        };
-        var config = {
-          method: "post",
-          url: process.env.REGISTRYHASURA,
-          headers: {
-            "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-            "Content-Type": "application/json",
-          },
-          data: search,
-        };
-
-        const responseData = await axios(config);
-
-        let resData = await this.mappedResponse(
-          responseData.data.data.attendance
-        );
-
-        if (resData.length > 0) {
-          let query = "";
-          Object.keys(attendanceDto).forEach((e) => {
-            if (attendanceDto[e] && attendanceDto[e] != "") {
-              query += `${e}: "${attendanceDto[e]}", `;
-            }
-          });
-
-          var updateQuery = {
-            query: `mutation UpdateAttendance($attendanceId:uuid) {
-          update_attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
-          affected_rows
-        }
-}`,
-            variables: {
-              attendanceId: resData[0].attendanceId,
-            },
-          };
-
-          var update = {
-            method: "post",
-            url: process.env.REGISTRYHASURA,
-            headers: {
-              "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-              "Content-Type": "application/json",
-            },
-            data: updateQuery,
-          };
-
-          const response = await axios(update);
-
-          return await response.data.data;
-        } else {
-          let query = "";
-          Object.keys(attendanceDto).forEach((e) => {
-            if (attendanceDto[e] && attendanceDto[e] != "") {
-              query += `${e}: "${attendanceDto[e]}", `;
-            }
-          });
-
-          var CreateData = {
-            query: `mutation CreateAttendance {
-        insert_attendance_one(object: {${query}}) {
-         attendanceId
-        }
-      }
-      `,
             variables: {},
           };
-
           var config = {
             method: "post",
             url: process.env.REGISTRYHASURA,
@@ -726,22 +710,92 @@ export class AttendanceHasuraService implements IServicelocator {
               "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
               "Content-Type": "application/json",
             },
-            data: CreateData,
+            data: search,
           };
 
-          const response = await axios(config);
+          const responseData = await axios(config);
 
-          return await response.data.data.insert_attendance_one;
-        }
-      })
-    );
+          let resData = await this.mappedResponse(
+            responseData.data.data.Attendance
+          );
 
-    const responseArray = await result;
-    return new SuccessResponse({
-      statusCode: 200,
-      message: " Ok.",
-      data: responseArray,
-    });
+          if (resData.length > 0) {
+            let query = "";
+            Object.keys(attendanceDto).forEach((e) => {
+              if (attendanceDto[e] && attendanceDto[e] != "") {
+                query += `${e}: "${attendanceDto[e]}", `;
+              }
+            });
+
+            var updateQuery = {
+              query: `mutation UpdateAttendance($attendanceId:uuid) {
+                      update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
+                        affected_rows
+                      }
+                    }`,
+              variables: {
+                attendanceId: resData[0].attendanceId,
+              },
+            };
+
+            var update = {
+              method: "post",
+              url: process.env.REGISTRYHASURA,
+              headers: {
+                "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+                "Content-Type": "application/json",
+              },
+              data: updateQuery,
+            };
+
+            const response = await axios(update);
+
+            return await response.data.data;
+          } else {
+            let query = "";
+            Object.keys(attendanceDto).forEach((e) => {
+              if (attendanceDto[e] && attendanceDto[e] != "") {
+                query += `${e}: "${attendanceDto[e]}", `;
+              }
+            });
+
+            var CreateData = {
+              query: `mutation CreateAttendance {
+              insert_Attendance_one(object: {${query}}) {
+                attendanceId
+              }
+            }
+          `,
+              variables: {},
+            };
+
+            var config = {
+              method: "post",
+              url: process.env.REGISTRYHASURA,
+              headers: {
+                "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+                "Content-Type": "application/json",
+              },
+              data: CreateData,
+            };
+
+            const response = await axios(config);
+
+            return await response.data.data.insert_Attendance_one;
+          }
+        })
+      );
+
+      const responseArray = await result;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: " Ok.",
+        data: responseArray,
+      });
+    } catch (e) {
+      console.log(e);
+      return e;
+    }
   }
 
   public async studentAttendanceByGroup(
@@ -897,24 +951,24 @@ export class AttendanceHasuraService implements IServicelocator {
   public async mappedResponse(result: any) {
     const attendanceResponse = result.map((item: any) => {
       const attendanceMapping = {
-        id: item?.attendanceId ? `${item.attendanceId}` : "",
+        tenantId: item?.tenantId ? `${item.tenantId}` : "",
         attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",
-        schoolId: item?.schoolId ? `${item.schoolId}` : "",
-        userType: item?.userType ? `${item.userType}` : "",
         userId: item?.userId ? `${item.userId}` : "",
-        groupId: item?.groupId ? `${item.groupId}` : "",
-        topicId: item?.topicId ? `${item.topicId}` : "",
-        eventId: item?.eventId ? `${item.eventId}` : "",
-        remark: item?.remark ? `${item.remark}` : "",
-        attendance: item?.attendance ? `${item.attendance}` : "",
         attendanceDate: item?.attendanceDate ? `${item.attendanceDate}` : "",
+        attendance: item?.attendance ? `${item.attendance}` : "",
+        remark: item?.remark ? `${item.remark}` : "",
         latitude: item?.latitude ? item.latitude : 0,
         longitude: item?.longitude ? item.longitude : 0,
         image: item?.image ? `${item.image}` : "",
-        syncTime: item?.syncTime ? `${item.syncTime}` : "",
         metaData: item?.metaData ? item.metaData : [],
-        createdAt: item?.created_at ? `${item.created_at}` : "",
-        updatedAt: item?.updated_at ? `${item.updated_at}` : "",
+        syncTime: item?.syncTime ? `${item.syncTime}` : "",
+        session: item?.session ? `${item.session}` : "",
+        contextId: item?.contextId ? `${item.contextId}` : "",
+        contextType: item?.contextType ? `${item.contextType}` : "",
+        createdAt: item?.createdAt ? `${item.createdAt}` : "",
+        updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+        createdBy: item?.createdBy ? `${item.createdBy}` : "",
+        updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
       };
 
       return new AttendanceDto(attendanceMapping);
@@ -922,6 +976,7 @@ export class AttendanceHasuraService implements IServicelocator {
 
     return attendanceResponse;
   }
+
   public async StudentMappedResponse(result: any) {
     const studentResponse = result.map((item: any) => {
       const studentMapping = {

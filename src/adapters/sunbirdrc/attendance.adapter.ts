@@ -20,7 +20,11 @@ export class AttendanceService implements IServicelocator {
   url = `${process.env.BASEAPIURL}/Attendance`;
   studentAPIUrl = `${process.env.BASEAPIURL}/Student`;
   baseUrl = process.env.BASEAPIURL;
-  public async getAttendance(attendanceId: any, request: any) {
+  public async getAttendance(
+    tenantId: string,
+    attendanceId: any,
+    request: any
+  ) {
     return this.httpService
       .get(`${this.url}/${attendanceId}`, {
         headers: {
@@ -66,6 +70,7 @@ export class AttendanceService implements IServicelocator {
   }
 
   public async searchAttendance(
+    tenantId: string,
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
@@ -398,7 +403,11 @@ export class AttendanceService implements IServicelocator {
       });
     }
   }
-  public async multipleAttendance(request: any, attendanceData: [Object]) {
+  public async multipleAttendance(
+    tenantId: string,
+    request: any,
+    attendanceData: [Object]
+  ) {
     let attendeeData = attendanceData["attendanceData"];
     const result = Promise.all(
       attendeeData.map(async (data: any) => {

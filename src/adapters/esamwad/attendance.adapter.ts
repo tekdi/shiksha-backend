@@ -12,7 +12,11 @@ export class AttendanceEsamwadService implements IServicelocator {
   baseURL = process.env.HASURAURL;
   adminSecret = process.env.ADMINSECRET;
 
-  public async getAttendance(attendanceId: string, request: any) {
+  public async getAttendance(
+    tenantId: string,
+    attendanceId: string,
+    request: any
+  ) {
     var axios = require("axios");
     var data = {
       query: `query getAttendance($id:Int!) {
@@ -64,6 +68,7 @@ export class AttendanceEsamwadService implements IServicelocator {
   }
 
   public async searchAttendance(
+    tenantId: string,
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
@@ -189,8 +194,8 @@ export class AttendanceEsamwadService implements IServicelocator {
       });
     } else {
       var data = {
-        query: `mutation CreateAttendance($date: date, $is_present: Boolean = true, $student_id: Int, $taken_by_school_id: Int, $temperature: float8) {
-        insert_attendance_one(object: {date: $date, is_present: $is_present, student_id: $student_id, taken_by_school_id: $taken_by_school_id, temperature: $temperature}){
+        query: `mutation CreateAttendance($date: date, $is_present: Boolean = true, $student_id: Int, $taken_by_tenant_id: Int, $temperature: float8) {
+        insert_attendance_one(object: {date: $date, is_present: $is_present, student_id: $student_id, taken_by_tenant_id: $taken_by_tenant_id, temperature: $temperature}){
           id,
           updated
         }
@@ -199,7 +204,7 @@ export class AttendanceEsamwadService implements IServicelocator {
           date: attendanceDto.attendanceDate,
           is_present: isPresent,
           student_id: attendanceDto.userId,
-          taken_by_school_id: attendanceDto.schoolId,
+          taken_by_school_id: attendanceDto.tenantId,
           temperature: attendanceDto.metaData,
         },
       };
@@ -273,7 +278,11 @@ export class AttendanceEsamwadService implements IServicelocator {
       data: response,
     });
   }
-  public async multipleAttendance(request: any, attendanceData: [Object]) {
+  public async multipleAttendance(
+    tenantId: string,
+    request: any,
+    attendanceData: [Object]
+  ) {
     let attendeeData = attendanceData["attendanceData"];
 
     attendeeData.forEach((data: any) => {

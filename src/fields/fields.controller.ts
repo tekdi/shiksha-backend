@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiConsumes,
+  ApiHeader,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -21,6 +22,7 @@ import {
   Query,
   CacheInterceptor,
   UploadedFile,
+  Headers,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -34,7 +36,34 @@ import { FieldsAdapter } from "./fieldsadapter";
 @Controller("fields")
 export class FieldsController {
   constructor(private fieldsAdapter: FieldsAdapter) {}
-/*
+
+  //create fields
+  @Post()
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Fields has been created successfully." })
+  @ApiBody({ type: FieldsDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async createFields(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() fieldsDto: FieldsDto
+  ) {
+    let tenantid = headers["tenantid"];
+    const payload = {
+      TenantId: tenantid,
+    };
+    Object.assign(fieldsDto, payload);
+
+    return this.fieldsAdapter
+      .buildFieldsAdapter()
+      .createFields(request, fieldsDto);
+  }
+
+  //get fields
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
@@ -43,32 +72,45 @@ export class FieldsController {
   @SerializeOptions({
     strategy: "excludeAll",
   })
+  @ApiHeader({
+    name: "tenantid",
+  })
   public async getFields(
+    @Headers() headers,
     @Param("id") fieldsId: string,
     @Req() request: Request
   ) {
-    return this.fieldsAdapter.buildFieldsAdapter().getFields(fieldsId, request);
-  }
-
-  @Post()
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Fields has been created successfully." })
-  @ApiBody({ type: FieldsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  public async createFields(
-    @Req() request: Request,
-    @Body() fieldsDto: FieldsDto
-  ) {
-    const response = {};
-    Object.assign(fieldsDto, response);
-
+    let tenantid = headers["tenantid"];
     return this.fieldsAdapter
       .buildFieldsAdapter()
-      .createFields(request, fieldsDto);
+      .getFields(tenantid, fieldsId, request);
   }
 
+  //search
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Fields list." })
+  @ApiBody({ type: FieldsSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchFields(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() fieldsSearchDto: FieldsSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.fieldsAdapter
+      .buildFieldsAdapter()
+      .searchFields(tenantid, request, fieldsSearchDto);
+  }
+
+  /*
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -90,24 +132,6 @@ export class FieldsController {
     return this.fieldsAdapter
       .buildFieldsAdapter()
       .updateFields(fieldsId, request, fieldsDto);
-  }
-
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Fields list." })
-  @ApiBody({ type: FieldsSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async searchFields(
-    @Req() request: Request,
-    @Body() fieldsSearchDto: FieldsSearchDto
-  ) {
-    return this.fieldsAdapter
-      .buildFieldsAdapter()
-      .searchFields(request, fieldsSearchDto);
   }
 
   @Get(":fieldsId/participants")

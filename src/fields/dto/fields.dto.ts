@@ -9,95 +9,146 @@ import {
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class FieldsDto {
+  //generated fields
   @Expose()
-  id: string;
-
+  TenantId: string;
   @Expose()
-  fieldsId: string;
+  field_id: string;
 
-  @ApiPropertyOptional({
+  //asset_id
+  @ApiProperty({
     type: String,
-    description: "The schoolId of the fields",
+    description: "The asset_id of the fields",
+    default: "",
   })
   @Expose()
-  schoolId: string;
+  asset_id: string;
 
-  @ApiPropertyOptional({
+  //context
+  @ApiProperty({
+    type: String,
+    description: "The context of the fields",
+    default: "",
+  })
+  @Expose()
+  context: string;
+
+  //group_id
+  @ApiProperty({
+    type: String,
+    description: "The group_id of the fields",
+    default: "",
+  })
+  @Expose()
+  group_id: string;
+
+  //name
+  @ApiProperty({
     type: String,
     description: "The name of the fields",
+    default: "",
   })
   @Expose()
   name: string;
 
-  @ApiPropertyOptional({
+  //label
+  @ApiProperty({
+    type: String,
+    description: "The label of the fields",
+    default: "",
+  })
+  @Expose()
+  label: string;
+
+  //default_value
+  @ApiProperty({
+    type: String,
+    description: "The default_value of the fields",
+    default: "",
+  })
+  @Expose()
+  default_value: string;
+
+  //type
+  @ApiProperty({
     type: String,
     description: "The type of the fields",
+    default: "",
   })
   @Expose()
   type: string;
 
-  @ApiPropertyOptional({
+  //note
+  @ApiProperty({
     type: String,
-    description: "The section of the fields",
+    description: "The note of the fields",
+    default: "",
   })
   @Expose()
-  section: string;
+  note: string;
 
-  @ApiPropertyOptional({
+  //description
+  @ApiProperty({
     type: String,
-    description: "The status of the fields",
+    description: "The description of the fields",
+    default: "",
   })
   @Expose()
-  status: string;
+  description: string;
 
-  @ApiPropertyOptional({
+  //state
+  @ApiProperty({
     type: String,
-    description: "Teacher Id of Fields",
+    description: "The state of the fields",
+    default: "",
   })
   @Expose()
-  teacherId: string;
+  state: string;
 
-  @ApiPropertyOptional({
+  //required
+  @ApiProperty({
+    type: Boolean,
+    description: "The required of the fields",
+    default: true,
+  })
+  @Expose()
+  required: string;
+
+  //ordering
+  @ApiProperty({
+    type: Number,
+    description: "The ordering of the fields",
+    default: 0,
+  })
+  @Expose()
+  ordering: string;
+
+  //metadata
+  @ApiProperty({
     type: String,
-    description: "Parent Id of Fields",
+    description: "The metadata of the fields",
+    default: "",
   })
   @Expose()
-  parentId: string;
+  metadata: string;
 
-  @ApiPropertyOptional()
-  @Expose()
-  deactivationReason: string;
-
-  @ApiPropertyOptional({
+  //access
+  @ApiProperty({
     type: String,
-    description: "The mediumOfInstruction of the fields",
+    description: "The access of the fields",
+    default: "",
   })
   @Expose()
-  mediumOfInstruction: string;
+  access: string;
 
-  @ApiPropertyOptional({ type: "string", format: "binary" })
-  @Expose()
-  image: string;
-
-  @ApiPropertyOptional()
-  @Expose()
-  metaData: [string];
-
-  @ApiPropertyOptional()
-  @Expose()
-  option: [string];
-
-  @ApiPropertyOptional({
-    description: "Grade against fields",
+  //only_use_in_subform
+  @ApiProperty({
+    type: Boolean,
+    description: "The only_use_in_subform of the fields",
+    default: true,
   })
   @Expose()
-  gradeLevel: string;
-
-  @Expose()
-  createdAt: string;
-
-  @Expose()
-  updatedAt: string;
+  only_use_in_subform: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

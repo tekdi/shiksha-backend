@@ -106,7 +106,7 @@ export class CohortMembersController {
       .searchCohortMembers(tenantid, request, cohortMembersSearchDto);
   }
 
-  /*
+  //update
   @Put("/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
@@ -125,5 +125,5 @@ export class CohortMembersController {
       request,
       cohortMembersipDto
     );
-  }*/
+  }
 }

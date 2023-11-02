@@ -10,6 +10,7 @@ import { SchoolHasuraService } from "./school.adapter";
 import { HasuraCohortService } from "./cohort.adapter";
 import { HasuraCohortMembersService } from "./cohortMembers.adapter";
 import { HasuraFieldsService } from "./fields.adapter";
+import { FieldsService } from "./services/fields.service";
 
 @Module({
   imports: [HttpModule],
@@ -24,6 +25,7 @@ import { HasuraFieldsService } from "./fields.adapter";
     HasuraLikeService,
     HasuraHolidayService,
     HasuraFieldsService,
+    FieldsService,
   ],
   exports: [
     AttendanceHasuraService,

@@ -24,7 +24,7 @@ export class HasuraCohortMembersService
     Object.keys(cohortMembers).forEach((e) => {
       if (cohortMembers[e] && cohortMembers[e] != "") {
         if (Array.isArray(cohortMembers[e])) {
-          query += `${e}: ${JSON.stringify(cohortMembers[e])}, `;
+          query += `${e}: "${JSON.stringify(cohortMembers[e])}", `;
         } else {
           query += `${e}: "${cohortMembers[e]}", `;
         }
@@ -75,7 +75,7 @@ export class HasuraCohortMembersService
     var axios = require("axios");
 
     var data = {
-      query: `query GetCohortMembers($cohortMembershipId:uuid!, $tenantId:String!) {
+      query: `query GetCohortMembers($cohortMembershipId:uuid!, $tenantId:uuid!) {
         CohortMembers(
           where:{
             TenantId:{
@@ -208,7 +208,7 @@ export class HasuraCohortMembersService
   }
 
   public async updateCohortMembers(
-    cohortMembersId: string,
+    cohortMembershipId: string,
     request: any,
     cohortMembersDto: CohortMembersDto
   ) {
@@ -218,21 +218,30 @@ export class HasuraCohortMembersService
     Object.keys(cohortMembersDto).forEach((e) => {
       if (cohortMembersDto[e] && cohortMembersDto[e] != "") {
         if (Array.isArray(cohortMembersDto[e])) {
-          query += `${e}: ${JSON.stringify(cohortMembersDto[e])}, `;
+          query += `${e}: "${JSON.stringify(cohortMembersDto[e])}", `;
         } else {
-          query += `${e}: ${cohortMembersDto[e]}, `;
+          query += `${e}: "${cohortMembersDto[e]}", `;
         }
       }
     });
 
     var data = {
-      query: `mutation UpdateCohortMembers($cohortMembersId:uuid) {
-          update_CohortMembers(where: { cohortMembersId: {_eq: $ cohortMembersId}}, _set: {${query}}) {
-          affected_rows
+      query: `
+      mutation UpdateCohortMembers($cohortMembershipId:uuid!) {
+        update_CohortMembers_by_pk(
+            pk_columns: {
+              cohortMembershipId: $cohortMembershipId
+            },
+            _set: {
+                ${query}
+            }
+        ) {
+            cohortMembershipId
         }
-}`,
+    }
+    `,
       variables: {
-        cohortMembersId: cohortMembersId,
+        cohortMembershipId: cohortMembershipId,
       },
     };
 
@@ -248,13 +257,19 @@ export class HasuraCohortMembersService
 
     const response = await axios(config);
 
-    const result = response.data.data;
-
-    return new SuccessResponse({
-      statusCode: 200,
-      message: "Ok.",
-      data: result,
-    });
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: result,
+      });
+    }
   }
 
   public async mappedResponse(result: any) {

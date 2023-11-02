@@ -1,10 +1,15 @@
 pipeline {
     agent any
         stages {
+         stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
         stage('Checkout'){
             
             steps{
-               sh 'rm -rf *'
+               
                git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
                 echo "Clone repository"
             

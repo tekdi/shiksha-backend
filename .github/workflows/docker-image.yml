@@ -23,7 +23,7 @@ jobs:
         with:
           context: .
           push: true
-          tags:  ${{ secrets.CONTAINER_REGISTRY }}
+          tags:  ${{ secrets.CONTAINER_REGISTRY }}${{ github.sha }}
           
   deploy:
     runs-on: ubuntu-latest

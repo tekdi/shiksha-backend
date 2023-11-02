@@ -11,7 +11,7 @@ pipeline {
             steps{
                
                git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
-                echo "Clone repository"
+                echo "========================== ***Repository cloned Successfully*** =========================="
             
           }
         }

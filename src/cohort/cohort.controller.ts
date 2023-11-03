@@ -69,7 +69,7 @@ export class CohortController {
     let tenantid = headers["tenantid"];
     const payload = {
       image: image?.filename,
-      TenantId: tenantid,
+      tenantId: tenantid,
     };
     Object.assign(cohortDto, payload);
 

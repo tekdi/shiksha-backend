@@ -11,7 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class CohortDto {
   //generated fields
   @Expose()
-  TenantId: string;
+  tenantId: string;
   @Expose()
   cohortId: string;
   @Expose()
@@ -19,14 +19,14 @@ export class CohortDto {
   @Expose()
   updatedAt: string;
 
-  //ProgramId
+  //programId
   @ApiPropertyOptional({
     type: String,
-    description: "The ProgramId of the cohort",
+    description: "The programId of the cohort",
     default: "",
   })
   @Expose()
-  ProgramId: string;
+  programId: string;
 
   //parentId
   @ApiPropertyOptional({

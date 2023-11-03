@@ -84,7 +84,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
       query: `query GetCohort($cohortId:uuid!, $tenantId:uuid!) {
         Cohort(
           where:{
-            TenantId:{
+            tenantId:{
               _eq:$tenantId
             }
             cohortId:{
@@ -92,8 +92,8 @@ export class HasuraCohortService implements IServicelocatorcohort {
             },
           }
         ){
-          TenantId
-          ProgramId
+          tenantId
+          programId
           cohortId
           parentId
           referenceId
@@ -102,8 +102,8 @@ export class HasuraCohortService implements IServicelocatorcohort {
           status
           image
           metadata
-          created_at
-          updated_at
+          createdAt
+          updatedAt
           createdBy
           updatedBy
         }
@@ -126,7 +126,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
 
     const response = await axios(config);
     if (response?.data?.errors) {
-      return new ErrorResponse({
+      return res.status(200).send({
         errorCode: response?.data?.errors[0]?.extensions?.code,
         errorMessage: response?.data?.errors[0]?.message,
       });
@@ -159,7 +159,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
     let temp_filters = cohortSearchDto.filters;
     //add tenantid
     let filters = new Object(temp_filters);
-    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
     Object.keys(cohortSearchDto.filters).forEach((item) => {
       Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
@@ -172,20 +172,20 @@ export class HasuraCohortService implements IServicelocatorcohort {
     var data = {
       query: `query SearchCohort($filters:Cohort_bool_exp,$limit:Int, $offset:Int) {
            Cohort(where:$filters, limit: $limit, offset: $offset,) {
-              TenantId
-              ProgramId
-              cohortId
-              parentId
-              referenceId
-              name
-              type
-              status
-              image
-              metadata
-              created_at
-              updated_at
-              createdBy
-              updatedBy
+            tenantId
+            programId
+            cohortId
+            parentId
+            referenceId
+            name
+            type
+            status
+            image
+            metadata
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
             }
           }`,
       variables: {
@@ -206,7 +206,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
 
     const response = await axios(config);
     if (response?.data?.errors) {
-      return new ErrorResponse({
+      return res.status(200).send({
         errorCode: response?.data?.errors[0]?.extensions?.code,
         errorMessage: response?.data?.errors[0]?.message,
       });
@@ -293,16 +293,16 @@ export class HasuraCohortService implements IServicelocatorcohort {
   public async mappedResponse(result: any) {
     const cohortResponse = result.map((item: any) => {
       const cohortMapping = {
-        TenantId: item?.TenantId ? `${item.TenantId}` : "",
-        ProgramId: item?.ProgramId ? `${item.ProgramId}` : "",
+        tenantId: item?.tenantId ? `${item.tenantId}` : "",
+        programId: item?.programId ? `${item.programId}` : "",
         cohortId: item?.cohortId ? `${item.cohortId}` : "",
         parentId: item?.parentId ? `${item.parentId}` : "",
         name: item?.name ? `${item.name}` : "",
         type: item?.type ? `${item.type}` : "",
         status: item?.status ? `${item.status}` : "",
         image: item?.image ? `${item.image}` : "",
-        created_at: item?.created_at ? `${item.created_at}` : "",
-        updated_at: item?.updated_at ? `${item.updated_at}` : "",
+        createdAt: item?.createdAt ? `${item.createdAt}` : "",
+        updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
         createdBy: item?.createdBy ? `${item.createdBy}` : "",
         updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
         referenceId: item?.referenceId ? `${item.referenceId}` : "",
@@ -318,30 +318,38 @@ export class HasuraCohortService implements IServicelocatorcohort {
     let cohort_fields = [];
     for (let i = 0; i < cohorts.length; i++) {
       let new_obj = new Object(cohorts[i]);
-      //get fields value
-      let response = await this.fieldsService.getFieldValuesItemId(
-        new_obj["cohortId"]
+      let cohortId = new_obj["cohortId"];
+      //get fields
+      let response = await this.fieldsService.getFieldsContext(
+        tenantId,
+        "Cohort",
+        cohortId
       );
       if (response?.data?.errors) {
       } else {
-        let result = response?.data?.data?.field_values;
-        let fields_value = [];
+        let result = response?.data?.data?.Fields;
+        let fields = [];
         for (let i = 0; i < result.length; i++) {
           let new_obj_key = new Object(result[i]);
-          let field_id = new_obj_key["field_id"];
+          let field_id = new_obj_key["fieldId"];
           //get fields
-          let response_fields = await this.fieldsService.getFields(
-            tenantId,
-            field_id
-          );
-          if (response_fields?.data?.errors) {
+          let response_field_values =
+            await this.fieldsService.getFieldValuesFieldsItemId(
+              field_id,
+              cohortId
+            );
+          if (response_field_values?.data?.errors) {
           } else {
-            let result_fields = response_fields?.data?.data?.fields;
-            new_obj_key["fields"] = result_fields[0];
+            let result_fields = response_field_values?.data?.data?.FieldValues;
+            if (result_fields.length > 0) {
+              new_obj_key["field_value"] = result_fields[0];
+            } else {
+              new_obj_key["field_value"] = { value: null };
+            }
           }
-          fields_value.push(new_obj_key);
+          fields.push(new_obj_key);
         }
-        new_obj["field_values"] = fields_value;
+        new_obj["fields"] = fields;
       }
       cohort_fields.push(new_obj);
     }

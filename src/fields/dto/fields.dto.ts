@@ -11,18 +11,22 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class FieldsDto {
   //generated fields
   @Expose()
-  TenantId: string;
+  tenantId: string;
   @Expose()
-  field_id: string;
+  fieldId: string;
+  @Expose()
+  createdAt: string;
+  @Expose()
+  updatedAt: string;
 
-  //asset_id
+  //assetId
   @ApiProperty({
     type: String,
-    description: "The asset_id of the fields",
+    description: "The assetId of the fields",
     default: "",
   })
   @Expose()
-  asset_id: string;
+  assetId: string;
 
   //context
   @ApiProperty({
@@ -33,23 +37,23 @@ export class FieldsDto {
   @Expose()
   context: string;
 
-  //context_id
+  //contextId
   @ApiProperty({
     type: String,
-    description: "The context_id of the fields",
+    description: "The contextId of the fields",
     default: "",
   })
   @Expose()
-  context_id: string;
+  contextId: string;
 
-  //group_id
+  //groupId
   @ApiProperty({
     type: String,
-    description: "The group_id of the fields",
+    description: "The groupId of the fields",
     default: "",
   })
   @Expose()
-  group_id: string;
+  groupId: string;
 
   //name
   @ApiProperty({
@@ -69,14 +73,14 @@ export class FieldsDto {
   @Expose()
   label: string;
 
-  //default_value
+  //defaultValue
   @ApiProperty({
     type: String,
-    description: "The default_value of the fields",
+    description: "The defaultValue of the fields",
     default: "",
   })
   @Expose()
-  default_value: string;
+  defaultValue: string;
 
   //type
   @ApiProperty({
@@ -121,7 +125,7 @@ export class FieldsDto {
     default: true,
   })
   @Expose()
-  required: string;
+  required: Boolean;
 
   //ordering
   @ApiProperty({
@@ -130,7 +134,7 @@ export class FieldsDto {
     default: 0,
   })
   @Expose()
-  ordering: string;
+  ordering: Number;
 
   //metadata
   @ApiProperty({
@@ -150,14 +154,32 @@ export class FieldsDto {
   @Expose()
   access: string;
 
-  //only_use_in_subform
+  //onlyUseInSubform
   @ApiProperty({
     type: Boolean,
-    description: "The only_use_in_subform of the fields",
+    description: "The onlyUseInSubform of the fields",
     default: true,
   })
   @Expose()
-  only_use_in_subform: string;
+  onlyUseInSubform: Boolean;
+
+  //createdBy
+  @ApiProperty({
+    type: String,
+    description: "The createdBy of the fields",
+    default: "",
+  })
+  @Expose()
+  createdBy: string;
+
+  //updatedBy
+  @ApiProperty({
+    type: String,
+    description: "The updatedBy of the fields",
+    default: "",
+  })
+  @Expose()
+  updatedBy: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

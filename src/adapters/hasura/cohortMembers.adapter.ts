@@ -78,7 +78,7 @@ export class HasuraCohortMembersService
       query: `query GetCohortMembers($cohortMembershipId:uuid!, $tenantId:uuid!) {
         CohortMembers(
           where:{
-            TenantId:{
+            tenantId:{
               _eq:$tenantId
             }
             cohortMembershipId:{
@@ -86,13 +86,13 @@ export class HasuraCohortMembersService
             },
           }
         ){
-          TenantId
+          tenantId
           cohortMembershipId
           cohortId
           userId
           role
-          created_at
-          updated_at
+          createdAt
+          updatedAt
           createdBy
           updatedBy
       }
@@ -148,7 +148,7 @@ export class HasuraCohortMembersService
     let temp_filters = cohortMembersSearchDto.filters;
     //add tenantid
     let filters = new Object(temp_filters);
-    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
     Object.keys(cohortMembersSearchDto.filters).forEach((item) => {
       Object.keys(cohortMembersSearchDto.filters[item]).forEach((e) => {
@@ -161,13 +161,13 @@ export class HasuraCohortMembersService
     var data = {
       query: `query SearchCohortMembers($filters:CohortMembers_bool_exp,$limit:Int, $offset:Int) {
           CohortMembers(where:$filters, limit: $limit, offset: $offset,) {
-            TenantId
+            tenantId
             cohortMembershipId
             cohortId
             userId
             role
-            created_at
-            updated_at
+            createdAt
+            updatedAt
             createdBy
             updatedBy
             }
@@ -275,15 +275,15 @@ export class HasuraCohortMembersService
   public async mappedResponse(result: any) {
     const cohortMembersResponse = result.map((obj: any) => {
       const cohortMembersMapping = {
-        TenantId: obj?.TenantId ? `${obj.TenantId}` : "",
+        tenantId: obj?.tenantId ? `${obj.tenantId}` : "",
         cohortMembershipId: obj?.cohortMembershipId
           ? `${obj.cohortMembershipId}`
           : "",
         cohortId: obj?.cohortId ? `${obj.cohortId}` : "",
         userId: obj?.userId ? `${obj.userId}` : "",
         role: obj?.role ? `${obj.role}` : "",
-        created_at: obj?.created_at ? `${obj.created_at}` : "",
-        updated_at: obj?.updated_at ? `${obj.updated_at}` : "",
+        createdAt: obj?.createdAt ? `${obj.createdAt}` : "",
+        updatedAt: obj?.updatedAt ? `${obj.updatedAt}` : "",
         createdBy: obj?.createdBy ? `${obj.createdBy}` : "",
         updatedBy: obj?.updatedBy ? `${obj.updatedBy}` : "",
       };

@@ -25,8 +25,8 @@ export class FieldsService {
 
     var data = {
       query: `mutation CreateFields {
-        insert_fields_one(object: {${query}}) {
-          field_id
+        insert_Fields_one(object: {${query}}) {
+          fieldId
         }
       }
       `,
@@ -52,25 +52,25 @@ export class FieldsService {
 
     var data = {
       query: `query GetFields($fieldsId:uuid!, $tenantId:uuid!) {
-        fields(
+        Fields(
           where:{
-            TenantId:{
+            tenantId:{
               _eq:$tenantId
             }
-            field_id:{
+            fieldId:{
               _eq:$fieldsId
             },
           }
         ){
-          TenantId
-          field_id
-          asset_id
+          tenantId
+          fieldId
+          assetId
           context
-          context_id
-          group_id
+          contextId
+          groupId
           name
           label
-          default_value
+          defaultValue
           type
           note
           description
@@ -79,11 +79,82 @@ export class FieldsService {
           ordering
           metadata
           access
-          only_use_in_subform
+          onlyUseInSubform
+          createdAt
+          updatedAt
+          createdBy
+          updatedBy
       }
     }`,
       variables: {
         fieldsId: fieldsId,
+        tenantId: tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    return response;
+  }
+
+  public async getFieldsContext(
+    tenantId: string,
+    context: string,
+    contextId: string
+  ) {
+    var axios = require("axios");
+
+    var data = {
+      query: `query GetFields($context:String!, $contextId:String!, $tenantId:uuid!) {
+        Fields(
+          where:{
+            tenantId:{
+              _eq:$tenantId
+            }
+            context:{
+              _eq:$context
+            }
+            contextId:{
+              _in: [ $contextId, "0"]
+            },
+          }
+        ){
+          tenantId
+          fieldId
+          assetId
+          context
+          contextId
+          groupId
+          name
+          label
+          defaultValue
+          type
+          note
+          description
+          state
+          required
+          ordering
+          metadata
+          access
+          onlyUseInSubform
+          createdAt
+          updatedAt
+          createdBy
+          updatedBy
+      }
+    }`,
+      variables: {
+        context: context,
+        contextId: contextId,
         tenantId: tenantId,
       },
     };
@@ -113,7 +184,7 @@ export class FieldsService {
     let temp_filters = fieldsSearchDto.filters;
     //add tenantid
     let filters = new Object(temp_filters);
-    filters["TenantId"] = { _eq: tenantId ? tenantId : "" };
+    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
     Object.keys(fieldsSearchDto.filters).forEach((item) => {
       Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
@@ -125,16 +196,16 @@ export class FieldsService {
     });
     var data = {
       query: `query SearchFields($filters:fields_bool_exp,$limit:Int, $offset:Int) {
-           fields(where:$filters, limit: $limit, offset: $offset,) {
-              TenantId
-              field_id
-              asset_id
+           Fields(where:$filters, limit: $limit, offset: $offset,) {
+              tenantId
+              fieldId
+              assetId
               context
-              context_id
-              group_id
+              contextId
+              groupId
               name
               label
-              default_value
+              defaultValue
               type
               note
               description
@@ -143,7 +214,11 @@ export class FieldsService {
               ordering
               metadata
               access
-              only_use_in_subform
+              onlyUseInSubform
+              createdAt
+              updatedAt
+              createdBy
+              updatedBy
             }
           }`,
       variables: {
@@ -183,15 +258,15 @@ export class FieldsService {
     var data = {
       query: `
       mutation UpdateFields($fieldsId:uuid!) {
-        update_fields_by_pk(
+        update_Fields_by_pk(
             pk_columns: {
-                field_id: $fieldsId
+              fieldId: $fieldsId
             },
             _set: {
                 ${query}
             }
         ) {
-            field_id
+          fieldId
         }
     }
     `,
@@ -232,8 +307,8 @@ export class FieldsService {
 
     var data = {
       query: `mutation CreateFieldValues {
-        insert_field_values_one(object: {${query}}) {
-          id
+        insert_FieldValues_one(object: {${query}}) {
+          fieldValuesId
         }
       }
       `,
@@ -259,17 +334,21 @@ export class FieldsService {
 
     var data = {
       query: `query GetFieldValues($id:uuid!) {
-        field_values(
+        FieldValues(
           where:{
-            id:{
+            fieldValuesId:{
               _eq:$id
             },
           }
         ){
-            field_id
             value
-            item_id
-            id
+            fieldValuesId
+            itemId
+            fieldId
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
       }
     }`,
       variables: {
@@ -291,25 +370,33 @@ export class FieldsService {
     return response;
   }
 
-  public async getFieldValuesItemId(item_id: any) {
+  public async getFieldValuesFieldsItemId(field_id: string, item_id: string) {
     var axios = require("axios");
 
     var data = {
-      query: `query GetFieldValuesItemId($item_id:String!) {
-        field_values(
+      query: `query GetFieldValuesItemId($field_id:uuid!,$item_id:uuid!) {
+        FieldValues(
           where:{
-            item_id:{
+            itemId:{
               _eq:$item_id
+            },
+            fieldId:{
+              _eq:$field_id
             },
           }
         ){
-            field_id
             value
-            item_id
-            id
+            fieldValuesId
+            itemId
+            fieldId
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
       }
     }`,
       variables: {
+        field_id: field_id,
         item_id: item_id,
       },
     };
@@ -349,11 +436,15 @@ export class FieldsService {
     });
     var data = {
       query: `query SearchFieldValues($filters:fields_bool_exp,$limit:Int, $offset:Int) {
-           field_values(where:$filters, limit: $limit, offset: $offset,) {
-                field_id
-                value
-                item_id
-                id
+          FieldValues(where:$filters, limit: $limit, offset: $offset,) {
+              value
+              fieldValuesId
+              itemId
+              fieldId
+              createdAt
+              updatedAt
+              createdBy
+              updatedBy
             }
           }`,
       variables: {
@@ -393,15 +484,15 @@ export class FieldsService {
     var data = {
       query: `
       mutation UpdateFieldValues($id:uuid!) {
-        update_field_values_by_pk(
+        update_FieldValues_by_pk(
             pk_columns: {
-                id: $id
+              fieldValuesId: $id
             },
             _set: {
                 ${query}
             }
         ) {
-            id
+            fieldValuesId
         }
     }
     `,

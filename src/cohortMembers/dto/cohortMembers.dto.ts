@@ -4,7 +4,7 @@ import { ApiProperty } from "@nestjs/swagger";
 export class CohortMembersDto {
   //generated fields
   @Expose()
-  TenantId: string;
+  tenantId: string;
   @Expose()
   cohortMembershipId: string;
   @Expose()

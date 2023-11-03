@@ -11,16 +11,20 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class FieldValuesDto {
   //generated fields
   @Expose()
-  id: string;
+  fieldValuesId: string;
+  @Expose()
+  createdAt: string;
+  @Expose()
+  updatedAt: string;
 
-  //field_id
+  //fieldId
   @ApiProperty({
     type: String,
-    description: "The field_id of the field values",
+    description: "The fieldId of the field values",
     default: "",
   })
   @Expose()
-  field_id: string;
+  fieldId: string;
 
   //value
   @ApiProperty({
@@ -31,14 +35,32 @@ export class FieldValuesDto {
   @Expose()
   value: string;
 
-  //item_id
+  //itemId
   @ApiProperty({
     type: String,
-    description: "The item_id of the field values",
+    description: "The itemId of the field values",
     default: "",
   })
   @Expose()
-  item_id: string;
+  itemId: string;
+
+  //createdBy
+  @ApiProperty({
+    type: String,
+    description: "The createdBy of the field values",
+    default: "",
+  })
+  @Expose()
+  createdBy: string;
+
+  //updatedBy
+  @ApiProperty({
+    type: String,
+    description: "The updatedBy of the field values",
+    default: "",
+  })
+  @Expose()
+  updatedBy: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

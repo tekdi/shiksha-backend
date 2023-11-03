@@ -50,7 +50,7 @@ export class CohortMembersController {
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
-      TenantId: tenantid,
+      tenantId: tenantid,
     };
     Object.assign(cohortMembersDto, payload);
 

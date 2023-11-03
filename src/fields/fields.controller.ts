@@ -57,7 +57,7 @@ export class FieldsController {
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
-      TenantId: tenantid,
+      tenantId: tenantid,
     };
     Object.assign(fieldsDto, payload);
 

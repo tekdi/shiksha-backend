@@ -32,7 +32,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      const result = response.data.data.insert_fields_one;
+      const result = response.data.data.insert_Fields_one;
       return new SuccessResponse({
         statusCode: 200,
         message: "Ok.",
@@ -49,7 +49,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response?.data?.data?.fields;
+      let result = response?.data?.data?.Fields;
       const fieldsResponse = await this.mappedResponse(result);
       return new SuccessResponse({
         statusCode: 200,
@@ -74,7 +74,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response.data.data.fields;
+      let result = response.data.data.Fields;
       const fieldsResponse = await this.mappedResponse(result);
       const count = fieldsResponse.length;
       return new SuccessResponse({
@@ -116,7 +116,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      const result = response.data.data.insert_field_values_one;
+      const result = response.data.data.insert_FieldValues_one;
       return new SuccessResponse({
         statusCode: 200,
         message: "Ok.",
@@ -133,7 +133,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response?.data?.data?.field_values;
+      let result = response?.data?.data?.FieldValues;
       const fieldsResponse = await this.mappedResponseValues(result);
       return new SuccessResponse({
         statusCode: 200,
@@ -156,7 +156,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response.data.data.field_values;
+      let result = response.data.data.FieldValues;
       const fieldValuesResponse = await this.mappedResponseValues(result);
       const count = fieldValuesResponse.length;
       return new SuccessResponse({
@@ -195,26 +195,28 @@ export class HasuraFieldsService implements IServicelocatorfields {
   public async mappedResponse(result: any) {
     const fieldsResponse = result.map((item: any) => {
       const fieldsMapping = {
-        TenantId: item?.TenantId ? `${item.TenantId}` : "",
-        field_id: item?.field_id ? `${item.field_id}` : "",
-        asset_id: item?.asset_id ? `${item.asset_id}` : "",
+        tenantId: item?.tenantId ? `${item.tenantId}` : "",
+        fieldId: item?.fieldId ? `${item.fieldId}` : "",
+        assetId: item?.assetId ? `${item.assetId}` : "",
         context: item?.context ? `${item.context}` : "",
-        context_id: item?.context_id ? `${item.context_id}` : "",
-        group_id: item?.group_id ? `${item.group_id}` : "",
+        contextId: item?.contextId ? `${item.contextId}` : "",
+        groupId: item?.groupId ? `${item.groupId}` : "",
         name: item?.name ? `${item.name}` : "",
         label: item?.label ? `${item.label}` : "",
-        default_value: item?.default_value ? `${item.default_value}` : "",
+        defaultValue: item?.defaultValue ? `${item.defaultValue}` : "",
         type: item?.type ? `${item.type}` : "",
         note: item?.note ? `${item.note}` : "",
         description: item?.description ? `${item.description}` : "",
         state: item?.state ? `${item.state}` : "",
-        required: item?.required ? `${item.required}` : "",
-        ordering: item?.ordering ? `${item.ordering}` : "",
+        required: item?.required ? item.required : null,
+        ordering: item?.ordering ? item.ordering : null,
         metadata: item?.metadata ? `${item.metadata}` : "",
         access: item?.access ? `${item.access}` : "",
-        only_use_in_subform: item?.only_use_in_subform
-          ? `${item.only_use_in_subform}`
-          : "",
+        onlyUseInSubform: item?.onlyUseInSubform ? item.onlyUseInSubform : null,
+        createdAt: item?.createdAt ? `${item.createdAt}` : "",
+        updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+        createdBy: item?.createdBy ? `${item.createdBy}` : "",
+        updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
       };
       return new FieldsDto(fieldsMapping);
     });
@@ -224,10 +226,14 @@ export class HasuraFieldsService implements IServicelocatorfields {
   public async mappedResponseValues(result: any) {
     const fieldValuesResponse = result.map((item: any) => {
       const fieldValuesMapping = {
-        field_id: item?.field_id ? `${item.field_id}` : "",
         value: item?.value ? `${item.value}` : "",
-        item_id: item?.item_id ? `${item.item_id}` : "",
-        id: item?.id ? `${item.id}` : "",
+        fieldValuesId: item?.fieldValuesId ? `${item.fieldValuesId}` : "",
+        itemId: item?.itemId ? `${item.itemId}` : "",
+        fieldId: item?.fieldId ? `${item.fieldId}` : "",
+        createdAt: item?.createdAt ? `${item.createdAt}` : "",
+        updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+        createdBy: item?.createdBy ? `${item.createdBy}` : "",
+        updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
       };
       return new FieldValuesDto(fieldValuesMapping);
     });

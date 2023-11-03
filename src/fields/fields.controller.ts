@@ -31,12 +31,15 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 
 import { FieldsAdapter } from "./fieldsadapter";
+import { FieldValuesDto } from "./dto/field-values.dto";
+import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 
 @ApiTags("Fields")
 @Controller("fields")
 export class FieldsController {
   constructor(private fieldsAdapter: FieldsAdapter) {}
 
+  //fields
   //create fields
   @Post()
   @ApiBasicAuth("access-token")
@@ -110,72 +113,99 @@ export class FieldsController {
       .searchFields(tenantid, request, fieldsSearchDto);
   }
 
-  /*
+  //update
   @Put("/:id")
-  @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Fields has been updated successfully." })
   @ApiBody({ type: FieldsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
   public async updateFields(
     @Param("id") fieldsId: string,
     @Req() request: Request,
-    @Body() fieldsDto: FieldsDto,
-    @UploadedFile() image
+    @Body() fieldsDto: FieldsDto
   ) {
-    const response = {
-      image: image?.filename,
-    };
-    Object.assign(fieldsDto, response);
-
     return this.fieldsAdapter
       .buildFieldsAdapter()
       .updateFields(fieldsId, request, fieldsDto);
   }
 
-  @Get(":fieldsId/participants")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  //field values
+  //create fields values
+  @Post("/values")
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Fields detail." })
+  @ApiCreatedResponse({
+    description: "Fields Values has been created successfully.",
+  })
+  @ApiBody({ type: FieldValuesDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  public async findMembersOfFields(
-    @Param("fieldsId") id: string,
-    @Query("role") role: string,
-    @Req() request: Request
+  @UseInterceptors(ClassSerializerInterceptor)
+  public async createFieldValues(
+    @Req() request: Request,
+    @Body() fieldValuesDto: FieldValuesDto
   ) {
     return this.fieldsAdapter
       .buildFieldsAdapter()
-      .findMembersOfFields(id, role, request);
+      .createFieldValues(request, fieldValuesDto);
   }
 
-  @Get("participant/:userId")
+  //get fields values
+  @Get("/values/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Fields detail." })
+  @ApiCreatedResponse({ description: "Fields Values detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  public async getFieldssByUserId(
-    @Param("userId") id: string,
-    @Query("role") role: string,
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  public async getFieldValues(
+    @Param("id") id: string,
     @Req() request: Request
   ) {
-    return this.fieldsAdapter
-      .buildFieldsAdapter()
-      .findFieldssByUserId(id, role, request);
+    return this.fieldsAdapter.buildFieldsAdapter().getFieldValues(id, request);
   }
 
-  @Get(":fieldsId/child")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  //search fields values
+  @Post("/values/search")
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Fields detail." })
+  @ApiCreatedResponse({ description: "Fields Values list." })
+  @ApiBody({ type: FieldValuesSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  public async findMembersOfChildFields(
-    @Param("fieldsId") id: string,
-    @Query("role") role: string,
-    @Req() request: Request
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  public async searchFieldValues(
+    @Req() request: Request,
+    @Body() fieldValuesSearchDto: FieldValuesSearchDto
   ) {
     return this.fieldsAdapter
       .buildFieldsAdapter()
-      .findMembersOfChildFields(id, role, request);
-  }*/
+      .searchFieldValues(request, fieldValuesSearchDto);
+  }
+
+  //update
+  @Put("/values/:id")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({
+    description: "Fields Values has been updated successfully.",
+  })
+  @ApiBody({ type: FieldValuesDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  public async updateFieldValues(
+    @Param("id") id: string,
+    @Req() request: Request,
+    @Body() fieldValuesDto: FieldValuesDto
+  ) {
+    return this.fieldsAdapter
+      .buildFieldsAdapter()
+      .updateFieldValues(id, request, fieldValuesDto);
+  }
 }

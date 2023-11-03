@@ -9,7 +9,6 @@ import {
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CohortDto {
-  
   //generated fields
   @Expose()
   TenantId: string;
@@ -90,7 +89,7 @@ export class CohortDto {
 
   //createdBy
   @Expose()
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: String,
     description: "The cohort is createdBy",
     default: "",

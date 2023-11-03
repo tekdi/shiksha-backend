@@ -31,6 +31,7 @@ import { CohortDto } from "./dto/cohort.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
+import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 
@@ -92,12 +93,13 @@ export class CohortController {
   public async getCohort(
     @Headers() headers,
     @Param("id") cohortId: string,
-    @Req() request: Request
+    @Req() request: Request,
+    @Res() res: Response
   ) {
     let tenantid = headers["tenantid"];
     return this.cohortAdapter
       .buildCohortAdapter()
-      .getCohort(tenantid, cohortId, request);
+      .getCohort(tenantid, cohortId, request, res);
   }
 
   //search
@@ -116,14 +118,16 @@ export class CohortController {
   public async searchCohort(
     @Headers() headers,
     @Req() request: Request,
-    @Body() cohortSearchDto: CohortSearchDto
+    @Body() cohortSearchDto: CohortSearchDto,
+    @Res() res: Response
   ) {
     let tenantid = headers["tenantid"];
     return this.cohortAdapter
       .buildCohortAdapter()
-      .searchCohort(tenantid, request, cohortSearchDto);
+      .searchCohort(tenantid, request, cohortSearchDto, res);
   }
-  /*
+
+  //update
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -155,49 +159,4 @@ export class CohortController {
       .buildCohortAdapter()
       .updateCohort(cohortId, request, cohortDto);
   }
-
-  @Get(":cohortId/participants")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Cohort detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  public async findMembersOfCohort(
-    @Param("cohortId") id: string,
-    @Query("role") role: string,
-    @Req() request: Request
-  ) {
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .findMembersOfCohort(id, role, request);
-  }
-
-  @Get("participant/:userId")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Cohort detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  public async getCohortsByUserId(
-    @Param("userId") id: string,
-    @Query("role") role: string,
-    @Req() request: Request
-  ) {
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .findCohortsByUserId(id, role, request);
-  }
-
-  @Get(":cohortId/child")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Cohort detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  public async findMembersOfChildCohort(
-    @Param("cohortId") id: string,
-    @Query("role") role: string,
-    @Req() request: Request
-  ) {
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .findMembersOfChildCohort(id, role, request);
-  }*/
 }

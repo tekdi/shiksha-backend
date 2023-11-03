@@ -33,6 +33,15 @@ export class FieldsDto {
   @Expose()
   context: string;
 
+  //context_id
+  @ApiProperty({
+    type: String,
+    description: "The context_id of the fields",
+    default: "",
+  })
+  @Expose()
+  context_id: string;
+
   //group_id
   @ApiProperty({
     type: String,

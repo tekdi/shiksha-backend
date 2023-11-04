@@ -114,18 +114,33 @@ export class FieldsService {
     var axios = require("axios");
 
     var data = {
-      query: `query GetFields($context:String!, $contextId:String!, $tenantId:uuid!) {
+      query: `query GetFields($context:String!, $contextId:uuid!, $tenantId:uuid!) {
         Fields(
           where:{
-            tenantId:{
-              _eq:$tenantId
-            }
-            context:{
-              _eq:$context
-            }
-            contextId:{
-              _in: [ $contextId, "0"]
-            },
+            _or:[
+              {
+                tenantId:{
+                  _eq:$tenantId
+                }
+                context:{
+                  _eq:$context
+                }
+                contextId:{
+                  _is_null:true
+                }
+              },
+              {
+                tenantId:{
+                  _eq:$tenantId
+                }
+                context:{
+                  _eq:$context
+                }
+                contextId:{
+                  _eq:$contextId
+                }
+              }
+            ]
           }
         ){
           tenantId
@@ -150,6 +165,22 @@ export class FieldsService {
           updatedAt
           createdBy
           updatedBy
+          fieldValues: FieldValues(
+            where:{
+              itemId:{
+                _eq:$contextId
+              },
+            }
+          ){
+              value
+              fieldValuesId
+              itemId
+              fieldId
+              createdAt
+              updatedAt
+              createdBy
+              updatedBy
+        }
       }
     }`,
       variables: {
@@ -195,7 +226,7 @@ export class FieldsService {
       });
     });
     var data = {
-      query: `query SearchFields($filters:fields_bool_exp,$limit:Int, $offset:Int) {
+      query: `query SearchFields($filters:Fields_bool_exp,$limit:Int, $offset:Int) {
            Fields(where:$filters, limit: $limit, offset: $offset,) {
               tenantId
               fieldId
@@ -435,7 +466,7 @@ export class FieldsService {
       });
     });
     var data = {
-      query: `query SearchFieldValues($filters:fields_bool_exp,$limit:Int, $offset:Int) {
+      query: `query SearchFieldValues($filters:FieldValues_bool_exp,$limit:Int, $offset:Int) {
           FieldValues(where:$filters, limit: $limit, offset: $offset,) {
               value
               fieldValuesId
@@ -452,6 +483,47 @@ export class FieldsService {
         offset: offset,
         filters: fieldValuesSearchDto.filters,
       },
+    };
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    return response;
+  }
+
+  async searchFieldValuesFilter(filter: any) {
+    let obj_filter = [];
+    Object.keys(filter).forEach((item) => {
+      Object.keys(filter[item]).forEach((e) => {
+        let obj_val = new Object();
+        obj_val[e] = filter[item][e];
+        obj_filter.push({
+          fieldId: { _eq: item },
+          value: obj_val,
+        });
+      });
+    });
+
+    let valuefilter = new Object({ _or: obj_filter });
+
+    var axios = require("axios");
+
+    var data = {
+      query: `query SearchFieldValuesFilter($valuefilter:FieldValues_bool_exp) {
+        FieldValues(
+          where:$valuefilter
+        ){
+            itemId
+      }
+    }`,
+      variables: { valuefilter: valuefilter },
     };
     var config = {
       method: "post",

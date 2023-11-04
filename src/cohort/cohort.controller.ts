@@ -34,6 +34,7 @@ import { diskStorage } from "multer";
 import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
+import { CohortSearchFieldsDto } from "./dto/cohort-search-fields.dto";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -125,6 +126,31 @@ export class CohortController {
     return this.cohortAdapter
       .buildCohortAdapter()
       .searchCohort(tenantid, request, cohortSearchDto, res);
+  }
+
+  //search fields
+  @Post("/search/fields")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort list." })
+  @ApiBody({ type: CohortSearchFieldsDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchCohortFieldValues(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortSearchFieldsDto: CohortSearchFieldsDto,
+    @Res() res: Response
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .searchCohortFieldValues(tenantid, request, cohortSearchFieldsDto, res);
   }
 
   //update

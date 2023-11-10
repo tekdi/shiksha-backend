@@ -200,6 +200,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         assetId: item?.assetId ? `${item.assetId}` : "",
         context: item?.context ? `${item.context}` : "",
         contextId: item?.contextId ? `${item.contextId}` : "",
+        render: item?.render ? `${item.render}` : "",
         groupId: item?.groupId ? `${item.groupId}` : "",
         name: item?.name ? `${item.name}` : "",
         label: item?.label ? `${item.label}` : "",

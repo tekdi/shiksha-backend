@@ -34,7 +34,7 @@ import { diskStorage } from "multer";
 import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
-import { CohortSearchFieldsDto } from "./dto/cohort-search-fields.dto";
+import { CohortCreateDto } from "./dto/cohort-create.dto";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -55,7 +55,7 @@ export class CohortController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: CohortDto })
+  @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -64,7 +64,7 @@ export class CohortController {
   public async createCohort(
     @Headers() headers,
     @Req() request: Request,
-    @Body() cohortDto: CohortDto,
+    @Body() cohortCreateDto: CohortCreateDto,
     @UploadedFile() image
   ) {
     let tenantid = headers["tenantid"];
@@ -72,11 +72,11 @@ export class CohortController {
       image: image?.filename,
       tenantId: tenantid,
     };
-    Object.assign(cohortDto, payload);
+    Object.assign(cohortCreateDto, payload);
 
     return this.cohortAdapter
       .buildCohortAdapter()
-      .createCohort(request, cohortDto);
+      .createCohort(request, cohortCreateDto);
   }
 
   //get cohort
@@ -128,31 +128,6 @@ export class CohortController {
       .searchCohort(tenantid, request, cohortSearchDto, res);
   }
 
-  //search fields
-  @Post("/search/fields")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort list." })
-  @ApiBody({ type: CohortSearchFieldsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async searchCohortFieldValues(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() cohortSearchFieldsDto: CohortSearchFieldsDto,
-    @Res() res: Response
-  ) {
-    let tenantid = headers["tenantid"];
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .searchCohortFieldValues(tenantid, request, cohortSearchFieldsDto, res);
-  }
-
   //update
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
@@ -167,22 +142,22 @@ export class CohortController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: CohortDto })
+  @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohort(
     @Param("id") cohortId: string,
     @Req() request: Request,
-    @Body() cohortDto: CohortDto,
+    @Body() cohortCreateDto: CohortCreateDto,
     @UploadedFile() image
   ) {
     const response = {
       image: image?.filename,
     };
-    Object.assign(cohortDto, response);
+    Object.assign(cohortCreateDto, response);
 
     return this.cohortAdapter
       .buildCohortAdapter()
-      .updateCohort(cohortId, request, cohortDto);
+      .updateCohort(cohortId, request, cohortCreateDto);
   }
 }

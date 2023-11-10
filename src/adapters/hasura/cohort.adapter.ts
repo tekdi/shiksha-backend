@@ -10,7 +10,8 @@ import { IServicelocatorcohort } from "../cohortservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
 import { FieldsService } from "./services/fields.service";
-import { CohortSearchFieldsDto } from "src/cohort/dto/cohort-search-fields.dto";
+import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
+import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 export const HasuraCohortToken = "HasuraCohort";
 @Injectable()
 export class HasuraCohortService implements IServicelocatorcohort {
@@ -23,16 +24,20 @@ export class HasuraCohortService implements IServicelocatorcohort {
 
   url = `${process.env.BASEAPIURL}`;
 
-  public async createCohort(request: any, cohortDto: CohortDto) {
+  public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     var axios = require("axios");
 
     let query = "";
-    Object.keys(cohortDto).forEach((e) => {
-      if (cohortDto[e] && cohortDto[e] != "") {
-        if (Array.isArray(cohortDto[e])) {
-          query += `${e}: "${JSON.stringify(cohortDto[e])}", `;
+    Object.keys(cohortCreateDto).forEach((e) => {
+      if (
+        cohortCreateDto[e] &&
+        cohortCreateDto[e] != "" &&
+        e != "fieldValues"
+      ) {
+        if (Array.isArray(cohortCreateDto[e])) {
+          query += `${e}: "${JSON.stringify(cohortCreateDto[e])}", `;
         } else {
-          query += `${e}: "${cohortDto[e]}", `;
+          query += `${e}: "${cohortCreateDto[e]}", `;
         }
       }
     });
@@ -65,11 +70,45 @@ export class HasuraCohortService implements IServicelocatorcohort {
       });
     } else {
       const result = response.data.data.insert_Cohort_one;
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
+      let fieldCreate = true;
+      let fieldError = null;
+      //create fields values
+      let cohortId = result?.cohortId;
+      let field_value_array = cohortCreateDto.fieldValues.split("|");
+
+      if (field_value_array.length > 0) {
+        let field_values = [];
+        for (let i = 0; i < field_value_array.length; i++) {
+          let fieldValues = field_value_array[i].split(":");
+          field_values.push({
+            value: fieldValues[1] ? fieldValues[1] : "",
+            itemId: cohortId,
+            fieldId: fieldValues[0] ? fieldValues[0] : "",
+            createdBy: cohortCreateDto?.createdBy,
+            updatedBy: cohortCreateDto?.updatedBy,
+          });
+        }
+
+        const response_field_values =
+          await this.fieldsService.createFieldValuesBulk(field_values);
+        if (response_field_values?.data?.errors) {
+          fieldCreate = false;
+          fieldError = response_field_values?.data;
+        }
+      }
+
+      if (fieldCreate) {
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: fieldError?.errors[0]?.extensions?.code,
+          errorMessage: fieldError?.errors[0]?.message,
+        });
+      }
     }
   }
 
@@ -140,6 +179,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
               assetId
               context
               contextId
+              render
               groupId
               name
               label
@@ -216,66 +256,55 @@ export class HasuraCohortService implements IServicelocatorcohort {
     cohortSearchDto: CohortSearchDto,
     res: any
   ) {
-    const response = await this.searchCohortQuery(tenantId, cohortSearchDto);
-    if (response?.data?.errors) {
-      return res.status(200).send({
-        errorCode: response?.data?.errors[0]?.extensions?.code,
-        errorMessage: response?.data?.errors[0]?.message,
-      });
+    let entityFilter = cohortSearchDto;
+    let filedsFilter = entityFilter?.filters["fields"];
+    //remove fields from filter
+    delete entityFilter.filters["fields"];
+    let newCohortSearchDto = null;
+    //check fields value present or not
+    if (filedsFilter) {
+      //apply filter on fields value
+      let response_fields_value =
+        await this.fieldsService.searchFieldValuesFilter(filedsFilter);
+      if (response_fields_value?.data?.errors) {
+        return res.status(200).send({
+          errorCode: response_fields_value?.data?.errors[0]?.extensions?.code,
+          errorMessage: response_fields_value?.data?.errors[0]?.message,
+        });
+      } else {
+        //get filter result
+        let result_FieldValues = response_fields_value?.data?.data?.FieldValues;
+        //fetch cohot id list
+        let cohort_id_list = [];
+        for (let i = 0; i < result_FieldValues.length; i++) {
+          cohort_id_list.push(result_FieldValues[i].itemId);
+        }
+        //remove duplicate entries
+        cohort_id_list = cohort_id_list.filter(
+          (item, index) => cohort_id_list.indexOf(item) === index
+        );
+        let cohort_filter = new Object(entityFilter.filters);
+        cohort_filter["cohortId"] = {
+          _in: cohort_id_list,
+        };
+        newCohortSearchDto = new CohortSearchDto({
+          limit: entityFilter.limit,
+          page: entityFilter.page,
+          filters: cohort_filter,
+        });
+      }
     } else {
-      let result = response?.data?.data?.Cohort;
-      let cohortResponse = await this.mappedResponse(result);
-      //const count = cohortResponse.length;
-      const count = result.length;
-      //get cohort fields value
-      let result_data = await this.searchCohortFields(tenantId, cohortResponse);
-      return res.status(200).send({
-        statusCode: 200,
-        message: "Ok.",
-        totalCount: count,
-        data: result_data,
+      newCohortSearchDto = new CohortSearchDto({
+        limit: entityFilter.limit,
+        page: entityFilter.page,
+        filters: entityFilter.filters,
       });
     }
-  }
-
-  public async searchCohortFieldValues(
-    tenantId: string,
-    request: any,
-    cohortSearchFieldsDto: CohortSearchFieldsDto,
-    res: any
-  ) {
-    //apply filter on fields value
-    let response_fields_value =
-      await this.fieldsService.searchFieldValuesFilter(
-        cohortSearchFieldsDto.filters
+    if (newCohortSearchDto) {
+      const response = await this.searchCohortQuery(
+        tenantId,
+        newCohortSearchDto
       );
-    if (response_fields_value?.data?.errors) {
-      return res.status(200).send({
-        errorCode: response_fields_value?.data?.errors[0]?.extensions?.code,
-        errorMessage: response_fields_value?.data?.errors[0]?.message,
-      });
-    } else {
-      //get filter result
-      let result_FieldValues = response_fields_value?.data?.data?.FieldValues;
-      //fetch cohot id list
-      let cohort_id_list = [];
-      for (let i = 0; i < result_FieldValues.length; i++) {
-        cohort_id_list.push(result_FieldValues[i].itemId);
-      }
-      //remove duplicate entries
-      cohort_id_list = cohort_id_list.filter(
-        (item, index) => cohort_id_list.indexOf(item) === index
-      );
-      let cohort_filter = new Object();
-      cohort_filter["cohortId"] = {
-        _in: cohort_id_list,
-      };
-      let cohortSearchDto = new CohortSearchDto({
-        limit: cohortSearchFieldsDto.limit,
-        page: cohortSearchFieldsDto.page,
-        filters: cohort_filter,
-      });
-      const response = await this.searchCohortQuery(tenantId, cohortSearchDto);
       if (response?.data?.errors) {
         return res.status(200).send({
           errorCode: response?.data?.errors[0]?.extensions?.code,
@@ -298,23 +327,32 @@ export class HasuraCohortService implements IServicelocatorcohort {
           data: result_data,
         });
       }
+    } else {
+      return res.status(200).send({
+        errorCode: "filter invalid",
+        errorMessage: "filter invalid",
+      });
     }
   }
 
   public async updateCohort(
     cohortId: string,
     request: any,
-    cohortDto: CohortDto
+    cohortUpdateDto: CohortCreateDto
   ) {
     var axios = require("axios");
 
     let query = "";
-    Object.keys(cohortDto).forEach((e) => {
-      if (cohortDto[e] && cohortDto[e] != "") {
-        if (Array.isArray(cohortDto[e])) {
-          query += `${e}: "${JSON.stringify(cohortDto[e])}", `;
+    Object.keys(cohortUpdateDto).forEach((e) => {
+      if (
+        cohortUpdateDto[e] &&
+        cohortUpdateDto[e] != "" &&
+        e != "fieldValues"
+      ) {
+        if (Array.isArray(cohortUpdateDto[e])) {
+          query += `${e}: "${JSON.stringify(cohortUpdateDto[e])}", `;
         } else {
-          query += `${e}: "${cohortDto[e]}", `;
+          query += `${e}: "${cohortUpdateDto[e]}", `;
         }
       }
     });
@@ -357,12 +395,42 @@ export class HasuraCohortService implements IServicelocatorcohort {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response.data.data;
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
+      let result = response.data.update_Cohort_by_pk;
+      let fieldCreate = true;
+      let fieldError = [];
+      //update fields values
+      let field_value_array = cohortUpdateDto.fieldValues.split("|");
+      if (field_value_array.length > 0) {
+        for (let i = 0; i < field_value_array.length; i++) {
+          let fieldValues = field_value_array[i].split(":");
+          //update values
+          let fieldValuesUpdate = new FieldValuesDto({
+            value: fieldValues[1] ? fieldValues[1] : "",
+          });
+
+          const response_field_values =
+            await this.fieldsService.updateFieldValues(
+              fieldValues[0] ? fieldValues[0] : "",
+              fieldValuesUpdate
+            );
+          if (response_field_values?.data?.errors) {
+            fieldCreate = false;
+            fieldError.push(response_field_values?.data);
+          }
+        }
+      }
+      if (fieldCreate) {
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: "filed value update error",
+          errorMessage: JSON.stringify(fieldError),
+        });
+      }
     }
   }
 

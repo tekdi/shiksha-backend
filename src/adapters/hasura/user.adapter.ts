@@ -14,6 +14,7 @@ import {
   createUserInKeyCloak,
   checkIfUsernameExistsInKeycloak,
 } from "./keycloak.adapter.util";
+import { UserCreateDto } from "src/user/dto/user-create.dto";
 
 @Injectable()
 export class HasuraUserService implements IServicelocator {
@@ -58,7 +59,7 @@ export class HasuraUserService implements IServicelocator {
             updatedBy
             createdBy
             createdAt
-            fields: UsersFieldsTenants(where: {context: {_eq: $context}, access: {_eq: $access}}) {
+            fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, access: {_eq: $access}}) {
               tenantId
               fieldId
               assetId
@@ -138,7 +139,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async createUser(request: any, userDto: UserDto) {
+  public async createUser(request: any, userCreateDto: UserCreateDto) {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userRoles =
@@ -146,14 +147,13 @@ export class HasuraUserService implements IServicelocator {
 
       const userId =
         decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      userDto.createdBy = userId;
-      userDto.updatedBy = userId;
+      userCreateDto.createdBy = userId;
+      userCreateDto.updatedBy = userId;
 
-      userDto.username = userDto.username.toLocaleLowerCase();
+      userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
 
-      const userSchema = new UserDto(userDto);
+      const userSchema = new UserDto(userCreateDto);
 
-      let query = "";
       let errKeycloak = "";
       let resKeycloak = "";
 
@@ -162,7 +162,7 @@ export class HasuraUserService implements IServicelocator {
       const token = keycloakResponse.data.access_token;
 
       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userDto.username,
+        userCreateDto.username,
         token
       );
 
@@ -190,67 +190,110 @@ export class HasuraUserService implements IServicelocator {
       //   });
       // }
 
-      Object.keys(userDto).forEach((e) => {
-        if (
-          userDto[e] &&
-          userDto[e] !== "" &&
-          e != "password" &&
-          Object.keys(userSchema).includes(e)
-        ) {
-          if (e === "role") {
-            query += `${e}: ${userDto[e]},`;
-          } else if (Array.isArray(userDto[e])) {
-            query += `${e}: ${JSON.stringify(userDto[e])}, `;
-          } else {
-            query += `${e}: ${JSON.stringify(userDto[e])}, `;
-          }
-        }
-      });
+      return await this.createUserInDatabase(
+        request,
+        userCreateDto,
+        resKeycloak
+      );
+    } catch (e) {
+      console.log(e);
+      return e;
+    }
+  }
 
-      // Add userId created in keycloak as user Id of ALT user
-      query += `userId: "${resKeycloak}"`;
-      const data = {
-        query: `mutation CreateUser {
-        insert_Users_one(object: {${query}}) {
-          userId
+  async createUserInDatabase(
+    request: any,
+    userCreateDto: UserCreateDto,
+    userId: String
+  ) {
+    let query = "";
+    Object.keys(userCreateDto).forEach((e) => {
+      if (
+        userCreateDto[e] &&
+        userCreateDto[e] !== "" &&
+        e != "password" &&
+        e != "fieldValues"
+      ) {
+        if (e === "role") {
+          query += `${e}: ${userCreateDto[e]},`;
+        } else if (Array.isArray(userCreateDto[e])) {
+          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+        } else {
+          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
         }
       }
-      `,
-        variables: {},
-      };
+    });
 
-      const headers = {
-        Authorization: request.headers.authorization,
-        "x-hasura-role": getUserRole(userRoles),
+    // Add userId created in keycloak as user Id of ALT user
+    query += `userId: "${userId}"`;
+    const data = {
+      query: `mutation CreateUser {
+      insert_Users_one(object: {${query}}) {
+        userId
+      }
+    }
+    `,
+      variables: {},
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
         "Content-Type": "application/json",
-      };
+      },
+      data: data,
+    };
+    const response = await this.axios(config);
 
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: headers,
-        data: data,
-      };
+    if (response?.data?.errors || userId == undefined) {
+      return new ErrorResponse({
+        errorCode: response.data.errors[0].extensions,
+        errorMessage: response.data.errors[0].message,
+      });
+    } else {
+      const result = response.data.data.insert_Users_one;
 
-      const response = await this.axios(config);
+      let fieldCreate = true;
+      let fieldError = null;
+      //create fields values
+      let userId = result?.userId;
+      let field_value_array = userCreateDto.fieldValues.split("|");
 
-      if (response?.data?.errors || resKeycloak == undefined) {
-        return new ErrorResponse({
-          errorCode: response.data.errors[0].extensions,
-          errorMessage: response.data.errors[0].message + errKeycloak,
-        });
-      } else {
-        const result = response.data.data.insert_Users_one;
+      if (field_value_array.length > 0) {
+        let field_values = [];
+        for (let i = 0; i < field_value_array.length; i++) {
+          let fieldValues = field_value_array[i].split(":");
+          field_values.push({
+            value: fieldValues[1] ? fieldValues[1] : "",
+            itemId: userId,
+            fieldId: fieldValues[0] ? fieldValues[0] : "",
+            createdBy: userCreateDto?.createdBy,
+            updatedBy: userCreateDto?.updatedBy,
+          });
+        }
 
+        const response_field_values =
+          await this.fieldsService.createFieldValuesBulk(field_values);
+        if (response_field_values?.data?.errors) {
+          fieldCreate = false;
+          fieldError = response_field_values?.data;
+        }
+      }
+
+      if (fieldCreate) {
         return new SuccessResponse({
           statusCode: 200,
           message: "Ok.",
           data: result,
         });
+      } else {
+        return new ErrorResponse({
+          errorCode: fieldError?.errors[0]?.extensions?.code,
+          errorMessage: fieldError?.errors[0]?.message,
+        });
       }
-    } catch (e) {
-      console.log(e);
-      return e;
     }
   }
 

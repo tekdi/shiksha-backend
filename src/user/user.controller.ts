@@ -35,6 +35,7 @@ import {
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
+import { UserCreateDto } from "./dto/user-create.dto";
 @ApiTags("User")
 @Controller("user")
 export class UserController {
@@ -88,7 +89,7 @@ export class UserController {
   @ApiConsumes("application/x-www-form-urlencoded")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
-  @ApiBody({ type: UserDto })
+  @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -97,10 +98,10 @@ export class UserController {
   public async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Body() userDto: UserDto
+    @Body() userCreateDto: UserCreateDto
   ) {
-    userDto.tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().createUser(request, userDto);
+    userCreateDto.tenantId = headers["tenantid"];
+    return this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
   }
 
   @Put("/:id")

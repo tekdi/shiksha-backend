@@ -67,6 +67,7 @@ export class FieldsService {
           assetId
           context
           contextId
+          render
           groupId
           name
           label
@@ -148,6 +149,7 @@ export class FieldsService {
           assetId
           context
           contextId
+          render
           groupId
           name
           label
@@ -233,6 +235,7 @@ export class FieldsService {
               assetId
               context
               contextId
+              render
               groupId
               name
               label
@@ -357,6 +360,37 @@ export class FieldsService {
     };
 
     const response = await axios(config);
+    return response;
+  }
+
+  async createFieldValuesBulk(field_values: any) {
+    var axios = require("axios");
+
+    var data_field_values = {
+      query: `mutation insert_multiple_fieldValues($objects: [FieldValues_insert_input!]!) {
+        insert_FieldValues(objects: $objects) {
+          returning {
+            fieldValuesId
+          }
+        }
+      }
+      `,
+      variables: {
+        objects: field_values,
+      },
+    };
+
+    var config_field_value = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data_field_values,
+    };
+
+    const response = await axios(config_field_value);
     return response;
   }
 

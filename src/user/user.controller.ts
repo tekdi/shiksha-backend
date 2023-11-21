@@ -13,12 +13,13 @@ import {
   Inject,
   Query,
   Headers,
+  Res,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
   UserService,
 } from "../adapters/sunbirdrc/user.adapter";
-import { Request } from "@nestjs/common";
+import { Request, Response } from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -34,6 +35,7 @@ import {
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
+import { UserCreateDto } from "./dto/user-create.dto";
 @ApiTags("User")
 @Controller("user")
 export class UserController {
@@ -42,7 +44,7 @@ export class UserController {
     private userAdapter: UserAdapter
   ) {}
 
-  @Get("/:id")
+  @Get("/:userid")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
@@ -53,15 +55,18 @@ export class UserController {
   @ApiHeader({
     name: "tenantid",
   })
+  @ApiQuery({ name: "accessrole" })
   public async getUser(
     @Headers() headers,
-    @Param("id") userId: string,
-    @Req() request: Request
+    @Param("userid") userId: string,
+    @Query("accessrole") accessRole: string,
+    @Req() request: Request,
+    @Res() response: Response
   ) {
     const tenantId = headers["tenantid"];
     return this.userAdapter
       .buildUserAdapter()
-      .getUser(tenantId, userId, request);
+      .getUser(tenantId, userId, accessRole, request, response);
   }
 
   @Get()
@@ -84,7 +89,7 @@ export class UserController {
   @ApiConsumes("application/x-www-form-urlencoded")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
-  @ApiBody({ type: UserDto })
+  @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -93,10 +98,10 @@ export class UserController {
   public async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Body() userDto: UserDto
+    @Body() userCreateDto: UserCreateDto
   ) {
-    userDto.tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().createUser(request, userDto);
+    userCreateDto.tenantId = headers["tenantid"];
+    return this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
   }
 
   @Put("/:id")
@@ -129,12 +134,13 @@ export class UserController {
   public async searchUser(
     @Headers() headers,
     @Req() request: Request,
+    @Res() response: Response,
     @Body() userSearchDto: UserSearchDto
   ) {
     const tenantId = headers["tenantid"];
     return await this.userAdapter
       .buildUserAdapter()
-      .searchUser(tenantId, request, userSearchDto);
+      .searchUser(tenantId, request, response, userSearchDto);
   }
 
   @Post("/reset-password")

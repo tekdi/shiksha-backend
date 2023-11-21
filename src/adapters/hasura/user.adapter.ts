@@ -6,6 +6,7 @@ import { UserDto } from "src/user/dto/user.dto";
 import jwt_decode from "jwt-decode";
 import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { ErrorResponse } from "src/error-response";
+import { FieldsService } from "./services/fields.service";
 // import { UserUpdateDto } from "src/user/dto/user-update.dto";
 import {
   getUserRole,
@@ -13,45 +14,94 @@ import {
   createUserInKeyCloak,
   checkIfUsernameExistsInKeycloak,
 } from "./keycloak.adapter.util";
+import { UserCreateDto } from "src/user/dto/user-create.dto";
 
 @Injectable()
 export class HasuraUserService implements IServicelocator {
   axios = require("axios");
 
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private httpService: HttpService,
+    private fieldsService: FieldsService
+  ) {}
   updateUser(id: string, request: any, teacherDto: UserDto) {
     throw new Error("Method not implemented.");
   }
 
-  public async getUser(tenantId: string, userId: string, request: any) {
+  public async getUser(
+    tenantId: string,
+    userId: string,
+    accessRole: string,
+    request: any,
+    res: any
+  ) {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userRoles =
         decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
       const data = {
-        query: `query GetUser($userId:uuid!) {
-        Users_by_pk(userId: $userId) {
+        query: `query GetUser($userId: uuid!, $tenantId: uuid!, $context: String!, $contextId: uuid!, $access : String!) {
+          Users(where: {tenantId: {_eq: $tenantId}, userId: {_eq: $userId}}) {
+            username
             userId
             name
-            username
             email
             district
-            state 
+            state
             address
             pincode
             mobile
             dob
             role
             tenantId
-            createdAt
             updatedAt
-            createdBy
             updatedBy
-        }
-      }
-      `,
-        variables: { userId: userId },
+            createdBy
+            createdAt
+            fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, access: {_eq: $access}}) {
+              tenantId
+              fieldId
+              assetId
+              context
+              contextId
+              groupId
+              name
+              label
+              defaultValue
+              type
+              note
+              description
+              state
+              required
+              ordering
+              metadata
+              access
+              onlyUseInSubform
+              updatedAt
+              updatedBy
+              createdAt
+              createdBy
+              fieldValues: FieldValues(where: {itemId: {_eq: $contextId}}) {
+                value
+                itemId
+                fieldId
+                fieldValuesId
+                updatedBy
+                updatedAt
+                createdBy
+                createdAt
+              }
+            }
+          }
+        }`,
+        variables: {
+          userId: userId,
+          tenantId: tenantId,
+          context: "Users",
+          contextId: userId,
+          access: accessRole,
+        },
       };
 
       const config = {
@@ -68,27 +118,28 @@ export class HasuraUserService implements IServicelocator {
       const response = await this.axios(config);
 
       if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response.data.errors[0].extensions,
-          errorMessage: response.data.errors[0].message,
+        return res.status(400).send({
+          errorCode: response?.data?.errors[0]?.extensions?.code,
+          errorMessage: response?.data?.errors[0]?.message,
         });
       } else {
-        const result = [response.data.data.Users_by_pk];
-
-        const userData = await this.mappedResponse(result);
-        return new SuccessResponse({
-          statusCode: response.status,
+        const result = response.data.data.Users;
+        return res.status(200).send({
+          statusCode: 200,
           message: "Ok.",
-          data: userData[0],
+          data: result,
         });
       }
     } catch (e) {
       console.log(e);
-      return e;
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e.message,
+      });
     }
   }
 
-  public async createUser(request: any, userDto: UserDto) {
+  public async createUser(request: any, userCreateDto: UserCreateDto) {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userRoles =
@@ -96,14 +147,13 @@ export class HasuraUserService implements IServicelocator {
 
       const userId =
         decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      userDto.createdBy = userId;
-      userDto.updatedBy = userId;
+      userCreateDto.createdBy = userId;
+      userCreateDto.updatedBy = userId;
 
-      userDto.username = userDto.username.toLocaleLowerCase();
+      userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
 
-      const userSchema = new UserDto(userDto);
+      const userSchema = new UserDto(userCreateDto);
 
-      let query = "";
       let errKeycloak = "";
       let resKeycloak = "";
 
@@ -112,7 +162,7 @@ export class HasuraUserService implements IServicelocator {
       const token = keycloakResponse.data.access_token;
 
       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userDto.username,
+        userCreateDto.username,
         token
       );
 
@@ -140,219 +190,200 @@ export class HasuraUserService implements IServicelocator {
       //   });
       // }
 
-      Object.keys(userDto).forEach((e) => {
-        if (
-          userDto[e] &&
-          userDto[e] !== "" &&
-          e != "password" &&
-          Object.keys(userSchema).includes(e)
-        ) {
-          if (e === "role") {
-            query += `${e}: ${userDto[e]},`;
-          } else if (Array.isArray(userDto[e])) {
-            query += `${e}: ${JSON.stringify(userDto[e])}, `;
-          } else {
-            query += `${e}: ${JSON.stringify(userDto[e])}, `;
-          }
-        }
-      });
-
-      // Add userId created in keycloak as user Id of ALT user
-      query += `userId: "${resKeycloak}"`;
-      const data = {
-        query: `mutation CreateUser {
-        insert_Users_one(object: {${query}}) {
-          userId
-        }
-      }
-      `,
-        variables: {},
-      };
-
-      const headers = {
-        Authorization: request.headers.authorization,
-        "x-hasura-role": getUserRole(userRoles),
-        "Content-Type": "application/json",
-      };
-
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: headers,
-        data: data,
-      };
-
-      const response = await this.axios(config);
-
-      if (response?.data?.errors || resKeycloak == undefined) {
-        return new ErrorResponse({
-          errorCode: response.data.errors[0].extensions,
-          errorMessage: response.data.errors[0].message + errKeycloak,
-        });
-      } else {
-        const result = response.data.data.insert_Users_one;
-
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });
-      }
+      return await this.createUserInDatabase(
+        request,
+        userCreateDto,
+        resKeycloak
+      );
     } catch (e) {
       console.log(e);
       return e;
     }
   }
 
-  //   public async updateUser(
-  //     userId: string,
-  //     request: any,
-  //     userUpdateDto: UserUpdateDto
-  //   ) {
-  //     const userSchema = new UserUpdateDto(userUpdateDto);
-  //     let userUpdate = "";
-  //     Object.keys(userUpdateDto).forEach((e) => {
-  //       if (
-  //         userUpdateDto[e] &&
-  //         userUpdateDto[e] != "" &&
-  //         Object.keys(userSchema).includes(e)
-  //       ) {
-  //         if (e === "role") {
-  //           userUpdate += `${e}: ${userUpdateDto[e]},`;
-  //         } else if (Array.isArray(userUpdateDto[e])) {
-  //           userUpdate += `${e}: ${JSON.stringify(userUpdateDto[e])}, `;
-  //         } else {
-  //           userUpdate += `${e}: ${JSON.stringify(userUpdateDto[e])}, `;
-  //         }
-  //       }
-  //     });
+  async createUserInDatabase(
+    request: any,
+    userCreateDto: UserCreateDto,
+    userId: String
+  ) {
+    let query = "";
+    Object.keys(userCreateDto).forEach((e) => {
+      if (
+        userCreateDto[e] &&
+        userCreateDto[e] !== "" &&
+        e != "password" &&
+        e != "fieldValues"
+      ) {
+        if (e === "role") {
+          query += `${e}: ${userCreateDto[e]},`;
+        } else if (Array.isArray(userCreateDto[e])) {
+          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+        } else {
+          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+        }
+      }
+    });
 
-  //     const data = {
-  //       query: `mutation UpdateUser ($userId:uuid){
-  //         update_Users(where: {userId: {_eq: $userId}}, _set: {${userUpdate}}) {
-  //           affected_rows
-  //         }
-  //       }`,
-  //       variables: {
-  //         userId: userId,
-  //       },
-  //     };
+    // Add userId created in keycloak as user Id of ALT user
+    query += `userId: "${userId}"`;
+    const data = {
+      query: `mutation CreateUser {
+      insert_Users_one(object: {${query}}) {
+        userId
+      }
+    }
+    `,
+      variables: {},
+    };
 
-  //     const config = {
-  //       method: "post",
-  //       url: process.env.REGISTRYHASURA,
-  //       headers: {
-  //         "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-  //         "Content-Type": "application/json",
-  //       },
-  //       data: data,
-  //     };
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+    const response = await this.axios(config);
 
-  //     const response = await this.axios(config);
+    if (response?.data?.errors || userId == undefined) {
+      return new ErrorResponse({
+        errorCode: response.data.errors[0].extensions,
+        errorMessage: response.data.errors[0].message,
+      });
+    } else {
+      const result = response.data.data.insert_Users_one;
 
-  //     if (response?.data?.errors) {
-  //       return new ErrorResponse({
-  //         errorCode: response.data.errors[0].extensions,
-  //         errorMessage: response.data.errors[0].message,
-  //       });
-  //     } else {
-  //       const result = response.data.data.update_Users;
-  //       return new SuccessResponse({
-  //         statusCode: 200,
-  //         message: "Ok.",
-  //         data: result,
-  //       });
-  //     }
-  //   }
+      let fieldCreate = true;
+      let fieldError = null;
+      //create fields values
+      let userId = result?.userId;
+      let field_value_array = userCreateDto.fieldValues.split("|");
+
+      if (field_value_array.length > 0) {
+        let field_values = [];
+        for (let i = 0; i < field_value_array.length; i++) {
+          let fieldValues = field_value_array[i].split(":");
+          field_values.push({
+            value: fieldValues[1] ? fieldValues[1] : "",
+            itemId: userId,
+            fieldId: fieldValues[0] ? fieldValues[0] : "",
+            createdBy: userCreateDto?.createdBy,
+            updatedBy: userCreateDto?.updatedBy,
+          });
+        }
+
+        const response_field_values =
+          await this.fieldsService.createFieldValuesBulk(field_values);
+        if (response_field_values?.data?.errors) {
+          fieldCreate = false;
+          fieldError = response_field_values?.data;
+        }
+      }
+
+      if (fieldCreate) {
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: fieldError?.errors[0]?.extensions?.code,
+          errorMessage: fieldError?.errors[0]?.message,
+        });
+      }
+    }
+  }
 
   public async searchUser(
     tenantId: string,
     request: any,
+    response: any,
     userSearchDto: UserSearchDto
   ) {
     try {
-      const decoded: any = jwt_decode(request.headers.authorization);
-      const userRoles =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+      // const decoded: any = jwt_decode(request.headers.authorization);
+      // const userRoles =
+      //   decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      let offset = 0;
-      if (userSearchDto.page > 1) {
-        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
-      }
+      const fieldsFilter = userSearchDto.filters["fields"];
+      delete userSearchDto.filters["fields"];
+      let newUserSearchDto = null;
 
-      const filters = userSearchDto.filters;
+      if (fieldsFilter) {
+        //apply filter on fields value
 
-      Object.keys(userSearchDto.filters).forEach((item) => {
-        Object.keys(userSearchDto.filters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            filters[item][`_${e}`] = filters[item][e];
-            delete filters[item][e];
+        // searchfieldValuesFilter returns the contexts here userId that match the fieldId and value pair
+        const responseFieldsValue =
+          await this.fieldsService.searchFieldValuesFilter(fieldsFilter);
+
+        if (responseFieldsValue?.data?.errors) {
+          return response.status(400).send({
+            errorCode: responseFieldsValue?.data?.errors[0]?.extensions?.code,
+            errorMessage: responseFieldsValue?.data?.errors[0]?.message,
+          });
+        } else {
+          // get filter result
+          let resultFieldValues = responseFieldsValue?.data?.data?.FieldValues;
+          // fetch user id list
+          let userIdList = [];
+          for (let i = 0; i < resultFieldValues.length; i++) {
+            userIdList.push(resultFieldValues[i].itemId);
           }
-        });
-      });
-
-      const data = {
-        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
-          Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
-            aggregate {
-              count
-            }
-          }
-          Users(where:$filters, limit: $limit, offset: $offset,) {
-            userId
-            name
-            username
-            email
-            district
-            state 
-            address
-            pincode
-            mobile
-            dob
-            role
-            tenantId
-            createdAt
-            updatedAt
-            createdBy
-            updatedBy
-              }
-            }`,
-        variables: {
-          limit: parseInt(userSearchDto.limit),
-          offset: offset,
-          filters: userSearchDto.filters,
-        },
-      };
-
-      const headers = {
-        Authorization: request.headers.authorization,
-        "x-hasura-role": getUserRole(userRoles),
-        "Content-Type": "application/json",
-      };
-
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: headers,
-        data: data,
-      };
-
-      const response = await this.axios(config);
-
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response.data.errors[0].extensions,
-          errorMessage: response.data.errors[0].message,
-        });
+          // remove duplicate entries
+          userIdList = userIdList.filter(
+            (item, index) => userIdList.indexOf(item) === index
+          );
+          let userFilter = new Object(userSearchDto.filters);
+          userFilter["userId"] = {
+            _in: userIdList,
+          };
+          newUserSearchDto = new UserSearchDto({
+            limit: userSearchDto.limit,
+            page: userSearchDto.page,
+            filters: userFilter,
+          });
+        }
       } else {
-        const result = response.data.data.Users;
-        const userData = await this.mappedResponse(result);
-        const count = response?.data?.data?.Users_aggregate?.aggregate?.count;
+        newUserSearchDto = new UserSearchDto({
+          limit: userSearchDto.limit,
+          page: userSearchDto.page,
+          filters: userSearchDto.filters,
+        });
+      }
+      if (newUserSearchDto) {
+        const responseUser = await this.searchUserQuery(
+          tenantId,
+          newUserSearchDto,
+          request
+        );
+        if (responseUser?.data?.errors) {
+          return response.status(400).send({
+            errorCode: responseUser?.data?.errors[0]?.extensions?.code,
+            errorMessage: responseUser?.data?.errors[0]?.message,
+          });
+        } else {
+          let result = responseUser?.data?.data?.Users;
 
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok. Found " + count + " records",
-          data: userData,
+          let userResponse = await this.mappedResponse(result);
+
+          const count = result.length;
+          //get user fields value
+          let result_data = await this.searchUserFields(tenantId, userResponse);
+
+          return response.status(200).send({
+            statusCode: 200,
+            message: "Ok.",
+            totalCount: count,
+            data: result_data,
+          });
+        }
+      } else {
+        return response.status(200).send({
+          errorCode: "filter invalid",
+          errorMessage: "filter invalid",
         });
       }
     } catch (e) {
@@ -578,6 +609,110 @@ export class HasuraUserService implements IServicelocator {
           data: userData[0],
         });
       }
+    } catch (e) {
+      console.log(e);
+      return e;
+    }
+  }
+
+  public async searchUserFields(tenantId: string, users: any) {
+    // function uses field service to get extra field and respective fieldValues for each user
+    // ****Need extra field for access via role
+    let userWithFields = [];
+    for (let i = 0; i < users.length; i++) {
+      let new_obj = new Object(users[i]);
+      let userId = new_obj["userId"];
+      //get fields
+      let response = await this.fieldsService.getFieldsContext(
+        tenantId,
+        "Users",
+        userId
+      );
+      if (response?.data?.errors) {
+      } else {
+        let result = response?.data?.data?.Fields;
+        new_obj["fields"] = result;
+      }
+      userWithFields.push(new_obj);
+    }
+
+    // userWithFields = users.map(async (user) => {});
+
+    return userWithFields;
+  }
+
+  public async searchUserQuery(
+    tenantId: string,
+    userSearchDto: UserSearchDto,
+    request: any
+  ) {
+    // function to search users within the user tables
+    try {
+      let offset = 0;
+      if (userSearchDto.page > 1) {
+        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
+      }
+
+      const filters = userSearchDto.filters;
+
+      //add tenantid
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+      Object.keys(userSearchDto.filters).forEach((item) => {
+        Object.keys(userSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
+      });
+
+      const data = {
+        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
+        Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
+          aggregate {
+            count
+          }
+        }
+        Users(where:$filters, limit: $limit, offset: $offset,) {
+          userId
+          name
+          username
+          email
+          district
+          state 
+          address
+          pincode
+          mobile
+          dob
+          role
+          tenantId
+          createdAt
+          updatedAt
+          createdBy
+          updatedBy
+            }
+          }`,
+        variables: {
+          limit: parseInt(userSearchDto.limit),
+          offset: offset,
+          filters: userSearchDto.filters,
+        },
+      };
+
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await this.axios(config);
+
+      return response;
     } catch (e) {
       console.log(e);
       return e;

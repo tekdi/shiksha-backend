@@ -12,10 +12,15 @@ export class FieldsService {
   async createFields(fieldsDto: FieldsDto) {
     var axios = require("axios");
 
+    //add render json object
+    fieldsDto = await this.addRender(fieldsDto);
+
     let query = "";
     Object.keys(fieldsDto).forEach((e) => {
       if (fieldsDto[e] && fieldsDto[e] != "") {
-        if (Array.isArray(fieldsDto[e])) {
+        if (e === "render") {
+          query += `${e}: ${fieldsDto[e]}, `;
+        } else if (Array.isArray(fieldsDto[e])) {
           query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
         } else {
           query += `${e}: "${fieldsDto[e]}", `;
@@ -278,10 +283,15 @@ export class FieldsService {
   async updateFields(fieldsId: string, fieldsDto: FieldsDto) {
     var axios = require("axios");
 
+    //add render json object
+    fieldsDto = await this.addRender(fieldsDto);
+
     let query = "";
     Object.keys(fieldsDto).forEach((e) => {
       if (fieldsDto[e] && fieldsDto[e] != "") {
-        if (Array.isArray(fieldsDto[e])) {
+        if (e === "render") {
+          query += `${e}: ${fieldsDto[e]}, `;
+        } else if (Array.isArray(fieldsDto[e])) {
           query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
         } else {
           query += `${e}: "${fieldsDto[e]}", `;
@@ -322,6 +332,92 @@ export class FieldsService {
     const response = await axios(config);
 
     return response;
+  }
+
+  //required functions
+  public async addRender(fieldsDto: FieldsDto) {
+    let fieldsDtoTemp = fieldsDto;
+    if (fieldsDtoTemp?.render) {
+      let renderObj = await this.createFieldSchema(fieldsDtoTemp?.render);
+      fieldsDtoTemp.render = JSON.stringify(JSON.stringify(renderObj));
+    }
+    fieldsDto = fieldsDtoTemp;
+    return fieldsDto;
+  }
+
+  public async setTypeProperties(schema, payload) {
+    switch (payload.type) {
+      case "string":
+        schema.coreSchema.type = "string";
+        break;
+      case "integer":
+        schema.coreSchema.type = "integer";
+        break;
+      case "password":
+        schema.coreSchema.type = "string";
+        schema.uiSchema["ui:widget"] = "password";
+        break;
+      case "email":
+        schema.coreSchema.type = "string";
+        schema.uiSchema["ui:widget"] = "email";
+        break;
+      case "textarea":
+        schema.coreSchema.type = "string";
+        schema.uiSchema["ui:widget"] = "textarea";
+        break;
+      case "radio":
+        schema.coreSchema.type = "boolean";
+        schema.uiSchema["ui:widget"] = "radio";
+        break;
+      case "checkbox":
+        schema.coreSchema.type = "array";
+        if (payload.hasOwnProperty("items")) {
+          schema.coreSchema.items = payload.items;
+          schema.coreSchema.uniqueItems = payload.uniqueItems;
+          schema.uiSchema["ui:widget"] = "checkboxes";
+        }
+        break;
+    }
+
+    return schema;
+  }
+
+  public async createFieldSchema(payload) {
+    let fieldSchema = {
+      required: false,
+      coreSchema: {},
+      uiSchema: {},
+    };
+    fieldSchema = await this.setTypeProperties(fieldSchema, payload);
+    if (payload.label) {
+      fieldSchema.coreSchema["title"] = payload.label;
+    }
+
+    if (payload.pattern) {
+      fieldSchema.coreSchema["pattern"] = payload.pattern;
+    }
+
+    if (payload.hasOwnProperty("minLength")) {
+      fieldSchema.coreSchema["minLength"] = payload.minLength;
+    }
+
+    if (payload.hasOwnProperty("maxLength")) {
+      fieldSchema.coreSchema["maxLength"] = payload.maxLength;
+    }
+
+    if (payload.defaultValue) {
+      fieldSchema.coreSchema["default"] = payload.defaultValue;
+    }
+    if (payload.placeholder) {
+      fieldSchema.uiSchema["ui:placeholder"] = payload.placeholder;
+    }
+    if (payload.hasOwnProperty("required")) {
+      fieldSchema.required = true;
+    }
+
+    return {
+      [payload.name]: fieldSchema,
+    };
   }
 
   //field values

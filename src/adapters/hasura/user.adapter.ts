@@ -15,6 +15,7 @@ import {
   checkIfUsernameExistsInKeycloak,
 } from "./keycloak.adapter.util";
 import { UserCreateDto } from "src/user/dto/user-create.dto";
+import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 
 @Injectable()
 export class HasuraUserService implements IServicelocator {
@@ -24,9 +25,6 @@ export class HasuraUserService implements IServicelocator {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) {}
-  updateUser(id: string, request: any, teacherDto: UserDto) {
-    throw new Error("Method not implemented.");
-  }
 
   public async getUser(
     tenantId: string,
@@ -152,7 +150,7 @@ export class HasuraUserService implements IServicelocator {
 
       userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
 
-      const userSchema = new UserDto(userCreateDto);
+      const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
       let resKeycloak = "";
@@ -259,9 +257,9 @@ export class HasuraUserService implements IServicelocator {
       let fieldError = null;
       //create fields values
       let userId = result?.userId;
-      let field_value_array = userCreateDto.fieldValues.split("|");
+      let field_value_array = userCreateDto.fieldValues?.split("|");
 
-      if (field_value_array.length > 0) {
+      if (field_value_array?.length > 0) {
         let field_values = [];
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
@@ -292,6 +290,101 @@ export class HasuraUserService implements IServicelocator {
         return new ErrorResponse({
           errorCode: fieldError?.errors[0]?.extensions?.code,
           errorMessage: fieldError?.errors[0]?.message,
+        });
+      }
+    }
+  }
+
+  public async updateUser(userId: string, request: any, userUpdateDto: UserCreateDto) {
+    let query = "";
+    Object.keys(userUpdateDto).forEach((e) => {
+      if (
+        userUpdateDto[e] &&
+        userUpdateDto[e] != "" &&
+        e != "password" &&
+        e != "username" &&
+        e != "fieldValues"
+      ) {
+        if (Array.isArray(userUpdateDto[e])) {
+          query += `${e}: "${JSON.stringify(userUpdateDto[e])}", `;
+        } else {
+          query += `${e}: "${userUpdateDto[e]}", `;
+        }
+      }
+    });
+
+    var data = {
+      query: `
+      mutation UpdateUser($userId:uuid!) {
+        update_Users_by_pk(
+            pk_columns: {
+              userId: $userId
+            },
+            _set: {
+                ${query}
+            }
+        ) {
+            userId
+        }
+    }
+    `,
+      variables: {
+        userId: userId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await this.axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.update_Users_by_pk;
+      let fieldCreate = true;
+      let fieldError = [];
+      //update fields values
+      let field_value_array = userUpdateDto.fieldValues?.split("|");
+      if (field_value_array?.length > 0) {
+        for (let i = 0; i < field_value_array.length; i++) {
+          let fieldValues = field_value_array[i].split(":");
+          //update values
+          let fieldValuesUpdate = new FieldValuesDto({
+            value: fieldValues[1] ? fieldValues[1] : "",
+          });
+
+          const response_field_values =
+            await this.fieldsService.updateFieldValues(
+              fieldValues[0] ? fieldValues[0] : "",
+              fieldValuesUpdate
+            );
+          if (response_field_values?.data?.errors) {
+            fieldCreate = false;
+            fieldError.push(response_field_values?.data);
+          }
+        }
+      }
+      if (fieldCreate) {
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "User updated successfully ",
+          data: result,
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: "filed value update error",
+          errorMessage: JSON.stringify(fieldError),
         });
       }
     }

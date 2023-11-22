@@ -104,19 +104,24 @@ export class UserController {
     return this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
   }
 
-  @Put("/:id")
+  @Put("/:userid")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been updated successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
   public async updateUser(
-    @Param("id") id: string,
+    @Headers() headers,
+    @Param("userid") userId: string,
     @Req() request: Request,
-    @Body() userDto: UserDto
+    @Body() userDto: UserCreateDto
   ) {
+    userDto.tenantId = headers["tenantid"];
     return await this.userAdapter
       .buildUserAdapter()
-      .updateUser(id, request, userDto);
+      .updateUser(userId, request, userDto);
   }
 
   @Post("/search")

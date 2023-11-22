@@ -415,6 +415,10 @@ export class FieldsService {
       fieldSchema.required = true;
     }
 
+    if (payload.hasOwnProperty("oneOf")) {
+      fieldSchema.coreSchema["oneOf"] = payload.oneOf;
+    }
+
     return {
       [payload.name]: fieldSchema,
     };

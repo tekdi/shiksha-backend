@@ -86,7 +86,6 @@ export class UserController {
   }
 
   @Post()
-  @ApiConsumes("application/x-www-form-urlencoded")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserCreateDto })

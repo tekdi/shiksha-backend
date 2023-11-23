@@ -11,6 +11,7 @@ export interface IServicelocator {
     response: any
   );
   getUserByAuth(tenantId: string, request: any);
+  checkAndAddUser(request: any, userDto: UserCreateDto);
   createUser(request: any, userDto: UserCreateDto);
   updateUser(id: string, request: any, userDto: UserCreateDto);
   searchUser(

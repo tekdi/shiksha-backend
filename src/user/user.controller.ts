@@ -100,7 +100,9 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
+    return this.userAdapter
+      .buildUserAdapter()
+      .checkAndAddUser(request, userCreateDto);
   }
 
   @Put("/:userid")

@@ -129,15 +129,91 @@ export class HasuraUserService implements IServicelocator {
         });
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return new ErrorResponse({
         errorCode: "400",
-        errorMessage: e.message,
+        errorMessage: e,
       });
     }
   }
 
+  public async checkAndAddUser(request: any, userDto: UserCreateDto) {
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const altUserRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+
+      const userId =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      userDto.createdBy = userId;
+      userDto.updatedBy = userId;
+
+      if (
+        !userDto.username ||
+        !userDto.password ||
+        !userDto.role ||
+        !userDto.name
+      ) {
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: "Name, username, password and role are required",
+        });
+      }
+
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+
+      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+        userDto.username,
+        token
+      );
+      if (usernameExistsInKeycloak?.data[0]?.username) {
+        const usernameExistsInDB: any = await this.getUserByUsername(
+          usernameExistsInKeycloak?.data[0]?.username,
+          request
+        );
+        if (usernameExistsInDB?.statusCode === 200) {
+          if (usernameExistsInDB?.data) {
+            return usernameExistsInDB;
+          } else {
+            
+            const resetPasswordRes: any = await this.resetKeycloakPassword(
+              request,
+              token,
+              userDto.password,
+              usernameExistsInKeycloak?.data[0]?.id
+            );
+  
+            if (resetPasswordRes.statusCode !== 204) {
+              return new ErrorResponse({
+                errorCode: "400",
+                errorMessage: "Something went wrong in password reset",
+              });
+            }
+
+            userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+            const newlyCreatedDbUser = await this.createUserInDatabase(
+              request,
+              userDto
+            );
+
+            return newlyCreatedDbUser;
+          }
+        } else {
+          return usernameExistsInDB;
+        }
+      } else {
+
+        return await this.createUser(request, userDto);
+      }
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+  }
+
   public async createUser(request: any, userCreateDto: UserCreateDto) {
+    // It is considered that if user is not present in keycloak it is not present in database as well
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userRoles =
@@ -156,25 +232,14 @@ export class HasuraUserService implements IServicelocator {
       let resKeycloak = "";
 
       // if (altUserRoles.includes("systemAdmin")) {
+
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
-
-      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userCreateDto.username,
-        token
-      );
-
-      if (usernameExistsInKeycloak?.data[0]?.username) {
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: "Username already exists",
-        });
-      }
 
       resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
         (error) => {
           errKeycloak = error.response?.data.errorMessage;
-          console.log(errKeycloak);
+         
           return new ErrorResponse({
             errorCode: "500",
             errorMessage: "Someting went wrong",
@@ -187,22 +252,18 @@ export class HasuraUserService implements IServicelocator {
       //     errorMessage: "Unauthorized",
       //   });
       // }
-
-      return await this.createUserInDatabase(
-        request,
-        userCreateDto,
-        resKeycloak
-      );
+      userCreateDto.userId = resKeycloak;
+      return await this.createUserInDatabase(request, userCreateDto);
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }
 
   async createUserInDatabase(
     request: any,
-    userCreateDto: UserCreateDto,
-    userId: String
+    userCreateDto: UserCreateDto
+    // userId: String
   ) {
     let query = "";
     Object.keys(userCreateDto).forEach((e) => {
@@ -223,7 +284,7 @@ export class HasuraUserService implements IServicelocator {
     });
 
     // Add userId created in keycloak as user Id of ALT user
-    query += `userId: "${userId}"`;
+    // query += `userId: "${userId}"`;
     const data = {
       query: `mutation CreateUser {
       insert_Users_one(object: {${query}}) {
@@ -245,7 +306,7 @@ export class HasuraUserService implements IServicelocator {
     };
     const response = await this.axios(config);
 
-    if (response?.data?.errors || userId == undefined) {
+    if (response?.data?.errors || userCreateDto.userId == undefined) {
       return new ErrorResponse({
         errorCode: response.data.errors[0].extensions,
         errorMessage: response.data.errors[0].message,
@@ -295,7 +356,11 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async updateUser(userId: string, request: any, userUpdateDto: UserCreateDto) {
+  public async updateUser(
+    userId: string,
+    request: any,
+    userUpdateDto: UserCreateDto
+  ) {
     let query = "";
     Object.keys(userUpdateDto).forEach((e) => {
       if (
@@ -480,7 +545,7 @@ export class HasuraUserService implements IServicelocator {
         });
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }
@@ -565,8 +630,69 @@ export class HasuraUserService implements IServicelocator {
         data: userData,
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
+    }
+  }
+
+  public async resetKeycloakPassword(
+    request: any,
+    token: string,
+    newPassword: string,
+    userId: string
+  ) {
+    const decoded: any = jwt_decode(request.headers.authorization);
+    const altUserRoles =
+      decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+
+    const data = JSON.stringify({
+      temporary: "false",
+      type: "password",
+      value: newPassword,
+    });
+
+    if (!token) {
+      const response = await getKeycloakAdminToken();
+      token = response.data.access_token;
+    }
+
+    let apiResponse;
+
+    const config = {
+      method: "put",
+      url:
+        process.env.KEYCLOAK +
+        process.env.KEYCLOAK_ADMIN +
+        "/" +
+        userId +
+        "/reset-password",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      data: data,
+    };
+
+    try {
+      apiResponse = await this.axios(config);
+    } catch (e) {
+      return new ErrorResponse({
+        errorCode: `${e.response.status}`,
+        errorMessage: e.response.data.error,
+      });
+    }
+
+    if (apiResponse.status === 204) {
+      return new SuccessResponse({
+        statusCode: apiResponse.status,
+        message: apiResponse.statusText,
+        data: { msg: "Password reset successful!" },
+      });
+    } else {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: apiResponse.errors,
+      });
     }
   }
 
@@ -599,26 +725,16 @@ export class HasuraUserService implements IServicelocator {
       });
 
       const keycloakResponse = await getKeycloakAdminToken();
-      const res = keycloakResponse.data.access_token;
+      const resToken = keycloakResponse.data.access_token;
       let apiResponse;
 
-      const config = {
-        method: "put",
-        url:
-          process.env.KEYCLOAK +
-          process.env.KEYCLOAK_ADMIN +
-          "/" +
-          userId +
-          "/reset-password",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + res,
-        },
-        data: data,
-      };
-
       try {
-        apiResponse = await this.axios(config);
+        apiResponse = await this.resetKeycloakPassword(
+          request,
+          resToken,
+          newPassword,
+          userId
+        );
       } catch (e) {
         return new ErrorResponse({
           errorCode: `${e.response.status}`,
@@ -626,11 +742,11 @@ export class HasuraUserService implements IServicelocator {
         });
       }
 
-      if (apiResponse.status === 204) {
+      if (apiResponse.statusCode === 204) {
         return new SuccessResponse({
-          statusCode: apiResponse.status,
-          message: apiResponse.statusText,
-          data: { msg: "Password reset successful!" },
+          statusCode: apiResponse.statusCode,
+          message: apiResponse.message,
+          data: apiResponse.data,
         });
       } else {
         return new ErrorResponse({
@@ -639,7 +755,7 @@ export class HasuraUserService implements IServicelocator {
         });
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }
@@ -703,7 +819,7 @@ export class HasuraUserService implements IServicelocator {
         });
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }
@@ -807,7 +923,7 @@ export class HasuraUserService implements IServicelocator {
 
       return response;
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }

@@ -10,10 +10,14 @@ import { UserDto } from "../../user/dto/user.dto";
 import jwt_decode from "jwt-decode";
 import { IServicelocator } from "../userservicelocator";
 import { UserSegmentDto } from "src/user/dto/user-segment.dto";
+import { UserCreateDto } from "src/user/dto/user-create.dto";
 export const SunbirdUserToken = "SunbirdUser";
 @Injectable()
 export class UserService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  checkAndAddUser(request: any, userDto: UserCreateDto) {
+    throw new Error("Method not implemented.");
+  }
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 

@@ -5,10 +5,14 @@ import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { UserDto } from "../../user/dto/user.dto";
 
 import { IServicelocator } from "../userservicelocator";
+import { UserCreateDto } from "src/user/dto/user-create.dto";
 export const EsamwadUserToken = "EsamwadUser";
 @Injectable()
 export class EsamwadUserService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  checkAndAddUser(request: any, userDto: UserCreateDto) {
+    throw new Error("Method not implemented.");
+  }
   url = `${process.env.BASEAPIURL}/User`;
 
   public async getUserByAuth(tenantId: string, request: any) {

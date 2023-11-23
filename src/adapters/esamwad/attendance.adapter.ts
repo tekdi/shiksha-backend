@@ -5,10 +5,14 @@ import { IServicelocator } from "../attendanceservicelocator";
 import { AttendanceDto } from "src/attendance/dto/attendance.dto";
 
 import { AttendanceSearchDto } from "src/attendance/dto/attendance-search.dto";
+import { AttendanceDateDto } from "src/attendance/dto/attendance-date.dto";
 export const EsamwadAttendanceToken = "EsamwadAttendance";
 @Injectable()
 export class AttendanceEsamwadService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  attendanceByDate(tenantId: string, request: any, attendanceSearchDto: AttendanceDateDto) {
+    throw new Error("Method not implemented.");
+  }
   baseURL = process.env.HASURAURL;
   adminSecret = process.env.ADMINSECRET;
 

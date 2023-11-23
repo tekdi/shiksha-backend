@@ -12,11 +12,15 @@ import moment from "moment";
 
 import { IServicelocator } from "../attendanceservicelocator";
 import { StudentDto } from "src/student/dto/student.dto";
+import { AttendanceDateDto } from "src/attendance/dto/attendance-date.dto";
 export const SunbirdAttendanceToken = "SunbirdAttendance";
 
 @Injectable()
 export class AttendanceService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  attendanceByDate(tenantId: string, request: any, attendanceSearchDto: AttendanceDateDto) {
+    throw new Error("Method not implemented.");
+  }
   url = `${process.env.BASEAPIURL}/Attendance`;
   studentAPIUrl = `${process.env.BASEAPIURL}/Student`;
   baseUrl = process.env.BASEAPIURL;

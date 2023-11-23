@@ -10,6 +10,7 @@ import { IServicelocator } from "../attendanceservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
 import { ErrorResponse } from "src/error-response";
+import { AttendanceDateDto } from "src/attendance/dto/attendance-date.dto";
 export const ShikshaAttendanceToken = "ShikshaAttendance";
 
 @Injectable()
@@ -429,90 +430,91 @@ export class AttendanceHasuraService implements IServicelocator {
     });
   }
 
-  public async attendanceFilter(
-    fromDate: string,
-    toDate: string,
-    userId: string,
-    userType: string,
-    attendance: string,
-    groupId: string,
-    schoolId: string,
-    eventId: string,
-    topicId: string,
-    request: any
+  public async attendanceByDate(
+    tenantId: string,
+    request: any,
+    attendanceSearchDto: AttendanceDateDto
   ) {
     let axios = require("axios");
 
-    const filterParams = {
-      userId,
-      userType,
-      attendance,
-      groupId,
-      schoolId,
-      eventId,
-      topicId,
-    };
+    let offset = 0;
+    if (attendanceSearchDto.page > 1) {
+      offset =
+        parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+    }
 
-    let query = "";
-    Object.keys(filterParams).forEach((e) => {
-      if (filterParams[e] && filterParams[e] != "") {
-        query += `${e}:{_eq:"${filterParams[e]}"}`;
-      }
+    const filters = attendanceSearchDto.filters;
+
+    //add tenantid
+    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+    Object.keys(attendanceSearchDto.filters).forEach((item) => {
+      Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          filters[item][`_${e}`] = filters[item][e];
+          delete filters[item][e];
+        }
+      });
     });
 
-    var FilterData = {
-      query: `query AttendanceFilter($fromDate:date,$toDate:date) {
-        attendance_aggregate {
-          aggregate {
-            count
-          }
+    const attendanceData = {
+      query: `query AttendanceFilter($fromDate: date, $toDate: date, $filters: [Attendance_bool_exp!], $limit: Int, $offset: Int) {
+        Attendance(where: {attendanceDate: {_gte: $fromDate, _lte: $toDate}, _and: $filters}, limit: $limit, offset: $offset) {
+          attendance
+          attendanceDate
+          attendanceId
+          tenantId
+          userId
+          remark
+          latitude
+          longitude
+          image
+          metaData
+          syncTime
+          session
+          contextId
+          contextType
+          createdAt
+          updatedAt
+          createdBy
+          updatedBy
         }
-            attendance(where:{  attendanceDate: {_gte: $fromDate}, _and: {attendanceDate: {_lte: $toDate}} ${query}}) {
-              attendance
-              attendanceDate
-              attendanceId
-              created_at
-              eventId
-              groupId
-              image
-              latitude
-              longitude
-              metaData
-              remark
-              schoolId
-              syncTime
-              topicId
-              updated_at
-              userId
-              userType
-            }
-          }`,
+      }`,
       variables: {
-        fromDate: fromDate,
-        toDate: toDate,
+        fromDate: attendanceSearchDto.fromDate,
+        toDate: attendanceSearchDto.toDate,
+        filters: filters,
+        limit: parseInt(attendanceSearchDto.limit),
+        offset: offset,
       },
     };
-    var config = {
+    const config = {
       method: "post",
       url: process.env.REGISTRYHASURA,
       headers: {
         "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
         "Content-Type": "application/json",
       },
-      data: FilterData,
+      data: attendanceData,
     };
 
     const response = await axios(config);
 
-    let result =
-      response?.data.data.attendance && response.data.data.attendance;
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: response.data.errors[0].message,
+      });
+    }
+
+    const result = response.data.data.Attendance;
 
     const mappedResponse = await this.mappedResponse(result);
-    const count = response?.data?.data?.attendance_aggregate?.aggregate?.count;
+
     return new SuccessResponse({
       statusCode: 200,
-      message: "ok",
-      totalCount: count,
+      message: "Ok",
+      totalCount: mappedResponse?.length,
       data: mappedResponse,
     });
   }

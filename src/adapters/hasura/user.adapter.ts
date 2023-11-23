@@ -176,14 +176,13 @@ export class HasuraUserService implements IServicelocator {
           if (usernameExistsInDB?.data) {
             return usernameExistsInDB;
           } else {
-            
             const resetPasswordRes: any = await this.resetKeycloakPassword(
               request,
               token,
               userDto.password,
               usernameExistsInKeycloak?.data[0]?.id
             );
-  
+
             if (resetPasswordRes.statusCode !== 204) {
               return new ErrorResponse({
                 errorCode: "400",
@@ -203,7 +202,6 @@ export class HasuraUserService implements IServicelocator {
           return usernameExistsInDB;
         }
       } else {
-
         return await this.createUser(request, userDto);
       }
     } catch (e) {
@@ -239,7 +237,7 @@ export class HasuraUserService implements IServicelocator {
       resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
         (error) => {
           errKeycloak = error.response?.data.errorMessage;
-         
+
           return new ErrorResponse({
             errorCode: "500",
             errorMessage: "Someting went wrong",
@@ -252,7 +250,7 @@ export class HasuraUserService implements IServicelocator {
       //     errorMessage: "Unauthorized",
       //   });
       // }
-      
+
       // Add userId created in keycloak as user Id of ALT user
       userCreateDto.userId = resKeycloak;
       return await this.createUserInDatabase(request, userCreateDto);
@@ -262,10 +260,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  async createUserInDatabase(
-    request: any,
-    userCreateDto: UserCreateDto
-  ) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     let query = "";
     Object.keys(userCreateDto).forEach((e) => {
       if (
@@ -620,6 +615,13 @@ export class HasuraUserService implements IServicelocator {
 
       const response = await this.axios(config);
 
+      if (response?.data?.errors) {
+        console.log(response?.data?.errors);
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      }
       const result = response.data.data.Users;
 
       const userData = await this.mappedResponse(result);

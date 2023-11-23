@@ -252,6 +252,8 @@ export class HasuraUserService implements IServicelocator {
       //     errorMessage: "Unauthorized",
       //   });
       // }
+      
+      // Add userId created in keycloak as user Id of ALT user
       userCreateDto.userId = resKeycloak;
       return await this.createUserInDatabase(request, userCreateDto);
     } catch (e) {
@@ -263,7 +265,6 @@ export class HasuraUserService implements IServicelocator {
   async createUserInDatabase(
     request: any,
     userCreateDto: UserCreateDto
-    // userId: String
   ) {
     let query = "";
     Object.keys(userCreateDto).forEach((e) => {
@@ -283,8 +284,6 @@ export class HasuraUserService implements IServicelocator {
       }
     });
 
-    // Add userId created in keycloak as user Id of ALT user
-    // query += `userId: "${userId}"`;
     const data = {
       query: `mutation CreateUser {
       insert_Users_one(object: {${query}}) {

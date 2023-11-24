@@ -1,11 +1,9 @@
 import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { StudentModule } from "./student/student.module";
 import { UserModule } from "./user/user.module";
 import { SchoolModule } from "./school/school.module";
 import { AttendanceModule } from "./attendance/attendance.module";
-import { GroupModule } from "./group/group.module";
 import { HolidayModule } from "./holiday/holiday.module";
 import { ConfigurationModule } from "./configs/configuration.module";
 import { ConfigModule } from "@nestjs/config";
@@ -28,10 +26,13 @@ import { CourseTrackingModule } from "./courseTracking/courseTracking.module";
 import { AnnouncementsModule } from "./announcements/announcements.module";
 import { RoleModule } from "./role/role.module";
 import { WorkHistoryModule } from "./workHistory/workHistory.module";
-import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
+// Below modules no longer required in Shiksha 2.0
+// import { GroupModule } from "./group/group.module";
+// import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
+// import { StudentModule } from "./student/student.module";
 
 @Module({
   imports: [
@@ -39,11 +40,8 @@ import { FieldsModule } from "./fields/fields.module";
     MulterModule.register({
       dest: "./uploads",
     }),
-    StudentModule,
     UserModule,
     SchoolModule,
-    GroupModule,
-    CohortModule,
     RoleModule,
     AttendanceModule,
     HolidayModule,
@@ -65,7 +63,7 @@ import { FieldsModule } from "./fields/fields.module";
     CourseTrackingModule,
     AnnouncementsModule,
     WorkHistoryModule,
-    GroupMembershipModule,
+    CohortModule,
     CohortMembersModule,
     FieldsModule
   ],

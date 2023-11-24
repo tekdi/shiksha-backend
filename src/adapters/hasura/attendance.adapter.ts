@@ -15,6 +15,8 @@ export const ShikshaAttendanceToken = "ShikshaAttendance";
 
 @Injectable()
 export class AttendanceHasuraService implements IServicelocator {
+  axios = require("axios");
+
   constructor(private httpService: HttpService) {}
 
   public async getAttendance(
@@ -22,8 +24,7 @@ export class AttendanceHasuraService implements IServicelocator {
     attendanceId: string,
     request: any
   ) {
-    var axios = require("axios");
-    var data = {
+    const data = {
       query: `query GetAttendance($attendanceId:uuid!) {
         Attendance(where: {attendanceId: {_eq: $attendanceId}}) {
             attendance
@@ -50,7 +51,7 @@ export class AttendanceHasuraService implements IServicelocator {
       variables: { attendanceId: attendanceId },
     };
 
-    var config = {
+    const config = {
       method: "post",
       url: process.env.REGISTRYHASURA,
       headers: {
@@ -60,7 +61,7 @@ export class AttendanceHasuraService implements IServicelocator {
       data: data,
     };
 
-    const response = await axios(config);
+    const response = await this.axios(config);
     let result = response?.data?.data?.Attendance;
     const mappedResponse = await this.mappedResponse(result);
 
@@ -72,7 +73,6 @@ export class AttendanceHasuraService implements IServicelocator {
   }
 
   public async createAttendance(request: any, attendanceDto: AttendanceDto) {
-    var axios = require("axios");
     let query = "";
     Object.keys(attendanceDto).forEach((e) => {
       if (attendanceDto[e] && attendanceDto[e] != "") {
@@ -80,7 +80,7 @@ export class AttendanceHasuraService implements IServicelocator {
       }
     });
 
-    var data = {
+    const data = {
       query: `mutation CreateAttendance {
       insert_Attendance_one(object: {${query}}) {
         attendanceId
@@ -90,7 +90,7 @@ export class AttendanceHasuraService implements IServicelocator {
       variables: {},
     };
 
-    var config = {
+    const config = {
       method: "post",
       url: process.env.REGISTRYHASURA,
       headers: {
@@ -100,7 +100,7 @@ export class AttendanceHasuraService implements IServicelocator {
       data: data,
     };
 
-    const response = await axios(config);
+    const response = await this.axios(config);
 
     if (response?.data?.errors) {
       return new ErrorResponse({
@@ -123,7 +123,6 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceDto: AttendanceDto
   ) {
-    var axios = require("axios");
     const attendanceSchema = new AttendanceDto(attendanceDto);
 
     let query = "";
@@ -137,7 +136,7 @@ export class AttendanceHasuraService implements IServicelocator {
       }
     });
 
-    var data = {
+    const data = {
       query: `mutation UpdateAttendance($attendanceId:uuid) {
           update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
           affected_rows
@@ -151,7 +150,7 @@ export class AttendanceHasuraService implements IServicelocator {
       },
     };
 
-    var config = {
+    const config = {
       method: "post",
       url: process.env.REGISTRYHASURA,
       headers: {
@@ -161,7 +160,7 @@ export class AttendanceHasuraService implements IServicelocator {
       data: data,
     };
 
-    const response = await axios(config);
+    const response = await this.axios(config);
 
     if (response?.data?.errors) {
       return new ErrorResponse({
@@ -184,8 +183,6 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
-    var axios = require("axios");
-
     let offset = 0;
     if (attendanceSearchDto.page > 1) {
       offset =
@@ -209,7 +206,7 @@ export class AttendanceHasuraService implements IServicelocator {
       });
     });
 
-    var data = {
+    const data = {
       query: `query SearchAttendance($filters:Attendance_bool_exp,$limit:Int, $offset:Int) {
         Attendance_aggregate (where:$filters, limit: $limit, offset: $offset,){
           aggregate {
@@ -246,7 +243,7 @@ export class AttendanceHasuraService implements IServicelocator {
         filters: attendanceSearchDto.filters,
       },
     };
-    var config = {
+    const config = {
       method: "post",
       url: process.env.REGISTRYHASURA,
       headers: {
@@ -256,7 +253,7 @@ export class AttendanceHasuraService implements IServicelocator {
       data: data,
     };
 
-    const response = await axios(config);
+    const response = await this.axios(config);
 
     if (response?.data?.errors) {
       return new ErrorResponse({
@@ -283,8 +280,6 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceSearchDto: AttendanceDateDto
   ) {
-    let axios = require("axios");
-
     let offset = 0;
     if (attendanceSearchDto.page > 1) {
       offset =
@@ -346,7 +341,7 @@ export class AttendanceHasuraService implements IServicelocator {
       data: attendanceData,
     };
 
-    const response = await axios(config);
+    const response = await this.axios(config);
 
     if (response?.data?.errors) {
       return new ErrorResponse({
@@ -372,7 +367,6 @@ export class AttendanceHasuraService implements IServicelocator {
     attendanceDto: AttendanceDto
   ) {
     // Api Checks attendance by date and userId , that is daywise attendance
-    let axios = require("axios");
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
 
@@ -424,8 +418,6 @@ export class AttendanceHasuraService implements IServicelocator {
     attendanceData: [AttendanceDto]
   ) {
     try {
-      let axios = require("axios");
-      // let attendeeData = attendanceData["attendanceData"];
       const result = Promise.all(
         attendanceData.map(async (attendanceData: any) => {
           let data = {};
@@ -484,7 +476,7 @@ export class AttendanceHasuraService implements IServicelocator {
             }
           });
 
-          var search = {
+          const search = {
             query: `query SearchAttendance {
             Attendance(where:{ ${dataObject}}) {
               attendanceId
@@ -502,7 +494,7 @@ export class AttendanceHasuraService implements IServicelocator {
             data: search,
           };
 
-          const responseData = await axios(config);
+          const responseData = await this.axios(config);
 
           let resData = await this.mappedResponse(
             responseData.data.data.Attendance
@@ -537,7 +529,7 @@ export class AttendanceHasuraService implements IServicelocator {
               data: updateQuery,
             };
 
-            const response = await axios(update);
+            const response = await this.axios(update);
 
             return await response.data.data;
           } else {
@@ -568,7 +560,7 @@ export class AttendanceHasuraService implements IServicelocator {
               data: CreateData,
             };
 
-            const response = await axios(config);
+            const response = await this.axios(config);
 
             return await response.data.data.insert_Attendance_one;
           }

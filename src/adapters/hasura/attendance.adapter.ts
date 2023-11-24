@@ -16,9 +16,6 @@ export const ShikshaAttendanceToken = "ShikshaAttendance";
 @Injectable()
 export class AttendanceHasuraService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  url = `${process.env.BASEAPIURL}/Attendance`;
-  studentAPIUrl = `${process.env.BASEAPIURL}/Student`;
-  baseUrl = process.env.BASEAPIURL;
 
   public async getAttendance(
     tenantId: string,

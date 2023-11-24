@@ -18,6 +18,9 @@ export const SunbirdAttendanceToken = "SunbirdAttendance";
 @Injectable()
 export class AttendanceService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  checkAndAddAttendance(request: Request, attendanceDto: AttendanceDto): unknown {
+    throw new Error("Method not implemented.");
+  }
   attendanceByDate(tenantId: string, request: any, attendanceSearchDto: AttendanceDateDto) {
     throw new Error("Method not implemented.");
   }

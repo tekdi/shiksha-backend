@@ -96,7 +96,7 @@ export class AttendanceController {
     attendanceDto.image = image?.filename;
     return this.attendaceAdapter
       .buildAttenceAdapter()
-      .createAttendance(request, attendanceDto);
+      .checkAndAddAttendance(request, attendanceDto);
   }
 
   @Put("/:id")

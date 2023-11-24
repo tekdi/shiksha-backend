@@ -5,7 +5,7 @@ import { SuccessResponse } from "src/success-response";
 import { AttendanceSearchDto } from "src/attendance/dto/attendance-search.dto";
 import { SegmentDto } from "src/common-dto/userSegment.dto";
 import moment from "moment";
-
+import jwt_decode from "jwt-decode";
 import { IServicelocator } from "../attendanceservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
@@ -74,6 +74,53 @@ export class AttendanceHasuraService implements IServicelocator {
     });
   }
 
+  public async createAttendance(request: any, attendanceDto: AttendanceDto) {
+    var axios = require("axios");
+    let query = "";
+    Object.keys(attendanceDto).forEach((e) => {
+      if (attendanceDto[e] && attendanceDto[e] != "") {
+        query += `${e}: "${attendanceDto[e]}", `;
+      }
+    });
+
+    var data = {
+      query: `mutation CreateAttendance {
+      insert_Attendance_one(object: {${query}}) {
+        attendanceId
+      }
+    }
+    `,
+      variables: {},
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: response.data.errors[0].message,
+      });
+    }
+
+    const result = response.data.data.insert_Attendance_one;
+
+    return new SuccessResponse({
+      statusCode: 200,
+      message: "Ok.",
+      data: result,
+    });
+  }
+
   public async updateAttendance(
     attendanceId: string,
     request: any,
@@ -95,8 +142,11 @@ export class AttendanceHasuraService implements IServicelocator {
 
     var data = {
       query: `mutation UpdateAttendance($attendanceId:uuid) {
-          update_attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
+          update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
           affected_rows
+          returning {
+            attendanceId
+          }
         }
 }`,
       variables: {
@@ -115,11 +165,19 @@ export class AttendanceHasuraService implements IServicelocator {
     };
 
     const response = await axios(config);
-    const result = response.data.data;
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: response.data.errors[0].message,
+      });
+    }
+
+    const result = response.data.data.update_Attendance;
 
     return new SuccessResponse({
       statusCode: 200,
-      message: "Ok.",
+      message: "Ok. Updated Successfully",
       data: result,
     });
   }
@@ -138,6 +196,12 @@ export class AttendanceHasuraService implements IServicelocator {
     }
 
     attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+    console.log(
+      attendanceSearchDto.filters,
+      parseInt(attendanceSearchDto.limit),
+      offset,
+      "attendanceSearchDto.filters"
+    );
     Object.keys(attendanceSearchDto.filters).forEach((item) => {
       Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
         if (!e.startsWith("_")) {
@@ -165,13 +229,8 @@ export class AttendanceHasuraService implements IServicelocator {
             latitude
             longitude
             image
-              metaData
-              metaData
-              remark
-              schoolId
             metaData
-              remark
-              schoolId
+            remark
             syncTime
             session
             contextId
@@ -183,7 +242,9 @@ export class AttendanceHasuraService implements IServicelocator {
             }
           }`,
       variables: {
-        limit: parseInt(attendanceSearchDto.limit),
+        limit: parseInt(attendanceSearchDto.limit)
+          ? parseInt(attendanceSearchDto.limit)
+          : 10,
         offset: offset,
         filters: attendanceSearchDto.filters,
       },
@@ -222,11 +283,12 @@ export class AttendanceHasuraService implements IServicelocator {
 
   // need to figure out this
   public async userSegment(
-    groupId: string,
+    groupId: string, // cohort
     attendance: string,
     date: string,
     request: any
   ) {
+    //  groupwise present absent attendance
     let axios = require("axios");
     let fromDate: any;
     let toDate: any;
@@ -519,114 +581,53 @@ export class AttendanceHasuraService implements IServicelocator {
     });
   }
 
-  public async createAttendance(request: any, attendanceDto: AttendanceDto) {
+  public async checkAndAddAttendance(
+    request: any,
+    attendanceDto: AttendanceDto
+  ) {
+    // Api Checks attendance by date and userId , that is daywise attendance
     let axios = require("axios");
-    // const attendanceSchema = new AttendanceDto(attendanceDto);
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
 
-    let query = "";
-    Object.keys(attendanceDto).forEach((e) => {
-      if (attendanceDto[e] && attendanceDto[e] != "") {
-        query += `${e}:{_eq:"${attendanceDto[e]}"}`;
+      const userId =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      attendanceDto.createdBy = userId;
+      attendanceDto.updatedBy = userId;
+      const attendanceToSearch = new AttendanceSearchDto({});
+
+      attendanceToSearch.filters = {
+        attendanceDate: { _eq: attendanceDto.attendanceDate },
+        userId: { _eq: attendanceDto.userId },
+      };
+
+      console.log(attendanceToSearch, "to search");
+      console.log(attendanceDto);
+
+      const attendanceFound: any = await this.searchAttendance(
+        attendanceDto.tenantId,
+        request,
+        attendanceToSearch
+      );
+
+      if (
+        attendanceFound.data.length > 0 &&
+        attendanceFound.statusCode === 200
+      ) {
+        //  If found search data for userId and date - Update entry
+        console.log(attendanceFound.data[0].attendanceId, "attendanceFound");
+        return await this.updateAttendance(
+          attendanceFound.data[0].attendanceId,
+          request,
+          attendanceDto
+        );
+      } else {
+        // Else - Create new entry
+        return await this.createAttendance(request, attendanceDto);
       }
-    });
-
-    var data = {
-      query: `query SearchAttendance {
-            Attendance(where:{ ${query}}) {
-              attendanceId
-            }
-          }`,
-      variables: {},
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const responseData = await axios(config);
-
-    const resData = responseData.data.data.Attendance;
-
-    if (resData.length > 0) {
-      let query = "";
-      Object.keys(attendanceDto).forEach((e) => {
-        if (attendanceDto[e] && attendanceDto[e] != "") {
-          query += `${e}: "${attendanceDto[e]}", `;
-        }
-      });
-
-      var updateQuery = {
-        query: `mutation UpdateAttendance($attendanceId:uuid) {
-          update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
-          affected_rows
-        }
-}`,
-        variables: {
-          attendanceId: resData[0].attendanceId,
-        },
-      };
-
-      var update = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: updateQuery,
-      };
-
-      const response = await axios(update);
-
-      const result = response.data.data;
-
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
-    } else {
-      let query = "";
-      Object.keys(attendanceDto).forEach((e) => {
-        if (attendanceDto[e] && attendanceDto[e] != "") {
-          query += `${e}: "${attendanceDto[e]}", `;
-        }
-      });
-
-      var data = {
-        query: `mutation CreateAttendance {
-        insert_Attendance_one(object: {${query}}) {
-         attendanceId
-        }
-      }
-      `,
-        variables: {},
-      };
-
-      var config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
-
-      const response = await axios(config);
-
-      const result = response.data.data.insert_Attendance_one;
-
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
-      });
+    } catch (e) {
+      console.error(e);
+      return e;
     }
   }
 
@@ -800,6 +801,7 @@ export class AttendanceHasuraService implements IServicelocator {
     }
   }
 
+  // need to figure out this
   public async studentAttendanceByGroup(
     date: string,
     groupId: string,
@@ -884,11 +886,13 @@ export class AttendanceHasuraService implements IServicelocator {
     }
   }
 
+  // need to figure out this
   public async studentAttendanceByUserId(
     date: string,
     userId: string,
     request: any
   ) {
+    //  returns attendance and student data
     let axios = require("axios");
     const filterParams = {
       userId,

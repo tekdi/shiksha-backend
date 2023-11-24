@@ -3,6 +3,7 @@ import { AttendanceSearchDto } from "src/attendance/dto/attendance-search.dto";
 import { AttendanceDto } from "src/attendance/dto/attendance.dto";
 
 export interface IServicelocator {
+  checkAndAddAttendance(request: Request, attendanceDto: AttendanceDto): unknown;
   getAttendance(tenantId: string, attendanceId: string, request: any);
   updateAttendance(
     attendanceId: string,

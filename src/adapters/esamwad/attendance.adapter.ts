@@ -10,6 +10,9 @@ export const EsamwadAttendanceToken = "EsamwadAttendance";
 @Injectable()
 export class AttendanceEsamwadService implements IServicelocator {
   constructor(private httpService: HttpService) {}
+  checkAndAddAttendance(request: Request, attendanceDto: AttendanceDto): unknown {
+    throw new Error("Method not implemented.");
+  }
   attendanceByDate(tenantId: string, request: any, attendanceSearchDto: AttendanceDateDto) {
     throw new Error("Method not implemented.");
   }

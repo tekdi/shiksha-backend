@@ -190,12 +190,6 @@ export class AttendanceHasuraService implements IServicelocator {
     }
 
     attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
-    console.log(
-      attendanceSearchDto.filters,
-      parseInt(attendanceSearchDto.limit),
-      offset,
-      "attendanceSearchDto.filters"
-    );
     Object.keys(attendanceSearchDto.filters).forEach((item) => {
       Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
         if (!e.startsWith("_")) {
@@ -381,9 +375,6 @@ export class AttendanceHasuraService implements IServicelocator {
         userId: { _eq: attendanceDto.userId },
       };
 
-      console.log(attendanceToSearch, "to search");
-      console.log(attendanceDto);
-
       const attendanceFound: any = await this.searchAttendance(
         attendanceDto.tenantId,
         request,
@@ -395,7 +386,6 @@ export class AttendanceHasuraService implements IServicelocator {
         attendanceFound.statusCode === 200
       ) {
         //  If found search data for userId and date - Update entry
-        console.log(attendanceFound.data[0].attendanceId, "attendanceFound");
         return await this.updateAttendance(
           attendanceFound.data[0].attendanceId,
           request,
@@ -574,7 +564,7 @@ export class AttendanceHasuraService implements IServicelocator {
         data: responseArray,
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return e;
     }
   }

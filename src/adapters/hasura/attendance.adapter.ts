@@ -144,7 +144,7 @@ export class AttendanceHasuraService implements IServicelocator {
             attendanceId
           }
         }
-}`,
+      }`,
       variables: {
         attendanceId: attendanceId,
       },
@@ -381,6 +381,13 @@ export class AttendanceHasuraService implements IServicelocator {
         attendanceToSearch
       );
 
+      if (attendanceFound?.errorCode) {
+        return new ErrorResponse({
+          errorCode: "500",
+          errorMessage: attendanceFound?.errorMessage,
+        });
+      }
+
       if (
         attendanceFound.data.length > 0 &&
         attendanceFound.statusCode === 200
@@ -407,166 +414,35 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceData: [AttendanceDto]
   ) {
+    const responses = [];
+    const errors = [];
     try {
-      const result = Promise.all(
-        attendanceData.map(async (attendanceData: any) => {
-          let data = {};
-          data["tenantId"] = tenantId;
-          data["attendanceId"] = attendanceData["attendanceId"]
-            ? attendanceData["attendanceId"]
-            : "";
-          data["userId"] = attendanceData["userId"]
-            ? attendanceData["userId"]
-            : "";
-          data["attendanceDate"] = attendanceData["attendanceDate"]
-            ? attendanceData["attendanceDate"]
-            : "";
-          data["attendance"] = attendanceData["attendance"]
-            ? attendanceData["attendance"]
-            : "";
-          data["remark"] = attendanceData["remark"]
-            ? attendanceData["remark"]
-            : "";
-          data["latitude"] = attendanceData["latitude"]
-            ? attendanceData["latitude"]
-            : 0;
-          data["longitude"] = attendanceData["longitude"]
-            ? attendanceData["longitude"]
-            : 0;
-          data["image"] = attendanceData["image"]
-            ? attendanceData["image"]
-            : "";
-          data["metaData"] = attendanceData["metaData"]
-            ? attendanceData["metaData"]
-            : [];
-          data["syncTime"] = attendanceData["syncTime"]
-            ? attendanceData["syncTime"]
-            : "";
-          data["session"] = attendanceData["session"]
-            ? attendanceData["session"]
-            : "";
-          data["contextType"] = attendanceData["contextType"]
-            ? attendanceData["contextType"]
-            : "";
-          data["contextId"] = attendanceData["contextId"]
-            ? attendanceData["contextId"]
-            : "";
-          data["createdBy"] = attendanceData["createdBy"]
-            ? attendanceData["createdBy"]
-            : "";
-          data["updatedBy"] = attendanceData["updatedBy"]
-            ? attendanceData["updatedBy"]
-            : "";
-
-          let attendanceDto = data;
-          let dataObject = "";
-          const newDataObj = Object.keys(attendanceDto).forEach((e) => {
-            if (attendanceDto[e] && attendanceDto[e] != "") {
-              dataObject += `${e}:{_eq:"${attendanceDto[e]}"}`;
-            }
+      for (const attendance of attendanceData) {
+        attendance.tenantId = tenantId;
+        const attendanceRes: any = await this.checkAndAddAttendance(
+          request,
+          attendance
+        );
+        if (attendanceRes?.statusCode === 200) {
+          responses.push(attendanceRes.data);
+        } else {
+          errors.push({
+            userId: attendance.userId,
+            attendanceRes,
           });
-
-          const search = {
-            query: `query SearchAttendance {
-            Attendance(where:{ ${dataObject}}) {
-              attendanceId
-            }
-          }`,
-            variables: {},
-          };
-          var config = {
-            method: "post",
-            url: process.env.REGISTRYHASURA,
-            headers: {
-              "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-              "Content-Type": "application/json",
-            },
-            data: search,
-          };
-
-          const responseData = await this.axios(config);
-
-          let resData = await this.mappedResponse(
-            responseData.data.data.Attendance
-          );
-
-          if (resData.length > 0) {
-            let query = "";
-            Object.keys(attendanceDto).forEach((e) => {
-              if (attendanceDto[e] && attendanceDto[e] != "") {
-                query += `${e}: "${attendanceDto[e]}", `;
-              }
-            });
-
-            var updateQuery = {
-              query: `mutation UpdateAttendance($attendanceId:uuid) {
-                      update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
-                        affected_rows
-                      }
-                    }`,
-              variables: {
-                attendanceId: resData[0].attendanceId,
-              },
-            };
-
-            var update = {
-              method: "post",
-              url: process.env.REGISTRYHASURA,
-              headers: {
-                "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-                "Content-Type": "application/json",
-              },
-              data: updateQuery,
-            };
-
-            const response = await this.axios(update);
-
-            return await response.data.data;
-          } else {
-            let query = "";
-            Object.keys(attendanceDto).forEach((e) => {
-              if (attendanceDto[e] && attendanceDto[e] != "") {
-                query += `${e}: "${attendanceDto[e]}", `;
-              }
-            });
-
-            var CreateData = {
-              query: `mutation CreateAttendance {
-              insert_Attendance_one(object: {${query}}) {
-                attendanceId
-              }
-            }
-          `,
-              variables: {},
-            };
-
-            var config = {
-              method: "post",
-              url: process.env.REGISTRYHASURA,
-              headers: {
-                "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-                "Content-Type": "application/json",
-              },
-              data: CreateData,
-            };
-
-            const response = await this.axios(config);
-
-            return await response.data.data.insert_Attendance_one;
-          }
-        })
-      );
-
-      const responseArray = await result;
-      return new SuccessResponse({
-        statusCode: 200,
-        message: " Ok.",
-        data: responseArray,
-      });
+        }
+      }
     } catch (e) {
       console.error(e);
       return e;
     }
+    return {
+      statusCode: 200,
+      totalCount: attendanceData.length,
+      successCount: responses.length,
+      responses,
+      errors,
+    };
   }
 
   public async mappedResponse(result: any) {

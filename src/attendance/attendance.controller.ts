@@ -155,22 +155,6 @@ export class AttendanceController {
       .searchAttendance(tenantid, request, studentSearchDto);
   }
 
-  @Get("usersegment/:attendance")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "groupId", required: false })
-  @ApiQuery({ name: "date" })
-  public async userSegment(
-    @Query("groupId") groupId: string,
-    @Param("attendance") attendance: string,
-    @Query("date") date: string,
-    @Req() request: Request
-  ) {
-    return await this.service.userSegment(groupId, attendance, date, request);
-  }
-
   @Post("/bydate")
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
@@ -212,35 +196,23 @@ export class AttendanceController {
       .multipleAttendance(tenantid, request, attendanceDtos);
   }
 
-  @Post(":groupId/studentdetails")
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
+  /** No longer required in Shiksha 2.0 */
+  /*
+  @Get("usersegment/:attendance")
+  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  // @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "date", required: false })
-  public async studentAttendanceByGroup(
+  @ApiQuery({ name: "groupId", required: false })
+  @ApiQuery({ name: "date" })
+  public async userSegment(
+    @Query("groupId") groupId: string,
+    @Param("attendance") attendance: string,
     @Query("date") date: string,
-    @Param("groupId") groupId: string,
     @Req() request: Request
   ) {
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
-      .studentAttendanceByGroup(date, groupId, request);
+    return await this.service.userSegment(groupId, attendance, date, request);
   }
-
-  @Post("studentdetail/:userId")
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "date", required: false })
-  public async studentAttendanceByUserId(
-    @Query("date") date: string,
-    @Param("userId") userId: string,
-    @Req() request: Request
-  ) {
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
-      .studentAttendanceByUserId(date, userId, request);
-  }
+  */
+ 
 }

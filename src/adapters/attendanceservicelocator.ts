@@ -26,6 +26,4 @@ export interface IServicelocator {
     request: any,
     attendanceSearchDto: AttendanceDateDto
   );
-  studentAttendanceByGroup(date: string, groupId: string, request: any);
-  studentAttendanceByUserId(date: string, userId: string, request: any);
 }

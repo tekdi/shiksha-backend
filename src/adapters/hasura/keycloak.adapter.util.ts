@@ -31,7 +31,7 @@ async function getKeycloakAdminToken() {
 
   const config = {
     method: "post",
-    url: "https://shiksha.uniteframework.io/auth/realms/master/protocol/openid-connect/token",
+    url: process.env.KEYCLOAK + process.env.KEYCLOAK_ADMIN_TOKEN,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },

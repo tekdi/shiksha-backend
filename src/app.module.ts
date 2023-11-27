@@ -29,6 +29,7 @@ import { WorkHistoryModule } from "./workHistory/workHistory.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
+import { AuthModule } from "./auth/auth.module";
 // Below modules no longer required in Shiksha 2.0
 // import { GroupModule } from "./group/group.module";
 // import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
@@ -65,7 +66,8 @@ import { FieldsModule } from "./fields/fields.module";
     WorkHistoryModule,
     CohortModule,
     CohortMembersModule,
-    FieldsModule
+    FieldsModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

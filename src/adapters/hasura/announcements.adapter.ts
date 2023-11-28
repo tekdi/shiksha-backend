@@ -6,6 +6,7 @@ import { AnnouncementsDto } from "src/announcements/dto/announcements.dto";
 import { AnnouncementsFilterDto } from "src/announcements/dto/announcements-filter.dto";
 
 export const AnnouncementsToken = "Announcements";
+// TODO: Refactor as per Shiksha 2.0
 @Injectable()
 export class AnnouncementsService implements IServicelocator {
   constructor(private httpService: HttpService) {}

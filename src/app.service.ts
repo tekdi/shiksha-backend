@@ -4,6 +4,6 @@ require("dotenv").config();
 @Injectable()
 export class AppService {
   getHello(): string {
-    return process.env.BASEAPIURL;
+    return process.env.ADAPTERSOURCE;
   }
 }

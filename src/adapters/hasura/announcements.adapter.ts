@@ -9,8 +9,8 @@ export const AnnouncementsToken = "Announcements";
 @Injectable()
 export class AnnouncementsService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  baseURL = process.env.HASURAURL;
-  adminSecret = process.env.ADMINSECRET;
+  baseURL = process.env.REGISTRYHASURA;
+  adminSecret = process.env.REGISTRYHASURAADMINSECRET;
 
   //to get details of a given announcement
   public async getAnnouncement(announcementId: string, request: any) {

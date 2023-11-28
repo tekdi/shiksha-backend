@@ -10,7 +10,7 @@ export class StudentAdapter {
   buildStudentAdapter(): IServicelocator {
     let adapter: IServicelocator;
 
-    switch (process.env.REGISTYADAPTER) {
+    switch (process.env.ADAPTERSOURCE) {
       case "sunbird":
         adapter = this.sunbirdProvider;
         break;

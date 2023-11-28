@@ -5,7 +5,6 @@ import { AssessmentsetDto } from "src/assessmentset/dto/assessmentset.dto";
 @Injectable()
 export class AssessmentsetService {
   constructor(private httpService: HttpService) {}
-  assessmentsetURL = `${process.env.BASEAPIURL}/Assessmentset`;
 
   public async createAssessmentSet(
     request: any,

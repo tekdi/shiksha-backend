@@ -13,7 +13,6 @@ export const HasuraConfigToken = "HasuraConfig";
 @Injectable()
 export class HasuraConfigService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  url = `${process.env.BASEAPIURL}config`;
 
   public async createConfig(request: any, configDto: ConfigDto) {
     let axios = require("axios");

@@ -6,7 +6,6 @@ import { WorkHistoryDto } from "../../workHistory/dto/work-history.dto";
 @Injectable()
 export class WorkHistoryService {
   constructor(private httpService: HttpService) {}
-  userUrl = `${process.env.BASEAPIURL}/User`;
 
   public async createWorkHistory(request: any, workHistoryDto: WorkHistoryDto) {
     var axios = require("axios");

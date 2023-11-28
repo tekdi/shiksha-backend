@@ -26,17 +26,17 @@ import {
 } from "@nestjs/swagger";
 import { IServicelocator } from "src/adapters/announcementsservicelocator";
 import {
-  AnnouncementsEsamwadService,
-  ESamwadAnnouncementsToken,
-} from "src/adapters/esamwad/announcements.adapter";
+  AnnouncementsService,
+  AnnouncementsToken,
+} from "src/adapters/hasura/announcements.adapter";
 import { AnnouncementsFilterDto } from "./dto/announcements-filter.dto";
 import { AnnouncementsDto } from "./dto/announcements.dto";
 
 @Controller("announcements")
 export class AnnouncementsController {
   constructor(
-    private hasuraService: AnnouncementsEsamwadService,
-    @Inject(ESamwadAnnouncementsToken) private eSamwadProvider: IServicelocator
+    private hasuraService: AnnouncementsService,
+    @Inject(AnnouncementsToken) private provider: IServicelocator
   ) {}
 
   @Get("/:id")
@@ -48,7 +48,7 @@ export class AnnouncementsController {
     @Param("id") announcementId: string,
     @Req() request: Request
   ) {
-    return this.eSamwadProvider.getAnnouncement(announcementId, request);
+    return this.hasuraService.getAnnouncement(announcementId, request);
   }
 
   @Get("")
@@ -60,7 +60,7 @@ export class AnnouncementsController {
     @Query() query: AnnouncementsFilterDto,
     @Req() request: Request
   ) {
-    return this.eSamwadProvider.getAnnouncementSet(request, query);
+    return this.hasuraService.getAnnouncementSet(request, query);
   }
 
   @Put("/:id")
@@ -78,7 +78,7 @@ export class AnnouncementsController {
     @Body() announcementData: any
   ) {
     const updatedData = JSON.parse(announcementData?.data);
-    return this.eSamwadProvider.updateAnnouncement(
+    return this.hasuraService.updateAnnouncement(
       announcementId,
       request,
       updatedData
@@ -97,7 +97,7 @@ export class AnnouncementsController {
     @Req() request: Request,
     @Body() announcementData: AnnouncementsDto
   ) {
-    return this.eSamwadProvider.createAnnouncement(request, announcementData);
+    return this.hasuraService.createAnnouncement(request, announcementData);
   }
 
   @Delete("/:id")
@@ -108,6 +108,6 @@ export class AnnouncementsController {
     @Param("id") announcementId: string,
     @Req() request: Request
   ) {
-    return this.eSamwadProvider.deleteAnnouncement(announcementId, request);
+    return this.hasuraService.deleteAnnouncement(announcementId, request);
   }
 }

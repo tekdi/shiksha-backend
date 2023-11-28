@@ -2,9 +2,9 @@ import { CacheModule, Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { ScheduleModule } from "@nestjs/schedule";
 import {
-  AnnouncementsEsamwadService,
-  ESamwadAnnouncementsToken,
-} from "../adapters/esamwad/announcements.adapter";
+  AnnouncementsService,
+  AnnouncementsToken,
+} from "../adapters/hasura/announcements.adapter";
 import { AnnouncementsController } from "./announcements.controller";
 
 const ttl = process.env.TTL as never;
@@ -17,10 +17,10 @@ const ttl = process.env.TTL as never;
     ScheduleModule.forRoot(),
   ],
   providers: [
-    AnnouncementsEsamwadService,
+    AnnouncementsService,
     {
-      provide: ESamwadAnnouncementsToken,
-      useClass: AnnouncementsEsamwadService,
+      provide: AnnouncementsToken,
+      useClass: AnnouncementsService,
     },
   ],
   controllers: [AnnouncementsController],

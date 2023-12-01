@@ -21,8 +21,6 @@ export class HasuraFieldsService implements IServicelocatorfields {
     private fieldsService: FieldsService
   ) {}
 
-  url = `${process.env.BASEAPIURL}`;
-
   //fields
   public async createFields(request: any, fieldsDto: FieldsDto) {
     const response = await this.fieldsService.createFields(fieldsDto);

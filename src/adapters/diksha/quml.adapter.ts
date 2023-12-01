@@ -4,7 +4,7 @@ import { SuccessResponse } from "src/success-response";
 import { QuestionDto } from "src/Question/dto/question.dto";
 import { IServicelocator } from "../questionservicelocator";
 import e from "express";
-export const DikshaQuestionToken = "EsamwadQuestion";
+export const DikshaQuestionToken = "Question";
 @Injectable()
 export class QumlQuestionService implements IServicelocator {
   constructor(private httpService: HttpService) {}

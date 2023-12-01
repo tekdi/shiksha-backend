@@ -33,10 +33,6 @@ import {
 } from "@nestjs/common";
 import { StudentDto } from "./dto/student.dto";
 import { StudentSearchDto } from "./dto/student-search.dto";
-import {
-  EsamwadStudentService,
-  EsamwadStudentToken,
-} from "src/adapters/esamwad/student.adapter";
 import { IServicelocator } from "src/adapters/studentservicelocator";
 import { StudentAdapter } from "./studentadapter";
 @ApiTags("Student")
@@ -44,7 +40,6 @@ import { StudentAdapter } from "./studentadapter";
 export class StudentController {
   constructor(
     private service: StudentService,
-    private esamwadService: EsamwadStudentService,
     @Inject(CACHE_MANAGER) private cacheManager,
 
     private studentAdapter: StudentAdapter

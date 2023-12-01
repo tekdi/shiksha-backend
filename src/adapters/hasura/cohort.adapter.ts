@@ -22,8 +22,6 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private fieldsService: FieldsService
   ) {}
 
-  url = `${process.env.BASEAPIURL}`;
-
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     var axios = require("axios");
 

@@ -7,7 +7,7 @@ export const DikshaCourseToken = "DikshaCourse";
 @Injectable()
 export class DikshaCourseService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  url = process.env.DIKSHADEVBASEAPIURL;
+
   public async getAllCourse(
     subject: [string],
     audience: [string],

@@ -5,12 +5,13 @@ import { IServicelocator } from "../announcementsservicelocator";
 import { AnnouncementsDto } from "src/announcements/dto/announcements.dto";
 import { AnnouncementsFilterDto } from "src/announcements/dto/announcements-filter.dto";
 
-export const ESamwadAnnouncementsToken = "ESamwadAnnouncements";
+export const AnnouncementsToken = "Announcements";
+// TODO: Refactor as per Shiksha 2.0
 @Injectable()
-export class AnnouncementsEsamwadService implements IServicelocator {
+export class AnnouncementsService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  baseURL = process.env.HASURAURL;
-  adminSecret = process.env.ADMINSECRET;
+  baseURL = process.env.REGISTRYHASURA;
+  adminSecret = process.env.REGISTRYHASURAADMINSECRET;
 
   //to get details of a given announcement
   public async getAnnouncement(announcementId: string, request: any) {

@@ -57,7 +57,7 @@ export class HasuraUserService implements IServicelocator {
             updatedBy
             createdBy
             createdAt
-            fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, access: {_eq: $access}}) {
+            fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, _and: {_or: [{access: {_is_null: true}}, {access: {_eq: $access}}]}}) {
               tenantId
               fieldId
               assetId

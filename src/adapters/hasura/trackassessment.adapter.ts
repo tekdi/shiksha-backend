@@ -10,8 +10,7 @@ import { Status } from "../../trackAssessment/enums/statuses.enum";
 @Injectable()
 export class TrackAssessmentService {
   constructor(private httpService: HttpService) {}
-  assessmentURL = `${process.env.BASEAPIURL}/Trackassessment`;
-  assessmentsetURL = `${process.env.BASEAPIURL}/Assessmentset`;
+
   url = process.env.DIKSHADEVBASEAPIURL;
   public async getAssessment(assessmentId: any, request: any) {
     var axios = require("axios");

@@ -13,8 +13,6 @@ export class HasuraCohortMembersService
 {
   constructor(private httpService: HttpService) {}
 
-  url = `${process.env.BASEAPIURL}`;
-
   public async createCohortMembers(
     request: any,
     cohortMembers: CohortMembersDto

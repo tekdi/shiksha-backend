@@ -3,7 +3,6 @@ import { GroupController } from "./group.controller";
 import { HttpModule } from "@nestjs/axios";
 import { GroupAdapter } from "./groupadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
-import { EsmwadModule } from "src/adapters/esamwad/esamwad.module";
 import { SunbirdModule } from "src/adapters/sunbirdrc/subnbird.module";
 const ttl = process.env.TTL as never;
 @Module({
@@ -11,7 +10,6 @@ const ttl = process.env.TTL as never;
     HttpModule,
     SunbirdModule,
     HasuraModule,
-    EsmwadModule,
     CacheModule.register({
       ttl: ttl,
     }),

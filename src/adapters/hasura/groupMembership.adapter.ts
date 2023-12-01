@@ -9,8 +9,6 @@ import { GroupMembershipSearchDto } from "src/groupMembership/dto/groupMembershi
 export class GroupMembershipService {
   constructor(private httpService: HttpService) {}
 
-  url = `${process.env.BASEAPIURL}`;
-
   public async getGroupMembership(groupMembershipId: any, request: any) {
     var axios = require("axios");
 

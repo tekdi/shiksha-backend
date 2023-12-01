@@ -348,9 +348,11 @@ export class FieldsService {
   public async setTypeProperties(schema, payload) {
     switch (payload.type) {
       case "string":
+      case "text":
         schema.coreSchema.type = "string";
         break;
       case "integer":
+      case "number":
         schema.coreSchema.type = "integer";
         break;
       case "password":
@@ -377,6 +379,22 @@ export class FieldsService {
           schema.uiSchema["ui:widget"] = "checkboxes";
         }
         break;
+      case "select":
+        schema.coreSchema.type = payload.fieldType;
+        if (
+          payload.hasOwnProperty("enum") &&
+          Array.isArray(payload.enum) &&
+          payload.hasOwnProperty("labels") &&
+          Array.isArray(payload.labels) &&
+          payload.enum.length === payload.labels.length
+        ) {
+          schema.coreSchema.enum = payload.enum;
+          schema.coreSchema.enumNames = payload.labels;
+        }
+        if (payload.hasOwnProperty("label")) {
+          schema.coreSchema.title = payload.label;
+        }
+        break;
     }
 
     return schema;
@@ -392,7 +410,7 @@ export class FieldsService {
     if (payload.label) {
       fieldSchema.coreSchema["title"] = payload.label;
     }
-
+ 
     if (payload.pattern) {
       fieldSchema.coreSchema["pattern"] = payload.pattern;
     }

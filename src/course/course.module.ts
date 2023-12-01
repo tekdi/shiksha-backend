@@ -6,10 +6,6 @@ import {
   DikshaCourseService,
   DikshaCourseToken,
 } from "src/adapters/diksha/dikshaCourse.adapter";
-import {
-  KhanAcademyCourseToken,
-  KhanAcadermyCourseService,
-} from "src/adapters/khanAcademy/khanAcademyCourse.adapter";
 const ttl = process.env.TTL as never;
 @Module({
   imports: [
@@ -19,12 +15,6 @@ const ttl = process.env.TTL as never;
     }),
   ],
   controllers: [CourseController],
-  providers: [
-    { provide: DikshaCourseToken, useClass: DikshaCourseService },
-    {
-      provide: KhanAcademyCourseToken,
-      useClass: KhanAcadermyCourseService,
-    },
-  ],
+  providers: [{ provide: DikshaCourseToken, useClass: DikshaCourseService }],
 })
 export class CourseModule {}

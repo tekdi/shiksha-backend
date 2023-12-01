@@ -28,7 +28,6 @@ import {
   QumlQuestionService,
 } from "src/adapters/diksha/quml.adapter";
 import { IServicelocator } from "src/adapters/questionservicelocator";
-import { KhanAcademyQuestionToken } from "src/adapters/khanAcademy/khanAcademy.adapter";
 import { QuestionDto } from "./dto/question.dto";
 import { HasuraQuestionToken } from "src/adapters/hasura/question.adapter";
 
@@ -37,8 +36,6 @@ import { HasuraQuestionToken } from "src/adapters/hasura/question.adapter";
 export class QuestionController {
   constructor(
     @Inject(DikshaQuestionToken) private dikshaProvider: IServicelocator,
-    @Inject(KhanAcademyQuestionToken)
-    private khanacademyProvider: IServicelocator,
 
     @Inject(HasuraQuestionToken)
     private hasuraProvider: IServicelocator
@@ -81,18 +78,6 @@ export class QuestionController {
         className,
         request
       );
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getAllQuestions(
-        questionType,
-        subject,
-        limit,
-        language,
-        medium,
-        bloomsLevel,
-        topic,
-        className,
-        request
-      );
     }
   }
 
@@ -112,11 +97,6 @@ export class QuestionController {
         questionIds,
         request
       );
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getAllQuestionsByQuestionIds(
-        questionIds,
-        request
-      );
     }
   }
 
@@ -131,8 +111,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getSubjectList(gradeLevel);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getSubjectList(gradeLevel);
     }
   }
 
@@ -147,8 +125,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getTopicsList(subject);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getTopicsList(subject);
     }
   }
 
@@ -165,8 +141,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getOneQuestion(questionId, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getOneQuestion(questionId, request);
     }
   }
 
@@ -185,12 +159,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getCompetenciesList(subject, limit, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getCompetenciesList(
-        subject,
-        limit,
-        request
-      );
     }
   }
 
@@ -209,8 +177,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getQuestion(questionId, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.getQuestion(questionId, request);
     } else if (adapter === "shiksha") {
       return this.hasuraProvider.getQuestion(questionId, request);
     }
@@ -232,8 +198,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.createQuestion(request, questionDto);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.createQuestion(request, questionDto);
     } else if (adapter === "shiksha") {
       return this.hasuraProvider.createQuestion(request, questionDto);
     }
@@ -255,12 +219,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.updateQuestion(
-        questionId,
-        request,
-        questionDto
-      );
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.updateQuestion(
         questionId,
         request,
         questionDto
@@ -314,19 +272,6 @@ export class QuestionController {
         page,
         request
       );
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.filterQuestion(
-        limit,
-        body,
-        className,
-        maxScore,
-        questionId,
-        subject,
-        topic,
-        type,
-        page,
-        request
-      );
     } else if (adapter === "shiksha") {
       return this.hasuraProvider.filterQuestion(
         limit,
@@ -357,8 +302,6 @@ export class QuestionController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.bulkImport(request, questionDto);
-    } else if (adapter === "khanacademy") {
-      return this.khanacademyProvider.bulkImport(request, questionDto);
     } else if (adapter === "shiksha") {
       return this.hasuraProvider.bulkImport(request, questionDto);
     }

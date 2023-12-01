@@ -19,15 +19,12 @@ import {
 
 import { DikshaCourseToken } from "src/adapters/diksha/dikshaCourse.adapter";
 import { IServicelocator } from "src/adapters/courseservicelocator";
-import { KhanAcademyCourseToken } from "src/adapters/khanAcademy/khanAcademyCourse.adapter";
 
 @ApiTags("Course")
 @Controller("course")
 export class CourseController {
   constructor(
     @Inject(DikshaCourseToken) private dikshaProvider: IServicelocator,
-    @Inject(KhanAcademyCourseToken)
-    private khanAcademyProvider: IServicelocator
   ) {}
 
   @Get(":adapter/search")
@@ -57,15 +54,6 @@ export class CourseController {
         limit,
         request
       );
-    } else if (adapter === "khanacademy") {
-      return this.khanAcademyProvider.getAllCourse(
-        subject,
-        audience,
-        className,
-        medium,
-        limit,
-        request
-      );
     }
   }
 
@@ -81,8 +69,6 @@ export class CourseController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getCoursesByIds(courseIds, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanAcademyProvider.getCoursesByIds(courseIds, request);
     }
   }
   @Get(":adapter/hierarchy/courseid")
@@ -97,8 +83,6 @@ export class CourseController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getCourseHierarchy(courseId, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanAcademyProvider.getCourseHierarchy(courseId, request);
     }
   }
 
@@ -114,8 +98,6 @@ export class CourseController {
   ) {
     if (adapter === "diksha") {
       return this.dikshaProvider.getCourseDetail(courseId, request);
-    } else if (adapter === "khanacademy") {
-      return this.khanAcademyProvider.getCourseDetail(courseId, request);
     }
   }
 }

@@ -21,7 +21,7 @@ pipeline {
             steps {
                                     
                         sh 'cp -r /shiksha/.env .'
-                        sh 'docker build -t backend'
+                        sh 'docker build -t backend .'
                         sh 'docker-compose up -d --force-recreate --no-deps'
                 }
             }

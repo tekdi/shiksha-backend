@@ -466,9 +466,10 @@ export class HasuraUserService implements IServicelocator {
 
       if (fieldsFilter) {
         //apply filter on fields value
+
         // searchfieldValuesFilter returns the contexts here userId that match the fieldId and value pair
         const responseFieldsValue =
-          await this.fieldsService.searchFieldValuesFilter(request,fieldsFilter);
+          await this.fieldsService.searchFieldValuesFilter(fieldsFilter);
 
         if (responseFieldsValue?.data?.errors) {
           return response.status(400).send({
@@ -857,7 +858,6 @@ export class HasuraUserService implements IServicelocator {
   ) {
     // function to search users within the user tables
     try {
-      const decoded: any = jwt_decode(request.headers.authorization);
       let offset = 0;
       if (userSearchDto.page > 1) {
         offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
@@ -914,7 +914,6 @@ export class HasuraUserService implements IServicelocator {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
-          Authorization: request.headers.authorization,
           "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
           "Content-Type": "application/json",
         },

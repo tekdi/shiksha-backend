@@ -124,7 +124,7 @@ export class AttendanceHasuraService implements IServicelocator {
     attendanceDto: AttendanceDto
   ) {
     const attendanceSchema = new AttendanceDto(attendanceDto);
-    
+
     let query = "";
     Object.keys(attendanceDto).forEach((e) => {
       if (
@@ -183,135 +183,31 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
-    try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-
-      let offset = 0;
-      if (attendanceSearchDto.page > 1) {
-        offset =
-          parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
-      }
-
-      attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
-      Object.keys(attendanceSearchDto.filters).forEach((item) => {
-        Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            attendanceSearchDto.filters[item][`_${e}`] =
-              attendanceSearchDto.filters[item][e];
-            delete attendanceSearchDto.filters[item][e];
-          }
-        });
-      });
-
-      const data = {
-        query: `query SearchAttendance($filters:Attendance_bool_exp,$limit:Int, $offset:Int) {
-          Attendance_aggregate (where:$filters, limit: $limit, offset: $offset,){
-            aggregate {
-              count
-            }
-          }
-            Attendance(where:$filters, limit: $limit, offset: $offset,) {
-              attendance
-              attendanceDate
-              attendanceId
-              tenantId
-              userId
-              remark
-              latitude
-              longitude
-              image
-              metaData
-              remark
-              syncTime
-              session
-              contextId
-              contextType
-              createdAt
-              updatedAt
-              createdBy
-              updatedBy
-              }
-            }`,
-        variables: {
-          limit: parseInt(attendanceSearchDto.limit)
-            ? parseInt(attendanceSearchDto.limit)
-            : 10,
-          offset: offset,
-          filters: attendanceSearchDto.filters,
-        },
-      };
-      
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
-
-      const response = await this.axios(config);
-
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: "500",
-          errorMessage: response.data.errors[0].message,
-        });
-      }
-
-      let result = response?.data?.data?.Attendance;
-
-      let mappedResponse = await this.mappedResponse(result);
-      const count = response?.data?.data?.Attendance_aggregate?.aggregate?.count;
-
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        totalCount: count,
-        data: mappedResponse,
-      });
-    }catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "400",
-        errorMessage: e,
-      });
+    let offset = 0;
+    if (attendanceSearchDto.page > 1) {
+      offset =
+        parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
     }
-  }
 
-  public async attendanceByDate(
-    tenantId: string,
-    request: any,
-    attendanceSearchDto: AttendanceDateDto
-  ) {
-    try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-
-      let offset = 0;
-      if (attendanceSearchDto.page > 1) {
-        offset =
-          parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
-      }
-
-      const filters = attendanceSearchDto.filters;
-
-      //add tenantid
-      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
-
-      Object.keys(attendanceSearchDto.filters).forEach((item) => {
-        Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            filters[item][`_${e}`] = filters[item][e];
-            delete filters[item][e];
-          }
-        });
+    attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+    Object.keys(attendanceSearchDto.filters).forEach((item) => {
+      Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          attendanceSearchDto.filters[item][`_${e}`] =
+            attendanceSearchDto.filters[item][e];
+          delete attendanceSearchDto.filters[item][e];
+        }
       });
+    });
 
-      const attendanceData = {
-        query: `query AttendanceFilter($fromDate: date, $toDate: date, $filters: [Attendance_bool_exp!], $limit: Int, $offset: Int) {
-          Attendance(where: {attendanceDate: {_gte: $fromDate, _lte: $toDate}, _and: $filters}, limit: $limit, offset: $offset) {
+    const data = {
+      query: `query SearchAttendance($filters:Attendance_bool_exp,$limit:Int, $offset:Int) {
+        Attendance_aggregate (where:$filters, limit: $limit, offset: $offset,){
+          aggregate {
+            count
+          }
+        }
+          Attendance(where:$filters, limit: $limit, offset: $offset,) {
             attendance
             attendanceDate
             attendanceId
@@ -322,6 +218,7 @@ export class AttendanceHasuraService implements IServicelocator {
             longitude
             image
             metaData
+            remark
             syncTime
             session
             contextId
@@ -330,53 +227,133 @@ export class AttendanceHasuraService implements IServicelocator {
             updatedAt
             createdBy
             updatedBy
-          }
-        }`,
-        variables: {
-          fromDate: attendanceSearchDto.fromDate,
-          toDate: attendanceSearchDto.toDate,
-          filters: filters,
-          limit: parseInt(attendanceSearchDto.limit),
-          offset: offset,
-        },
-      };
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: attendanceData,
-      };
+            }
+          }`,
+      variables: {
+        limit: parseInt(attendanceSearchDto.limit)
+          ? parseInt(attendanceSearchDto.limit)
+          : 10,
+        offset: offset,
+        filters: attendanceSearchDto.filters,
+      },
+    };
+    const config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
 
-      const response = await this.axios(config);
+    const response = await this.axios(config);
 
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: response.data.errors[0].message,
-        });
-      }
-
-      const result = response.data.data.Attendance;
-
-      const mappedResponse = await this.mappedResponse(result);
-
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok",
-        totalCount: mappedResponse?.length,
-        data: mappedResponse,
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "500",
+        errorMessage: response.data.errors[0].message,
       });
-    }catch (e) {
-        console.error(e);
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: e,
-        });
     }
+
+    let result = response?.data?.data?.Attendance;
+
+    let mappedResponse = await this.mappedResponse(result);
+    const count = response?.data?.data?.Attendance_aggregate?.aggregate?.count;
+
+    return new SuccessResponse({
+      statusCode: 200,
+      message: "Ok.",
+      totalCount: count,
+      data: mappedResponse,
+    });
+  }
+
+  public async attendanceByDate(
+    tenantId: string,
+    request: any,
+    attendanceSearchDto: AttendanceDateDto
+  ) {
+    let offset = 0;
+    if (attendanceSearchDto.page > 1) {
+      offset =
+        parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+    }
+
+    const filters = attendanceSearchDto.filters;
+
+    //add tenantid
+    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+    Object.keys(attendanceSearchDto.filters).forEach((item) => {
+      Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
+        if (!e.startsWith("_")) {
+          filters[item][`_${e}`] = filters[item][e];
+          delete filters[item][e];
+        }
+      });
+    });
+
+    const attendanceData = {
+      query: `query AttendanceFilter($fromDate: date, $toDate: date, $filters: [Attendance_bool_exp!], $limit: Int, $offset: Int) {
+        Attendance(where: {attendanceDate: {_gte: $fromDate, _lte: $toDate}, _and: $filters}, limit: $limit, offset: $offset) {
+          attendance
+          attendanceDate
+          attendanceId
+          tenantId
+          userId
+          remark
+          latitude
+          longitude
+          image
+          metaData
+          syncTime
+          session
+          contextId
+          contextType
+          createdAt
+          updatedAt
+          createdBy
+          updatedBy
+        }
+      }`,
+      variables: {
+        fromDate: attendanceSearchDto.fromDate,
+        toDate: attendanceSearchDto.toDate,
+        filters: filters,
+        limit: parseInt(attendanceSearchDto.limit),
+        offset: offset,
+      },
+    };
+    const config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: attendanceData,
+    };
+
+    const response = await this.axios(config);
+
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: response.data.errors[0].message,
+      });
+    }
+
+    const result = response.data.data.Attendance;
+
+    const mappedResponse = await this.mappedResponse(result);
+
+    return new SuccessResponse({
+      statusCode: 200,
+      message: "Ok",
+      totalCount: mappedResponse?.length,
+      data: mappedResponse,
+    });
   }
 
   public async checkAndAddAttendance(
@@ -384,6 +361,7 @@ export class AttendanceHasuraService implements IServicelocator {
     attendanceDto: AttendanceDto
   ) {
     // Api Checks attendance by date and userId , that is daywise attendance
+    try {
       const decoded: any = jwt_decode(request.headers.authorization);
 
       const userId =
@@ -424,7 +402,10 @@ export class AttendanceHasuraService implements IServicelocator {
         // Else - Create new entry
         return await this.createAttendance(request, attendanceDto);
       }
-
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
   }
 
   // bulk attendance api
@@ -435,8 +416,7 @@ export class AttendanceHasuraService implements IServicelocator {
   ) {
     const responses = [];
     const errors = [];
-
-      const decoded: any = jwt_decode(request.headers.authorization);
+    try {
       for (const attendance of attendanceData) {
         attendance.tenantId = tenantId;
         const attendanceRes: any = await this.checkAndAddAttendance(
@@ -452,15 +432,17 @@ export class AttendanceHasuraService implements IServicelocator {
           });
         }
       }
-
-      return {
-        statusCode: 200,
-        totalCount: attendanceData.length,
-        successCount: responses.length,
-        responses,
-        errors,
-      };
-
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+    return {
+      statusCode: 200,
+      totalCount: attendanceData.length,
+      successCount: responses.length,
+      responses,
+      errors,
+    };
   }
 
   public async mappedResponse(result: any) {

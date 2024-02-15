@@ -20,7 +20,7 @@ async function bootstrap() {
     .setVersion("1.0")
     .addTag("V1")
     .addApiKey(
-      { type: "apiKey", name: "Authorization", in: "header" },
+      { type: "apiKey", scheme: "bearer",  bearerFormat: "JWT", name: "Authorization", in: "header" },
       "access-token"
     )
 

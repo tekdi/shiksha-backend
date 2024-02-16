@@ -46,6 +46,15 @@ export class FieldsDto {
   @Expose()
   contextId: string;
 
+  //contexType
+  @ApiProperty({
+    type: String,
+    description: "The contexType of the fields",
+    default: "",
+  })
+  @Expose()
+  contexType: string;
+
   //render
   @ApiProperty({
     type: Object,

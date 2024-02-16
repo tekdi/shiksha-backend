@@ -105,6 +105,15 @@ export class CohortDto {
   @Expose()
   updatedBy: string;
 
+  //name
+  @ApiProperty({
+    type: Boolean,
+    description: "The Attendance Capture Image of the cohort",
+    default: "",
+  })
+  @Expose()
+  attendanceCaptureImage: Boolean;
+
   constructor(obj: any) {
     Object.assign(this, obj);
   }

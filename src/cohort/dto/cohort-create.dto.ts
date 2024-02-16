@@ -74,6 +74,15 @@ export class CohortCreateDto {
   @Expose()
   status: string;
 
+  //attendanceCaptureImage
+  @ApiProperty({
+    type: Boolean,
+    description: "Capture image while marking the attendance",
+    default: false,
+  })
+  @Expose()
+  attendanceCaptureImage: Boolean;
+
   //image
   @Expose()
   @ApiPropertyOptional({ type: "string", format: "binary" })

@@ -139,6 +139,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
           type
           status
           image
+          attendanceCaptureImage
           metadata
           createdAt
           updatedAt

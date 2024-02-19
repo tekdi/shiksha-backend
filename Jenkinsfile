@@ -10,7 +10,9 @@ pipeline {
             
             steps{
                
-               git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
+            //   git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
+                 checkout scmGit(branches: [[name: '*/oblf-21stFeb']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git']])
+                
                 echo "========================== ***Repository cloned Successfully*** =========================="
             
           }

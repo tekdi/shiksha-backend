@@ -3,53 +3,64 @@ import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldsSearchDto } from "src/fields/dto/fields-search.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
+import jwt_decode from "jwt-decode";
+import { ErrorResponse } from "src/error-response";
 
 @Injectable()
 export class FieldsService {
   constructor() {}
 
   //fields
-  async createFields(fieldsDto: FieldsDto) {
-    var axios = require("axios");
+  async createFields(request:any,fieldsDto: FieldsDto) {
+    try{
+      var axios = require("axios");
 
-    //add render json object
-    fieldsDto = await this.addRender(fieldsDto);
+      //add render json object
+      fieldsDto = await this.addRender(fieldsDto);
 
-    let query = "";
-    Object.keys(fieldsDto).forEach((e) => {
-      if (fieldsDto[e] && fieldsDto[e] != "") {
-        if (e === "render") {
-          query += `${e}: ${fieldsDto[e]}, `;
-        } else if (Array.isArray(fieldsDto[e])) {
-          query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
-        } else {
-          query += `${e}: "${fieldsDto[e]}", `;
+      let query = "";
+      Object.keys(fieldsDto).forEach((e) => {
+        if (fieldsDto[e] && fieldsDto[e] != "") {
+          if (e === "render") {
+            query += `${e}: ${fieldsDto[e]}, `;
+          } else if (Array.isArray(fieldsDto[e])) {
+            query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
+          } else {
+            query += `${e}: "${fieldsDto[e]}", `;
+          }
         }
-      }
-    });
+      });
 
-    var data = {
-      query: `mutation CreateFields {
-        insert_Fields_one(object: {${query}}) {
-          fieldId
+      var data = {
+        query: `mutation CreateFields {
+          insert_Fields_one(object: {${query}}) {
+            fieldId
+          }
         }
-      }
-      `,
-      variables: {},
-    };
+        `,
+        variables: {},
+      };
 
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    return response;
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
   public async getFields(tenantId: string, fieldsId: any) {
@@ -113,171 +124,190 @@ export class FieldsService {
   }
 
   public async getFieldsContext(
+    request:any,
     tenantId: string,
     context: string,
     contextId: string
   ) {
-    var axios = require("axios");
+    try{
+      var axios = require("axios");
 
-    var data = {
-      query: `query GetFields($context:String!, $contextId:uuid!, $tenantId:uuid!) {
-        Fields(
-          where:{
-            _or:[
-              {
-                tenantId:{
-                  _eq:$tenantId
-                }
-                context:{
-                  _eq:$context
-                }
-                contextId:{
-                  _is_null:true
-                }
-              },
-              {
-                tenantId:{
-                  _eq:$tenantId
-                }
-                context:{
-                  _eq:$context
-                }
-                contextId:{
-                  _eq:$contextId
-                }
-              }
-            ]
-          }
-        ){
-          tenantId
-          fieldId
-          assetId
-          context
-          contextId
-          render
-          groupId
-          name
-          label
-          defaultValue
-          type
-          note
-          description
-          state
-          required
-          ordering
-          metadata
-          access
-          onlyUseInSubform
-          createdAt
-          updatedAt
-          createdBy
-          updatedBy
-          fieldValues: FieldValues(
+      var data = {
+        query: `query GetFields($context:String!, $contextId:uuid!, $tenantId:uuid!) {
+          Fields(
             where:{
-              itemId:{
-                _eq:$contextId
-              },
+              _or:[
+                {
+                  tenantId:{
+                    _eq:$tenantId
+                  }
+                  context:{
+                    _eq:$context
+                  }
+                  contextId:{
+                    _is_null:true
+                  }
+                },
+                {
+                  tenantId:{
+                    _eq:$tenantId
+                  }
+                  context:{
+                    _eq:$context
+                  }
+                  contextId:{
+                    _eq:$contextId
+                  }
+                }
+              ]
             }
           ){
-              value
-              fieldValuesId
-              itemId
-              fieldId
-              createdAt
-              updatedAt
-              createdBy
-              updatedBy
+            tenantId
+            fieldId
+            assetId
+            context
+            contextId
+            render
+            groupId
+            name
+            label
+            defaultValue
+            type
+            note
+            description
+            state
+            required
+            ordering
+            metadata
+            access
+            onlyUseInSubform
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
+            fieldValues: FieldValues(
+              where:{
+                itemId:{
+                  _eq:$contextId
+                },
+              }
+            ){
+                value
+                fieldValuesId
+                itemId
+                fieldId
+                createdAt
+                updatedAt
+                createdBy
+                updatedBy
+          }
         }
-      }
-    }`,
-      variables: {
-        context: context,
-        contextId: contextId,
-        tenantId: tenantId,
-      },
-    };
+      }`,
+        variables: {
+          context: context,
+          contextId: contextId,
+          tenantId: tenantId,
+        },
+      };
 
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    return response;
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
-  async searchFields(tenantId: string, fieldsSearchDto: FieldsSearchDto) {
-    var axios = require("axios");
+  async searchFields(request: any, tenantId: string, fieldsSearchDto: FieldsSearchDto) {
+    try{
+      var axios = require("axios");
 
-    let offset = 0;
-    if (fieldsSearchDto.page > 1) {
-      offset = parseInt(fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
-    }
+      let offset = 0;
+      if (fieldsSearchDto.page > 1) {
+        offset = parseInt(fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
+      }
 
-    let temp_filters = fieldsSearchDto.filters;
-    //add tenantid
-    let filters = new Object(temp_filters);
-    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+      let temp_filters = fieldsSearchDto.filters;
+      //add tenantid
+      let filters = new Object(temp_filters);
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
-    Object.keys(fieldsSearchDto.filters).forEach((item) => {
-      Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
+      Object.keys(fieldsSearchDto.filters).forEach((item) => {
+        Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
       });
-    });
-    var data = {
-      query: `query SearchFields($filters:Fields_bool_exp,$limit:Int, $offset:Int) {
-           Fields(where:$filters, limit: $limit, offset: $offset,) {
-              tenantId
-              fieldId
-              assetId
-              context
-              contextId
-              render
-              groupId
-              name
-              label
-              defaultValue
-              type
-              note
-              description
-              state
-              required
-              ordering
-              metadata
-              access
-              onlyUseInSubform
-              createdAt
-              updatedAt
-              createdBy
-              updatedBy
-            }
-          }`,
-      variables: {
-        limit: parseInt(fieldsSearchDto.limit),
-        offset: offset,
-        filters: fieldsSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var data = {
+        query: `query SearchFields($filters:Fields_bool_exp,$limit:Int, $offset:Int) {
+            Fields(where:$filters, limit: $limit, offset: $offset,) {
+                tenantId
+                fieldId
+                assetId
+                context
+                contextId
+                render
+                groupId
+                name
+                label
+                defaultValue
+                type
+                note
+                description
+                state
+                required
+                ordering
+                metadata
+                access
+                onlyUseInSubform
+                createdAt
+                updatedAt
+                createdBy
+                updatedBy
+              }
+            }`,
+        variables: {
+          limit: parseInt(fieldsSearchDto.limit),
+          offset: offset,
+          filters: fieldsSearchDto.filters,
+        },
+      };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    return response;
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
   async updateFields(fieldsId: string, fieldsDto: FieldsDto) {
@@ -443,42 +473,51 @@ export class FieldsService {
   }
 
   //field values
-  async createFieldValues(fieldValuesDto: FieldValuesDto) {
-    var axios = require("axios");
+  async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
+    try{
+      var axios = require("axios");
 
-    let query = "";
-    Object.keys(fieldValuesDto).forEach((e) => {
-      if (fieldValuesDto[e] && fieldValuesDto[e] != "") {
-        if (Array.isArray(fieldValuesDto[e])) {
-          query += `${e}: "${JSON.stringify(fieldValuesDto[e])}", `;
-        } else {
-          query += `${e}: "${fieldValuesDto[e]}", `;
+      let query = "";
+      Object.keys(fieldValuesDto).forEach((e) => {
+        if (fieldValuesDto[e] && fieldValuesDto[e] != "") {
+          if (Array.isArray(fieldValuesDto[e])) {
+            query += `${e}: "${JSON.stringify(fieldValuesDto[e])}", `;
+          } else {
+            query += `${e}: "${fieldValuesDto[e]}", `;
+          }
         }
-      }
-    });
+      });
 
-    var data = {
-      query: `mutation CreateFieldValues {
-        insert_FieldValues_one(object: {${query}}) {
-          fieldValuesId
+      var data = {
+        query: `mutation CreateFieldValues {
+          insert_FieldValues_one(object: {${query}}) {
+            fieldValuesId
+          }
         }
-      }
-      `,
-      variables: {},
-    };
+        `,
+        variables: {},
+      };
 
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    return response;
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
   async createFieldValuesBulk(field_values: any) {
@@ -598,97 +637,115 @@ export class FieldsService {
     return response;
   }
 
-  async searchFieldValues(fieldValuesSearchDto: FieldValuesSearchDto) {
-    var axios = require("axios");
+  async searchFieldValues(request:any, fieldValuesSearchDto: FieldValuesSearchDto) {
+    try{
+      var axios = require("axios");
 
-    let offset = 0;
-    if (fieldValuesSearchDto.page > 1) {
-      offset =
-        parseInt(fieldValuesSearchDto.limit) * (fieldValuesSearchDto.page - 1);
-    }
+      let offset = 0;
+      if (fieldValuesSearchDto.page > 1) {
+        offset =
+          parseInt(fieldValuesSearchDto.limit) * (fieldValuesSearchDto.page - 1);
+      }
 
-    let filters = fieldValuesSearchDto.filters;
+      let filters = fieldValuesSearchDto.filters;
 
-    Object.keys(fieldValuesSearchDto.filters).forEach((item) => {
-      Object.keys(fieldValuesSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
-      });
-    });
-    var data = {
-      query: `query SearchFieldValues($filters:FieldValues_bool_exp,$limit:Int, $offset:Int) {
-          FieldValues(where:$filters, limit: $limit, offset: $offset,) {
-              value
-              fieldValuesId
-              itemId
-              fieldId
-              createdAt
-              updatedAt
-              createdBy
-              updatedBy
-            }
-          }`,
-      variables: {
-        limit: parseInt(fieldValuesSearchDto.limit),
-        offset: offset,
-        filters: fieldValuesSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-    return response;
-  }
-
-  async searchFieldValuesFilter(filter: any) {
-    let obj_filter = [];
-    Object.keys(filter).forEach((item) => {
-      Object.keys(filter[item]).forEach((e) => {
-        let obj_val = new Object();
-        obj_val[e] = filter[item][e];
-        obj_filter.push({
-          fieldId: { _eq: item },
-          value: obj_val,
+      Object.keys(fieldValuesSearchDto.filters).forEach((item) => {
+        Object.keys(fieldValuesSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
         });
       });
-    });
+      var data = {
+        query: `query SearchFieldValues($filters:FieldValues_bool_exp,$limit:Int, $offset:Int) {
+            FieldValues(where:$filters, limit: $limit, offset: $offset,) {
+                value
+                fieldValuesId
+                itemId
+                fieldId
+                createdAt
+                updatedAt
+                createdBy
+                updatedBy
+              }
+            }`,
+        variables: {
+          limit: parseInt(fieldValuesSearchDto.limit),
+          offset: offset,
+          filters: fieldValuesSearchDto.filters,
+        },
+      };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    let valuefilter = new Object({ _or: obj_filter });
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
+  }
 
-    var axios = require("axios");
+  async searchFieldValuesFilter(request:any,filter: any) {
+    try{
+      let obj_filter = [];
+      Object.keys(filter).forEach((item) => {
+        Object.keys(filter[item]).forEach((e) => {
+          let obj_val = new Object();
+          obj_val[e] = filter[item][e];
+          obj_filter.push({
+            fieldId: { _eq: item },
+            value: obj_val,
+          });
+        });
+      });
 
-    var data = {
-      query: `query SearchFieldValuesFilter($valuefilter:FieldValues_bool_exp) {
-        FieldValues(
-          where:$valuefilter
-        ){
-            itemId
-      }
-    }`,
-      variables: { valuefilter: valuefilter },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      let valuefilter = new Object({ _or: obj_filter });
 
-    const response = await axios(config);
-    return response;
+      var axios = require("axios");
+
+      var data = {
+        query: `query SearchFieldValuesFilter($valuefilter:FieldValues_bool_exp) {
+          FieldValues(
+            where:$valuefilter
+          ){
+              itemId
+        }
+      }`,
+        variables: { valuefilter: valuefilter },
+      };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
   async updateFieldValues(id: string, fieldValuesDto: FieldValuesDto) {

@@ -261,92 +261,98 @@ export class HasuraUserService implements IServicelocator {
   }
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-    let query = "";
-    Object.keys(userCreateDto).forEach((e) => {
-      if (
-        userCreateDto[e] &&
-        userCreateDto[e] !== "" &&
-        e != "password" &&
-        e != "fieldValues"
-      ) {
-        if (e === "role") {
-          query += `${e}: ${userCreateDto[e]},`;
-        } else if (Array.isArray(userCreateDto[e])) {
-          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
-        } else {
-          query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+    try{
+      let query = "";
+      Object.keys(userCreateDto).forEach((e) => {
+        if (
+          userCreateDto[e] &&
+          userCreateDto[e] !== "" &&
+          e != "password" &&
+          e != "fieldValues"
+        ) {
+          if (e === "role") {
+            query += `${e}: ${userCreateDto[e]},`;
+          } else if (Array.isArray(userCreateDto[e])) {
+            query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+          } else {
+            query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
+          }
         }
-      }
-    });
-
-    const data = {
-      query: `mutation CreateUser {
-      insert_Users_one(object: {${query}}) {
-        userId
-      }
-    }
-    `,
-      variables: {},
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-    const response = await this.axios(config);
-
-    if (response?.data?.errors || userCreateDto.userId == undefined) {
-      return new ErrorResponse({
-        errorCode: response.data.errors[0].extensions,
-        errorMessage: response.data.errors[0].message,
       });
-    } else {
-      const result = response.data.data.insert_Users_one;
 
-      let fieldCreate = true;
-      let fieldError = null;
-      //create fields values
-      let userId = result?.userId;
-      let field_value_array = userCreateDto.fieldValues?.split("|");
-
-      if (field_value_array?.length > 0) {
-        let field_values = [];
-        for (let i = 0; i < field_value_array.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          field_values.push({
-            value: fieldValues[1] ? fieldValues[1] : "",
-            itemId: userId,
-            fieldId: fieldValues[0] ? fieldValues[0] : "",
-            createdBy: userCreateDto?.createdBy,
-            updatedBy: userCreateDto?.updatedBy,
-          });
-        }
-
-        const response_field_values =
-          await this.fieldsService.createFieldValuesBulk(field_values);
-        if (response_field_values?.data?.errors) {
-          fieldCreate = false;
-          fieldError = response_field_values?.data;
+      const data = {
+        query: `mutation CreateUser {
+        insert_Users_one(object: {${query}}) {
+          userId
         }
       }
+      `,
+        variables: {},
+      };
 
-      if (fieldCreate) {
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+      const response = await this.axios(config);
+
+      if (response?.data?.errors || userCreateDto.userId == undefined) {
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
         });
       } else {
-        return new ErrorResponse({
-          errorCode: fieldError?.errors[0]?.extensions?.code,
-          errorMessage: fieldError?.errors[0]?.message,
-        });
+        const result = response.data.data.insert_Users_one;
+
+        let fieldCreate = true;
+        let fieldError = null;
+        //create fields values
+        let userId = result?.userId;
+        let field_value_array = userCreateDto.fieldValues?.split("|");
+
+        if (field_value_array?.length > 0) {
+          let field_values = [];
+          for (let i = 0; i < field_value_array.length; i++) {
+            let fieldValues = field_value_array[i].split(":");
+            field_values.push({
+              value: fieldValues[1] ? fieldValues[1] : "",
+              itemId: userId,
+              fieldId: fieldValues[0] ? fieldValues[0] : "",
+              createdBy: userCreateDto?.createdBy,
+              updatedBy: userCreateDto?.updatedBy,
+            });
+          }
+
+          const response_field_values =
+            await this.fieldsService.createFieldValuesBulk(field_values);
+          if (response_field_values?.data?.errors) {
+            fieldCreate = false;
+            fieldError = response_field_values?.data;
+          }
+        }
+
+        if (fieldCreate) {
+          return new SuccessResponse({
+            statusCode: 200,
+            message: "Ok.",
+            data: result,
+          });
+        } else {
+          return new ErrorResponse({
+            errorCode: fieldError?.errors[0]?.extensions?.code,
+            errorMessage: fieldError?.errors[0]?.message,
+          });
+        }
       }
+    }catch (e) {
+      console.error(e);
+      return e;
     }
   }
 
@@ -469,7 +475,7 @@ export class HasuraUserService implements IServicelocator {
 
         // searchfieldValuesFilter returns the contexts here userId that match the fieldId and value pair
         const responseFieldsValue =
-          await this.fieldsService.searchFieldValuesFilter(fieldsFilter);
+          await this.fieldsService.searchFieldValuesFilter(request,fieldsFilter);
 
         if (responseFieldsValue?.data?.errors) {
           return response.status(400).send({
@@ -523,7 +529,7 @@ export class HasuraUserService implements IServicelocator {
 
           const count = result.length;
           //get user fields value
-          let result_data = await this.searchUserFields(tenantId, userResponse);
+          let result_data = await this.searchUserFields(request,tenantId, userResponse);
 
           return response.status(200).send({
             statusCode: 200,
@@ -825,7 +831,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async searchUserFields(tenantId: string, users: any) {
+  public async searchUserFields(request:any, tenantId: string, users: any) {
     // function uses field service to get extra field and respective fieldValues for each user
     // ****Need extra field for access via role
     let userWithFields = [];
@@ -834,6 +840,7 @@ export class HasuraUserService implements IServicelocator {
       let userId = new_obj["userId"];
       //get fields
       let response = await this.fieldsService.getFieldsContext(
+        request,
         tenantId,
         "Users",
         userId
@@ -914,6 +921,7 @@ export class HasuraUserService implements IServicelocator {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
+          Authorization: request.headers.authorization,
           "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
           "Content-Type": "application/json",
         },

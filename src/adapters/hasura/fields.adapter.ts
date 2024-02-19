@@ -23,7 +23,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
 
   //fields
   public async createFields(request: any, fieldsDto: FieldsDto) {
-    const response = await this.fieldsService.createFields(fieldsDto);
+    const response = await this.fieldsService.createFields(request,fieldsDto);
     if (response?.data?.errors) {
       return new ErrorResponse({
         errorCode: response?.data?.errors[0]?.extensions?.code,
@@ -63,6 +63,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
     fieldsSearchDto: FieldsSearchDto
   ) {
     const response = await this.fieldsService.searchFields(
+      request,
       tenantId,
       fieldsSearchDto
     );
@@ -107,7 +108,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
 
   //field values
   public async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
-    const response = await this.fieldsService.createFieldValues(fieldValuesDto);
+    const response = await this.fieldsService.createFieldValues(request,fieldValuesDto);
     if (response?.data?.errors) {
       return new ErrorResponse({
         errorCode: response?.data?.errors[0]?.extensions?.code,
@@ -146,6 +147,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
     fieldValuesSearchDto: FieldValuesSearchDto
   ) {
     const response = await this.fieldsService.searchFieldValues(
+      request,
       fieldValuesSearchDto
     );
     if (response?.data?.errors) {

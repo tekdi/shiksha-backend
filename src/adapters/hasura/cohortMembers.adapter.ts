@@ -17,50 +17,59 @@ export class HasuraCohortMembersService
     request: any,
     cohortMembers: CohortMembersDto
   ) {
-    var axios = require("axios");
-    let query = "";
-    Object.keys(cohortMembers).forEach((e) => {
-      if (cohortMembers[e] && cohortMembers[e] != "") {
-        if (Array.isArray(cohortMembers[e])) {
-          query += `${e}: "${JSON.stringify(cohortMembers[e])}", `;
-        } else {
-          query += `${e}: "${cohortMembers[e]}", `;
+    try{
+      var axios = require("axios");
+      let query = "";
+      Object.keys(cohortMembers).forEach((e) => {
+        if (cohortMembers[e] && cohortMembers[e] != "") {
+          if (Array.isArray(cohortMembers[e])) {
+            query += `${e}: "${JSON.stringify(cohortMembers[e])}", `;
+          } else {
+            query += `${e}: "${cohortMembers[e]}", `;
+          }
         }
-      }
-    });
-
-    var data = {
-      query: `mutation CreateCohortMembers {
-        insert_CohortMembers_one(object: {${query}}) {
-         cohortMembershipId
-        }
-      }
-      `,
-      variables: {},
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response?.data?.errors[0]?.extensions?.code,
-        errorMessage: response?.data?.errors[0]?.message,
       });
-    } else {
-      const result = response.data.data.insert_CohortMembers_one;
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: result,
+
+      var data = {
+        query: `mutation CreateCohortMembers {
+          insert_CohortMembers_one(object: {${query}}) {
+          cohortMembershipId
+          }
+        }
+        `,
+        variables: {},
+      };
+
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await axios(config);
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response?.data?.errors[0]?.extensions?.code,
+          errorMessage: response?.data?.errors[0]?.message,
+        });
+      } else {
+        const result = response.data.data.insert_CohortMembers_one;
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: result,
+        });
+      }
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
       });
     }
   }
@@ -134,73 +143,82 @@ export class HasuraCohortMembersService
     request: any,
     cohortMembersSearchDto: CohortMembersSearchDto
   ) {
-    var axios = require("axios");
+    try{
+      var axios = require("axios");
 
-    let offset = 0;
-    if (cohortMembersSearchDto.page > 1) {
-      offset =
-        parseInt(cohortMembersSearchDto.limit) *
-        (cohortMembersSearchDto.page - 1);
-    }
+      let offset = 0;
+      if (cohortMembersSearchDto.page > 1) {
+        offset =
+          parseInt(cohortMembersSearchDto.limit) *
+          (cohortMembersSearchDto.page - 1);
+      }
 
-    let temp_filters = cohortMembersSearchDto.filters;
-    //add tenantid
-    let filters = new Object(temp_filters);
-    filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+      let temp_filters = cohortMembersSearchDto.filters;
+      //add tenantid
+      let filters = new Object(temp_filters);
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
-    Object.keys(cohortMembersSearchDto.filters).forEach((item) => {
-      Object.keys(cohortMembersSearchDto.filters[item]).forEach((e) => {
-        if (!e.startsWith("_")) {
-          filters[item][`_${e}`] = filters[item][e];
-          delete filters[item][e];
-        }
+      Object.keys(cohortMembersSearchDto.filters).forEach((item) => {
+        Object.keys(cohortMembersSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
       });
-    });
-    var data = {
-      query: `query SearchCohortMembers($filters:CohortMembers_bool_exp,$limit:Int, $offset:Int) {
-          CohortMembers(where:$filters, limit: $limit, offset: $offset,) {
-            tenantId
-            cohortMembershipId
-            cohortId
-            userId
-            role
-            createdAt
-            updatedAt
-            createdBy
-            updatedBy
-            }
-          }`,
-      variables: {
-        limit: parseInt(cohortMembersSearchDto.limit),
-        offset: offset,
-        filters: cohortMembersSearchDto.filters,
-      },
-    };
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var data = {
+        query: `query SearchCohortMembers($filters:CohortMembers_bool_exp,$limit:Int, $offset:Int) {
+            CohortMembers(where:$filters, limit: $limit, offset: $offset,) {
+              tenantId
+              cohortMembershipId
+              cohortId
+              userId
+              role
+              createdAt
+              updatedAt
+              createdBy
+              updatedBy
+              }
+            }`,
+        variables: {
+          limit: parseInt(cohortMembersSearchDto.limit),
+          offset: offset,
+          filters: cohortMembersSearchDto.filters,
+        },
+      };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    if (response?.data?.errors) {
+      const response = await axios(config);
+      if (response?.data?.errors) {
+        return new ErrorResponse({
+          errorCode: response?.data?.errors[0]?.extensions?.code,
+          errorMessage: response?.data?.errors[0]?.message,
+        });
+      } else {
+        let result = response.data.data.CohortMembers;
+        const cohortMembersResponse = await this.mappedResponse(result);
+        const count = cohortMembersResponse.length;
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          totalCount: count,
+          data: cohortMembersResponse,
+        });
+      }
+    }catch (e) {
+      console.error(e);
       return new ErrorResponse({
-        errorCode: response?.data?.errors[0]?.extensions?.code,
-        errorMessage: response?.data?.errors[0]?.message,
-      });
-    } else {
-      let result = response.data.data.CohortMembers;
-      const cohortMembersResponse = await this.mappedResponse(result);
-      const count = cohortMembersResponse.length;
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        totalCount: count,
-        data: cohortMembersResponse,
+        errorCode: "400",
+        errorMessage: e,
       });
     }
   }

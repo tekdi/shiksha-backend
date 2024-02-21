@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ oblf-21stFeb ]
 
 jobs:
   build:

@@ -14,6 +14,10 @@ import { UserCreateDto } from "src/user/dto/user-create.dto";
 export const SunbirdUserToken = "SunbirdUser";
 @Injectable()
 export class UserService implements IServicelocator {
+
+  public async addDataUsingCsv(request: any){
+    return(request);
+  }
   constructor(private httpService: HttpService) {}
   checkAndAddUser(request: any, userDto: UserCreateDto) {
     throw new Error("Method not implemented.");

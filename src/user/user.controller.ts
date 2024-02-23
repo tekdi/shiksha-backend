@@ -14,6 +14,7 @@ import {
   Query,
   Headers,
   Res,
+  UploadedFile,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -36,6 +37,11 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
+import { ImportCsvDto } from "./dto/user-import-csv.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
+import csvParser from 'csv-parser';
+import * as fs from 'fs';
+
 @ApiTags("User")
 @Controller("user")
 export class UserController {
@@ -167,4 +173,94 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+
+  @Post("/importCsv")
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBasicAuth("access-token")
+  @ApiBody({ type: ImportCsvDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async importCsv(
+    @Req() request: Request,
+    @Headers() headers,
+    @UploadedFile() file,
+    @Body() importCsvDto: ImportCsvDto
+  ) {
+    console.log("Received file:", file.originalname);
+    console.log("File contents:");
+    console.log(file.buffer.toString('utf-8'));
+    const contextValue = importCsvDto.context;
+    console.log("Context value:", contextValue);
+    
+  }
+
+
+  // @Post("/importCsv")
+  // @UseInterceptors(FileInterceptor('file'))
+  // @ApiBasicAuth("access-token")
+  // // @ApiBody({ type: UserCreateDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async importCsv(
+  //   @Headers() headers,
+  //   @UploadedFile() file
+  //   // @Body() userCreateDto: UserCreateDto
+  // ) {
+  //   console.log(file);
+  //   // const results = [];
+  //   // fs.createReadStream(file.path)
+  //   //   .pipe(csvParser())
+  //   //   .on('data', (data) => results.push(data))
+
+      
+  //     // .on('end', async () => {
+  //     //   for (const userData of results) {
+  //     //     const user = new User();
+  //     //     user.name = userData.name;
+  //     //     user.email = userData.email;
+  //     //     // set other properties as needed
+  //     //     await this.userService.createUser(user);
+  //     //   }
+  //     // });
+  //   // return { message: 'Users imported successfully' };
+  
+
+  
+  //   // userCreateDto.tenantId = headers["tenantid"];
+  //   // return this.userAdapter
+  //   //   .buildUserAdapter()
+  //   //   .addDataUsingCsv(request);
+  // }
+
+
+  // async importUsers(@UploadedFile() file) {
+  //   const results = [];
+  //   fs.createReadStream(file.path)
+  //     .pipe(csvParser())
+  //     .on('data', (data) => results.push(data))
+  //     .on('end', async () => {
+  //       for (const userData of results) {
+  //         const user = new User();
+  //         user.name = userData.name;
+  //         user.email = userData.email;
+  //         // set other properties as needed
+  //         await this.userService.createUser(user);
+  //       }
+  //     });
+  //   return { message: 'Users imported successfully' };
+  // }
+  
+  // @ApiSecurity('access-token')
+  // @Get('/:id')
+  // findUser(@Param('id', ParseIntPipe) id: number){
+  //     return this.userService.findUser(id)
+  // }
+
 }

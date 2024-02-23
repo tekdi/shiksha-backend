@@ -29,13 +29,16 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/schedule": "^1.1.0",
     "@nestjs/swagger": "^5.2.0",
+    "@nestjs/typeorm": "^10.0.2",
     "axios": "^0.26.1",
     "cache-manager": "^3.6.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
+    "csv-parser": "^3.0.0",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "form-data": "^4.0.0",
+    "fs": "^0.0.1-security",
     "graphql-tag": "^2.12.6",
     "jwt-decode": "^3.1.2",
     "moment": "^2.29.3",
@@ -47,7 +50,8 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "swagger-ui-express": "^4.3.0",
-    "templates.js": "^0.3.11"
+    "templates.js": "^0.3.11",
+    "typeorm": "^0.3.20"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",

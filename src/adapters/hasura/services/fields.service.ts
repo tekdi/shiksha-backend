@@ -5,6 +5,8 @@ import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import jwt_decode from "jwt-decode";
 import { ErrorResponse } from "src/error-response";
+import { FieldSearchUsingContextDto } from "src/fields/dto/field-seach-using-context";
+
 
 @Injectable()
 export class FieldsService {
@@ -231,6 +233,89 @@ export class FieldsService {
       });
     }
   }
+
+  public async searchFieldsBasedOnContext(
+    request: any,
+    tenantId: string,
+    fieldSearchUsingContextDto: FieldSearchUsingContextDto
+  ) {
+    try{
+      var axios = require("axios");
+      const fieldSearchUsingContextSchema = new FieldSearchUsingContextDto(fieldSearchUsingContextDto);
+
+      let query = "";
+      let where ="";
+      Object.keys(fieldSearchUsingContextDto).forEach((e) => {
+        if (
+          fieldSearchUsingContextDto[e] &&
+          fieldSearchUsingContextDto[e] != "" &&
+          Object.keys(fieldSearchUsingContextSchema).includes(e)
+        ) {
+          query += `${e}:{_eq:"${fieldSearchUsingContextDto[e]}"}, `;
+        }
+      });
+
+      var data = {
+        query: `query MyQuery {
+          Fields(where: {tenantId: {_eq: "${tenantId}"}, ${query}}) {
+            tenantId
+            fieldId 
+            createdAt
+            updatedAt
+            assetId
+            context
+            contextId
+            contextType
+            render 
+            groupId 
+            name
+            label
+            defaultValue
+            type
+            note
+            description
+            state
+            required
+            ordering
+            metadata
+            access
+            onlyUseInSubform
+            createdBy
+            updatedBy
+          }
+        }`,
+      };    
+        
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+      
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
+  }
+
+
+  // public async searchFieldsBoasedOnContext(
+  //   tenantId: string,
+  //   request: any,
+  //   fieldsSearchDto: FieldsSearchDto
+  // ){
+    
+  // }
 
   async searchFields(request: any, tenantId: string, fieldsSearchDto: FieldsSearchDto) {
     try{

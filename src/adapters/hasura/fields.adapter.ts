@@ -5,6 +5,7 @@ import { ErrorResponse } from "src/error-response";
 const resolvePath = require("object-resolve-path");
 import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldsSearchDto } from "src/fields/dto/fields-search.dto";
+import { FieldSearchUsingContextDto } from "src/fields/dto/field-seach-using-context";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import { IServicelocatorfields } from "../fieldsservicelocator";
@@ -53,6 +54,36 @@ export class HasuraFieldsService implements IServicelocatorfields {
         statusCode: 200,
         message: "Ok.",
         data: fieldsResponse[0],
+      });
+    }
+  }
+
+  public async searchFieldsBasedOnContext(
+    tenantId: string,
+    request: any,
+    fieldSearchUsingContextDto: FieldSearchUsingContextDto
+  ) {
+    const response = await this.fieldsService.searchFieldsBasedOnContext(
+      request,
+      tenantId,
+      fieldSearchUsingContextDto
+    );
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      // console.log(response);
+      
+      let result = response.data.data.Fields;
+      const fieldsResponse = await this.mappedResponse(result);
+      const count = fieldsResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: fieldsResponse,
       });
     }
   }
@@ -200,6 +231,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         assetId: item?.assetId ? `${item.assetId}` : "",
         context: item?.context ? `${item.context}` : "",
         contextId: item?.contextId ? `${item.contextId}` : "",
+        contextType: item?.contextType ? `${item.contextType}` : "",
         render: item?.render ? `${item.render}` : "",
         groupId: item?.groupId ? `${item.groupId}` : "",
         name: item?.name ? `${item.name}` : "",

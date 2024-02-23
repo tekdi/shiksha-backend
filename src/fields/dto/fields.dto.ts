@@ -63,6 +63,14 @@ export class FieldsDto {
   @Expose()
   render: any;
 
+  //contextType
+  @ApiProperty({
+    type: Object,
+    description: "The form contextType json of the fields",
+  })
+  @Expose()
+  contextType: any;
+
   //groupId
   @ApiProperty({
     type: String,

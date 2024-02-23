@@ -245,6 +245,16 @@ export class FieldsService {
       //add tenantid
       let filters = new Object(temp_filters);
       filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+      if (fieldsSearchDto.context) {
+        filters["context"] = { _eq: fieldsSearchDto.context };
+      }
+      if (fieldsSearchDto.contextId) {
+        filters["contextId"] = { _eq: fieldsSearchDto.contextId };
+      }
+      if (fieldsSearchDto.contextType) {
+        filters["contextType"] = { _eq: fieldsSearchDto.contextType };
+      }
+      
 
       Object.keys(fieldsSearchDto.filters).forEach((item) => {
         Object.keys(fieldsSearchDto.filters[item]).forEach((e) => {
@@ -288,6 +298,7 @@ export class FieldsService {
           filters: fieldsSearchDto.filters,
         },
       };
+      
       var config = {
         method: "post",
         url: process.env.REGISTRYHASURA,

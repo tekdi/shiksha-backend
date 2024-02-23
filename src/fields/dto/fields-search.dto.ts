@@ -3,6 +3,24 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class FieldsSearchDto {
   @ApiProperty({
     type: String,
+    description: "context",
+  })
+  context: string;
+
+  @ApiProperty({
+    type: String,
+    description: "contextType",
+  })
+  contextType: string;
+
+  @ApiProperty({
+    type: String,
+    description: "contextId",
+  })
+  contextId: string;
+
+  @ApiProperty({
+    type: String,
     description: "Limit",
   })
   limit: string;

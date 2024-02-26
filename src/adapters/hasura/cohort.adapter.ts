@@ -360,98 +360,134 @@ export class HasuraCohortService implements IServicelocatorcohort {
     cohortUpdateDto: CohortCreateDto
   ) {
     var axios = require("axios");
-
-    let query = "";
-    Object.keys(cohortUpdateDto).forEach((e) => {
-      if (
-        cohortUpdateDto[e] &&
-        cohortUpdateDto[e] != "" &&
-        e != "fieldValues"
-      ) {
-        if (Array.isArray(cohortUpdateDto[e])) {
-          query += `${e}: "${JSON.stringify(cohortUpdateDto[e])}", `;
-        } else {
-          query += `${e}: "${cohortUpdateDto[e]}", `;
-        }
-      }
-    });
-
-    var data = {
-      query: `
-      mutation UpdateCohort($cohortId:uuid!) {
-        update_Cohort_by_pk(
-            pk_columns: {
-              cohortId: $cohortId
-            },
-            _set: {
-                ${query}
-            }
-        ) {
+  
+    try {
+      // Fetching cohort based on parent ID
+      const parentIdQuery = `
+        query MyQuery {
+          Cohort(where: {parentId: {_eq: "${request.params.id}"}}) {
             cohortId
-        }
-    }
-    `,
-      variables: {
-        cohortId: cohortId,
-      },
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response?.data?.errors[0]?.extensions?.code,
-        errorMessage: response?.data?.errors[0]?.message,
+            parentId
+          }
+        }`;
+  
+      const childIdResponse = await axios({
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: { query: parentIdQuery },
       });
-    } else {
-      let result = response.data.update_Cohort_by_pk;
-      let fieldCreate = true;
-      let fieldError = [];
-      //update fields values
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
-      if (field_value_array.length > 0) {
-        for (let i = 0; i < field_value_array.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          //update values
-          let fieldValuesUpdate = new FieldValuesDto({
-            value: fieldValues[1] ? fieldValues[1] : "",
-          });
-
-          const response_field_values =
-            await this.fieldsService.updateFieldValues(
-              fieldValues[0] ? fieldValues[0] : "",
-              fieldValuesUpdate
-            );
-          if (response_field_values?.data?.errors) {
-            fieldCreate = false;
-            fieldError.push(response_field_values?.data);
+  
+      const childIdsData = childIdResponse.data;
+      if (childIdsData.errors) {
+        console.log("Error");
+        // Handle error
+      }
+  
+      const cohortIds = childIdsData.data.Cohort.map((cohort) => cohort.cohortId);
+      
+      if (!cohortIds.includes(cohortUpdateDto.parentId)) {
+        // Constructing mutation query to update cohort
+        let query = "";
+        Object.keys(cohortUpdateDto).forEach((e) => {
+          if (
+            cohortUpdateDto[e] &&
+            cohortUpdateDto[e] != "" &&
+            e != "fieldValues"
+          ) {
+            if (Array.isArray(cohortUpdateDto[e])) {
+              query += `${e}: "${JSON.stringify(cohortUpdateDto[e])}", `;
+            } else {
+              query += `${e}: "${cohortUpdateDto[e]}", `;
+            }
+          }
+        });
+  
+        const updateCohortMutation = `
+          mutation UpdateCohort($cohortId:uuid!) {
+            update_Cohort_by_pk(
+              pk_columns: {
+                cohortId: $cohortId
+              },
+              _set: {
+                ${query}
+              }
+            ) {
+              cohortId
+            }
+          }`;
+  
+        const updateCohortResponse = await axios({
+          method: "post",
+          url: process.env.REGISTRYHASURA,
+          headers: {
+            "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+            "Content-Type": "application/json",
+          },
+          data: {
+            query: updateCohortMutation,
+            variables: {
+              cohortId: cohortId,
+            },
+          },
+        });
+  
+        const result = updateCohortResponse.data.data.update_Cohort_by_pk;
+        
+        let fieldCreate = true;
+        let fieldError = [];
+        //update fields values
+        let field_value_array = cohortUpdateDto.fieldValues.split("|");
+        if (field_value_array.length > 0) {
+          for (let i = 0; i < field_value_array.length; i++) {
+            let fieldValues = field_value_array[i].split(":");
+            //update values
+            let fieldValuesUpdate = new FieldValuesDto({
+              value: fieldValues[1] ? fieldValues[1] : "",
+            });
+  
+            const response_field_values =
+              await this.fieldsService.updateFieldValues(
+                fieldValues[0] ? fieldValues[0] : "",
+                fieldValuesUpdate
+              );
+            if (response_field_values?.data?.errors) {
+              fieldCreate = false;
+              fieldError.push(response_field_values?.data);
+            }
           }
         }
-      }
-      if (fieldCreate) {
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });
+        if (fieldCreate) {
+          return new SuccessResponse({
+            statusCode: 200,
+            message: "Ok.",
+            data: result,
+          });
+        } else {
+          return new ErrorResponse({
+            errorCode: "field value update error",
+            errorMessage: JSON.stringify(fieldError),
+          });
+        }
       } else {
         return new ErrorResponse({
-          errorCode: "filed value update error",
-          errorMessage: JSON.stringify(fieldError),
+          errorCode: "field value update error",
+          errorMessage:
+            "The child field cannot serve as the parent field in this context.",
         });
       }
+    } catch (error) {
+      console.error("Error:", error);
+      return new ErrorResponse({
+        errorCode: "field value update error",
+        errorMessage: "An error occurred while updating cohort.",
+      });
     }
   }
+  
 
   public async mappedResponse(result: any) {
     const cohortResponse = result.map((item: any) => {

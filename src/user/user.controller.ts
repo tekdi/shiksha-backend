@@ -40,22 +40,14 @@ import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { ImportCsvDto } from "./dto/user-import-csv.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { createLogger, transports, format } from 'winston';
 import csvParser from 'csv-parser';
 import * as fs from 'fs';
+import * as winston from 'winston';
 
-// Create a logger instance
-const logger = createLogger({
-  level: 'info', // Set the logging level
-  format: format.combine(
-    format.timestamp(), // Add timestamp to logs
-    format.json() // Log in JSON format
-  ),
+
+const logger = winston.createLogger({
   transports: [
-    // Log to console
-    new transports.Console(),
-    // Log to file
-    new transports.File({ filename: 'import.log' })
+    new winston.transports.File({ filename: 'import.log' }) // Log file for import
   ]
 });
 
@@ -123,11 +115,10 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    console.log(userCreateDto);
     
-    // return this.userAdapter
-    //   .buildUserAdapter()
-    //   .checkAndAddUser(request, userCreateDto);
+    return this.userAdapter
+      .buildUserAdapter()
+      .checkAndAddUser(request, userCreateDto);
   }
 
   // IMPORT CSV FILE
@@ -146,8 +137,10 @@ export class UserController {
     @UploadedFile() file,
     @Body() importCsvDto: ImportCsvDto
   ) {
-      logger.info("Received file: " + file.originalname);
+    // logger.info("Received file: " + file.originalname);
+
     
+
       const csvData = file.buffer.toString('utf-8').trim();
       const lines = csvData.split('\n');
       
@@ -164,20 +157,30 @@ export class UserController {
         };
       });
   
+      var count = 1;
       // Process each data item
+      const contextValue = importCsvDto.context;
+      
+      
       for (const item of data) {
-        try {
-          const response = await this.userAdapter.buildUserAdapter().checkAndAddUser(request, item);
-          logger.info('Success: ' + JSON.stringify(response));
-        } catch (error) {
-          logger.error('Error: ' + error.message);
-        }
+        await this.userAdapter          
+          try {
+            const response = await this.userAdapter.buildUserAdapter().checkAndAddUser(request, item);
+            if(!response.data.username){
+              await logger.info(`${count}. ${item.username} : User imported successfully `);
+            }else{
+              await logger.info(`${count}. ${item.username} : User already exist.`);
+            }
+          } catch (error) {
+            await logger.error(`${count}. ${item.username} : Error importing user ${error.message}`);
+          }
+          count ++;
       }
       return new SuccessResponse({
         statusCode: 200,
         message: "Data imported successfully."
       });
-  }
+    }
 
 
   @Put("/:userid")

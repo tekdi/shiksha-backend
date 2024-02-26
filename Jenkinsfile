@@ -11,7 +11,7 @@ pipeline {
             steps{
                
             //   git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
-                 checkout scmGit(branches: [[name: '*/oblf-21stFeb']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git']])
+                 checkout scmGit(branches: [[name: '*/prod-oblf']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-backend', url: 'https://github.com/tekdi/shiksha-backend.git']])
                 
                 echo "========================== ***Repository cloned Successfully*** =========================="
             
@@ -22,8 +22,8 @@ pipeline {
             
             steps {
                                     
-                        sh 'cp -r /shiksha/.env .'
-                        sh 'docker build -t backend .'
+                        sh 'cp -r /home/prasad/backend-oblf/.env .'
+                        sh 'docker build -t backend-oblf-dgocean .'
                         sh 'docker-compose up -d --force-recreate --no-deps'
                 }
             }

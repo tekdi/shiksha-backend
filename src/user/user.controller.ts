@@ -33,14 +33,31 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 
+import { SuccessResponse } from "src/success-response";
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { ImportCsvDto } from "./dto/user-import-csv.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { createLogger, transports, format } from 'winston';
 import csvParser from 'csv-parser';
 import * as fs from 'fs';
+
+// Create a logger instance
+const logger = createLogger({
+  level: 'info', // Set the logging level
+  format: format.combine(
+    format.timestamp(), // Add timestamp to logs
+    format.json() // Log in JSON format
+  ),
+  transports: [
+    // Log to console
+    new transports.Console(),
+    // Log to file
+    new transports.File({ filename: 'import.log' })
+  ]
+});
 
 @ApiTags("User")
 @Controller("user")
@@ -129,35 +146,8 @@ export class UserController {
     @UploadedFile() file,
     @Body() importCsvDto: ImportCsvDto
   ) {
-    // console.log("Received file:", file.originalname);
-    // console.log("File contents:");
-    // const csvData = file.buffer.toString('utf-8').trim();
-    // const lines = csvData.split('\n');
+      logger.info("Received file: " + file.originalname);
     
-    // // Skip the first line (header) and process the rest
-    // const data = lines.slice(1).map(line => {
-    //   const [name, username, fieldValues, password, role, tenantId] = line.split(',');
-    //   return {
-    //     name,
-    //     username,
-    //     fieldValues,
-    //     password,
-    //     role,
-    //     tenantId
-    //   };
-    // });
-    // console.log(data);
-    
-    // // Process each data item
-    // for (const item of data) {
-    //   return await this.userAdapter
-    //     .buildUserAdapter()
-    //     .checkAndAddUser(request, item);
-    // }
-    
-
-      console.log("Received file:", file.originalname);
-      console.log("File contents:");
       const csvData = file.buffer.toString('utf-8').trim();
       const lines = csvData.split('\n');
       
@@ -176,11 +166,17 @@ export class UserController {
   
       // Process each data item
       for (const item of data) {
-        await this.userAdapter
-          .buildUserAdapter()
-          .checkAndAddUser(request, item);
+        try {
+          const response = await this.userAdapter.buildUserAdapter().checkAndAddUser(request, item);
+          logger.info('Success: ' + JSON.stringify(response));
+        } catch (error) {
+          logger.error('Error: ' + error.message);
+        }
       }
-
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Data imported successfully."
+      });
   }
 
 

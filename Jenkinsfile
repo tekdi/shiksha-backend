@@ -23,7 +23,7 @@ pipeline {
             steps {
                                     
                         sh 'cp -r /home/prasad/backend-oblf/.env .'
-                        sh 'docker build -t backend-oblf-dgocean .'
+                        sh 'sudo docker build -t backend-oblf-dgocean .'
                         sh 'docker-compose up -d --force-recreate --no-deps'
                 }
             }

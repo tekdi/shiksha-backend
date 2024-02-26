@@ -106,10 +106,83 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userAdapter
-      .buildUserAdapter()
-      .checkAndAddUser(request, userCreateDto);
+    console.log(userCreateDto);
+    
+    // return this.userAdapter
+    //   .buildUserAdapter()
+    //   .checkAndAddUser(request, userCreateDto);
   }
+
+  // IMPORT CSV FILE
+  @Post("/importCsv")
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBasicAuth("access-token")
+  @ApiBody({ type: ImportCsvDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async importCsv(
+    @Req() request: Request,
+    @Headers() headers,
+    @UploadedFile() file,
+    @Body() importCsvDto: ImportCsvDto
+  ) {
+    // console.log("Received file:", file.originalname);
+    // console.log("File contents:");
+    // const csvData = file.buffer.toString('utf-8').trim();
+    // const lines = csvData.split('\n');
+    
+    // // Skip the first line (header) and process the rest
+    // const data = lines.slice(1).map(line => {
+    //   const [name, username, fieldValues, password, role, tenantId] = line.split(',');
+    //   return {
+    //     name,
+    //     username,
+    //     fieldValues,
+    //     password,
+    //     role,
+    //     tenantId
+    //   };
+    // });
+    // console.log(data);
+    
+    // // Process each data item
+    // for (const item of data) {
+    //   return await this.userAdapter
+    //     .buildUserAdapter()
+    //     .checkAndAddUser(request, item);
+    // }
+    
+
+      console.log("Received file:", file.originalname);
+      console.log("File contents:");
+      const csvData = file.buffer.toString('utf-8').trim();
+      const lines = csvData.split('\n');
+      
+      // Skip the first line (header) and process the rest
+      const data = lines.slice(1).map(line => {
+        const [name, username, fieldValues, password, role, tenantId] = line.split(',');
+        return {
+          name,
+          username,
+          fieldValues,
+          password,
+          role,
+          tenantId
+        };
+      });
+  
+      // Process each data item
+      for (const item of data) {
+        await this.userAdapter
+          .buildUserAdapter()
+          .checkAndAddUser(request, item);
+      }
+
+  }
+
 
   @Put("/:userid")
   @ApiBasicAuth("access-token")
@@ -175,92 +248,9 @@ export class UserController {
   }
 
 
-  @Post("/importCsv")
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiBasicAuth("access-token")
-  @ApiBody({ type: ImportCsvDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async importCsv(
-    @Req() request: Request,
-    @Headers() headers,
-    @UploadedFile() file,
-    @Body() importCsvDto: ImportCsvDto
-  ) {
-    console.log("Received file:", file.originalname);
-    console.log("File contents:");
-    console.log(file.buffer.toString('utf-8'));
-    const contextValue = importCsvDto.context;
-    console.log("Context value:", contextValue);
-    
-  }
 
 
-  // @Post("/importCsv")
-  // @UseInterceptors(FileInterceptor('file'))
-  // @ApiBasicAuth("access-token")
-  // // @ApiBody({ type: UserCreateDto })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async importCsv(
-  //   @Headers() headers,
-  //   @UploadedFile() file
-  //   // @Body() userCreateDto: UserCreateDto
-  // ) {
-  //   console.log(file);
-  //   // const results = [];
-  //   // fs.createReadStream(file.path)
-  //   //   .pipe(csvParser())
-  //   //   .on('data', (data) => results.push(data))
-
-      
-  //     // .on('end', async () => {
-  //     //   for (const userData of results) {
-  //     //     const user = new User();
-  //     //     user.name = userData.name;
-  //     //     user.email = userData.email;
-  //     //     // set other properties as needed
-  //     //     await this.userService.createUser(user);
-  //     //   }
-  //     // });
-  //   // return { message: 'Users imported successfully' };
-  
-
-  
-  //   // userCreateDto.tenantId = headers["tenantid"];
-  //   // return this.userAdapter
-  //   //   .buildUserAdapter()
-  //   //   .addDataUsingCsv(request);
-  // }
 
 
-  // async importUsers(@UploadedFile() file) {
-  //   const results = [];
-  //   fs.createReadStream(file.path)
-  //     .pipe(csvParser())
-  //     .on('data', (data) => results.push(data))
-  //     .on('end', async () => {
-  //       for (const userData of results) {
-  //         const user = new User();
-  //         user.name = userData.name;
-  //         user.email = userData.email;
-  //         // set other properties as needed
-  //         await this.userService.createUser(user);
-  //       }
-  //     });
-  //   return { message: 'Users imported successfully' };
-  // }
-  
-  // @ApiSecurity('access-token')
-  // @Get('/:id')
-  // findUser(@Param('id', ParseIntPipe) id: number){
-  //     return this.userService.findUser(id)
-  // }
 
 }

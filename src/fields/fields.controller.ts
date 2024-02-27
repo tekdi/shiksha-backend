@@ -33,6 +33,8 @@ import { diskStorage } from "multer";
 import { FieldsAdapter } from "./fieldsadapter";
 import { FieldValuesDto } from "./dto/field-values.dto";
 import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
+import { FieldSearchUsingContextDto } from "src/fields/dto/field-seach-using-context";
+
 
 @ApiTags("Fields")
 @Controller("fields")
@@ -112,6 +114,30 @@ export class FieldsController {
       .buildFieldsAdapter()
       .searchFields(tenantid, request, fieldsSearchDto);
   }
+
+    //search based on context
+    @Post("/search/context")
+    @ApiBasicAuth("access-token")
+    @ApiCreatedResponse({ description: "Fields list." })
+    @ApiBody({ type: FieldSearchUsingContextDto })
+    @ApiForbiddenResponse({ description: "Forbidden" })
+    @UseInterceptors(ClassSerializerInterceptor)
+    @SerializeOptions({
+      strategy: "excludeAll",
+    })
+    @ApiHeader({
+      name: "tenantid",
+    })
+    public async searchFieldsBasedOnContext(
+      @Headers() headers,
+      @Req() request: Request,
+      @Body() fieldSearchUsingContextDto: FieldSearchUsingContextDto
+    ) {
+      let tenantid = headers["tenantid"];
+      return this.fieldsAdapter
+        .buildFieldsAdapter()
+        .searchFieldsBasedOnContext(tenantid, request, fieldSearchUsingContextDto);
+    }
 
   //update
   @Put("/:id")

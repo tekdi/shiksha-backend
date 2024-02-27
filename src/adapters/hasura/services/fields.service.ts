@@ -240,11 +240,11 @@ export class FieldsService {
     fieldSearchUsingContextDto: FieldSearchUsingContextDto
   ) {
     try{
+
       var axios = require("axios");
       const fieldSearchUsingContextSchema = new FieldSearchUsingContextDto(fieldSearchUsingContextDto);
 
       let query = "";
-      let where ="";
       Object.keys(fieldSearchUsingContextDto).forEach((e) => {
         if (
           fieldSearchUsingContextDto[e] &&
@@ -255,37 +255,32 @@ export class FieldsService {
         }
       });
 
-      var data = {
-        query: `query MyQuery {
-          Fields(where: {tenantId: {_eq: "${tenantId}"}, ${query}}) {
-            tenantId
-            fieldId 
-            createdAt
-            updatedAt
-            assetId
-            context
-            contextId
-            contextType
-            render 
-            groupId 
-            name
-            label
-            defaultValue
-            type
-            note
-            description
-            state
-            required
-            ordering
-            metadata
-            access
-            onlyUseInSubform
-            createdBy
-            updatedBy
-          }
-        }`,
-      };    
-        
+      const searchField = `
+          tenantId
+          fieldId 
+          createdAt
+          updatedAt
+          assetId
+          context
+          contextId
+          contextType
+          render 
+          groupId 
+          name
+          label
+          defaultValue
+          type
+          note
+          description
+          state
+          required
+          ordering
+          metadata
+          access
+          onlyUseInSubform
+          createdBy
+          updatedBy
+      `;
       var config = {
         method: "post",
         url: process.env.REGISTRYHASURA,
@@ -296,9 +291,74 @@ export class FieldsService {
         },
         data: data,
       };
-      
+
+      var data = {
+        query: `query MyQuery {
+          Fields(where: {tenantId: {_eq: "${tenantId}"}, ${query}}) {
+            ${searchField}
+          }
+        }`,
+      };  
+      config.data = data;
       const response = await axios(config);
+      const responseDataWithAllValue = (response.data.data.Fields);
+
+      let queryWithCtxAndCtxType=""
+      if(responseDataWithAllValue.length === 0){
+        
+        Object.keys(fieldSearchUsingContextDto).forEach((e) => {
+          if (
+            fieldSearchUsingContextDto[e] &&
+            fieldSearchUsingContextDto[e] != "" &&
+            Object.keys(fieldSearchUsingContextSchema).includes(e) &&
+            e !== "contextId" // Exclude contextId from the query
+          ) {
+            queryWithCtxAndCtxType += `${e}:{_eq:"${fieldSearchUsingContextDto[e]}"}, `;
+          }
+        });
+        
+        var data = {
+          query: `query MyQuery {
+            Fields(where: {tenantId: {_eq: "${tenantId}"}, ${queryWithCtxAndCtxType}}) {
+              ${searchField}
+            }
+          }`,
+        };  
+        // console.log(data.query);
+        config.data = data;
+        const response = await axios(config);
+        const responseDataWithCtxCtxTypeValue = (response.data.data.Fields);
+        
+        let queryWithCtx="";
+        if(responseDataWithCtxCtxTypeValue.length === 0){
+          Object.keys(fieldSearchUsingContextDto).forEach((e) => {
+            if (
+              fieldSearchUsingContextDto[e] &&
+              fieldSearchUsingContextDto[e] != "" &&
+              Object.keys(fieldSearchUsingContextSchema).includes(e) &&
+              e !== "contextId" &&  e !== "contextType"
+
+            ) {
+              queryWithCtx += `${e}:{_eq:"${fieldSearchUsingContextDto[e]}"}, `;
+            }
+          });
+          
+          var data = {
+            query: `query MyQuery {
+              Fields(where: {tenantId: {_eq: "${tenantId}"}, ${queryWithCtx}}) {
+                ${searchField}
+              }
+            }`,
+          };  
+          config.data = data;
+
+          const response = await axios(config);
+          return response;
+        }
+        return response;
+      }
       return response;
+
     }catch (e) {
       console.error(e);
       return new ErrorResponse({

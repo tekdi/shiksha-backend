@@ -35,6 +35,15 @@ import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
+import { ImportCsvDto } from "src/user/dto/user-import-csv.dto";
+import { SuccessResponse } from "src/success-response";
+import * as winston from 'winston';
+
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+  ]
+});
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -78,6 +87,60 @@ export class CohortController {
       .buildCohortAdapter()
       .createCohort(request, cohortCreateDto);
   }
+
+
+    // IMPORT CSV FILE
+    @Post("/importCsv")
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiBasicAuth("access-token")
+    @ApiBody({ type: ImportCsvDto })
+    @ApiForbiddenResponse({ description: "Forbidden" })
+    @UseInterceptors(ClassSerializerInterceptor)
+    @ApiHeader({
+      name: "tenantid",
+    })
+    public async importCsv(
+      @Req() request: Request,
+      @Headers() headers,
+      @UploadedFile() file,
+      @Body() importCsvDto: ImportCsvDto
+    ) {
+        const csvData = file.buffer.toString('utf-8').trim();
+        const lines = csvData.split('\n');
+        
+        // Skip the first line (header) and process the rest
+        const data = lines.slice(1).map(line => {
+          const [name, type, status, tenantId, programId, attendanceCaptureImage, fieldValues] = line.split(',');
+          return {
+            name, 
+            type, 
+            status, 
+            tenantId, 
+            programId, 
+            attendanceCaptureImage, 
+            fieldValues
+          };
+        });
+    
+        var count = 1;
+        // Process each data item
+
+        for (const item of data) {
+          
+          await this.cohortAdapter          
+            try {
+              const response = await this.cohortAdapter.buildCohortAdapter().createCohort(request, item);
+              await logger.info(`${count}. ${item.name} : User imported successfully `);
+            } catch (error) {
+              await logger.error(`${count}. ${item.name} : Error importing user ${error.message}`);
+            }
+            count ++;
+        }
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Data imported successfully."
+        });
+    }
 
   //get cohort
   @Get("/:id")

@@ -38,6 +38,7 @@ import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { ImportCsvDto } from "src/user/dto/user-import-csv.dto";
 import { SuccessResponse } from "src/success-response";
 import * as winston from 'winston';
+import { ErrorResponse } from "src/error-response";
 
 const logger = winston.createLogger({
   transports: [
@@ -108,39 +109,46 @@ export class CohortController {
         const csvData = file.buffer.toString('utf-8').trim();
         const lines = csvData.split('\n');
         
-        // Skip the first line (header) and process the rest
+        //ferch all fields 
+        const headersData = lines[0].split(',');
         const data = lines.slice(1).map(line => {
-          const [name, type, status, tenantId, programId, attendanceCaptureImage, fieldValues] = line.split(',');
-          return {
-            name, 
-            type, 
-            status, 
-            tenantId, 
-            programId, 
-            attendanceCaptureImage, 
-            fieldValues
-          };
+          const values = line.split(',');
+          const rowData = {};
+          headersData.forEach((headersData, index) => {
+            rowData[headersData] = values[index];
+          });
+          return rowData;
         });
-    
+        
         var count = 1;
-        // Process each data item
-
+        let success =0;
+        let error =0;
         for (const item of data) {
           
           await this.cohortAdapter          
             try {
               const response = await this.cohortAdapter.buildCohortAdapter().createCohort(request, item);
-              await logger.info(`${count}. ${item.name} : User imported successfully `);
+              
+              if (response instanceof ErrorResponse) {
+                await logger.info(`${count}. ${item.name} : ${response.errorMessage} `);
+                error++;
+              }else{
+                await logger.info(`${count}. ${item.name} : User imported successfully `);
+                success++;
+              }
             } catch (error) {
               await logger.error(`${count}. ${item.name} : Error importing user ${error.message}`);
+              error++;
             }
             count ++;
         }
         return new SuccessResponse({
           statusCode: 200,
-          message: "Data imported successfully."
+          message: `Success: ${success} records imported successfully. ${error ? `Encountered ${error} errors during import.` : 'No errors encountered.'}`
         });
     }
+
+    
 
   //get cohort
   @Get("/:id")

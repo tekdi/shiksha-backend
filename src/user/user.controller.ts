@@ -43,11 +43,12 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import csvParser from 'csv-parser';
 import * as fs from 'fs';
 import * as winston from 'winston';
+import { ErrorResponse } from "src/error-response";
 
 
 const logger = winston.createLogger({
   transports: [
-    new winston.transports.File({ filename: 'import.log' }) // Log file for import
+    new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
   ]
 });
 
@@ -144,20 +145,33 @@ export class UserController {
       const csvData = file.buffer.toString('utf-8').trim();
       const lines = csvData.split('\n');
       
-      // Skip the first line (header) and process the rest
+      // // Skip the first line (header) and process the rest
+      // const data = lines.slice(1).map(line => {
+      //   const [name, username, fieldValues, password, role, tenantId] = line.split(',');
+      //   return {
+      //     name,
+      //     username,
+      //     fieldValues,
+      //     password,
+      //     role,
+      //     tenantId
+      //   };
+      // });
+
+      //ferch all fields 
+      const headersData = lines[0].split(',');
       const data = lines.slice(1).map(line => {
-        const [name, username, fieldValues, password, role, tenantId] = line.split(',');
-        return {
-          name,
-          username,
-          fieldValues,
-          password,
-          role,
-          tenantId
-        };
+        const values = line.split(',');
+        const rowData = {};
+        headersData.forEach((headersData, index) => {
+          rowData[headersData] = values[index];
+        });
+        return rowData;
       });
   
       var count = 1;
+      let success =0;
+      let error =0;
       // Process each data item
       const contextValue = importCsvDto.context;
       
@@ -166,11 +180,20 @@ export class UserController {
         await this.userAdapter          
           try {
             const response = await this.userAdapter.buildUserAdapter().checkAndAddUser(request, item);
-            if(!response.data.username){
-              await logger.info(`${count}. ${item.username} : User imported successfully `);
+            
+            if (response instanceof ErrorResponse) {
+              await logger.info(`${count}. ${item.username} : ${response.errorMessage} `);
+              error++;
             }else{
-              await logger.info(`${count}. ${item.username} : User already exist.`);
+              if(!response.data.username){
+                await logger.info(`${count}. ${item.username} : User imported successfully `);
+                success++
+              }else{
+                await logger.info(`${count}. ${item.username} : User already exist.`);
+                error++;
+              }
             }
+
           } catch (error) {
             await logger.error(`${count}. ${item.username} : Error importing user ${error.message}`);
           }
@@ -178,7 +201,7 @@ export class UserController {
       }
       return new SuccessResponse({
         statusCode: 200,
-        message: "Data imported successfully."
+        message: `Success: ${success} records imported successfully. ${error ? `Encountered ${error} errors during import.` : 'No errors encountered.'}`
       });
     }
 

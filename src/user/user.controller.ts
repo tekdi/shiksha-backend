@@ -38,7 +38,7 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
-import { ImportCsvDto } from "./dto/user-import-csv.dto";
+import { ImportCsvDto } from "../import-csv.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import csvParser from 'csv-parser';
 import * as fs from 'fs';

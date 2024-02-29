@@ -23,7 +23,6 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private fieldsService: FieldsService
   ) {}
 
-  
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{
       var axios = require("axios");

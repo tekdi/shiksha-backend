@@ -19,16 +19,6 @@ export class ImportCsvDto {
   @Expose()
   context: string;
 
-  // @ApiProperty({
-  //   type: "string",
-  //   format: "binary",
-  //   description: "The image of person",
-  //   default: "NA",
-  // })
-  // @Expose()
-  // file: string;
-
-
   constructor(partial: Partial<ImportCsvDto>) {
     Object.assign(this, partial);
   }

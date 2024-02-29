@@ -35,7 +35,7 @@ import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
-import { ImportCsvDto } from "src/user/dto/user-import-csv.dto";
+import { ImportCsvDto } from "../import-csv.dto";
 import { SuccessResponse } from "src/success-response";
 import * as winston from 'winston';
 import { ErrorResponse } from "src/error-response";

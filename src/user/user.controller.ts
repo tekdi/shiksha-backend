@@ -138,25 +138,8 @@ export class UserController {
     @UploadedFile() file,
     @Body() importCsvDto: ImportCsvDto
   ) {
-    // logger.info("Received file: " + file.originalname);
-
-    
-
       const csvData = file.buffer.toString('utf-8').trim();
       const lines = csvData.split('\n');
-      
-      // // Skip the first line (header) and process the rest
-      // const data = lines.slice(1).map(line => {
-      //   const [name, username, fieldValues, password, role, tenantId] = line.split(',');
-      //   return {
-      //     name,
-      //     username,
-      //     fieldValues,
-      //     password,
-      //     role,
-      //     tenantId
-      //   };
-      // });
 
       //ferch all fields 
       const headersData = lines[0].split(',');

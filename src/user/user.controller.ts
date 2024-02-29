@@ -33,24 +33,11 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 
-import { SuccessResponse } from "src/success-response";
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
-import { ImportCsvDto } from "../import-csv.dto";
-import { FileInterceptor } from "@nestjs/platform-express";
-import csvParser from 'csv-parser';
-import * as fs from 'fs';
-import * as winston from 'winston';
-import { ErrorResponse } from "src/error-response";
 
-
-const logger = winston.createLogger({
-  transports: [
-    new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
-  ]
-});
 
 @ApiTags("User")
 @Controller("user")
@@ -122,72 +109,6 @@ export class UserController {
       .checkAndAddUser(request, userCreateDto);
   }
 
-  // IMPORT CSV FILE
-  @Post("/importCsv")
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiBasicAuth("access-token")
-  @ApiBody({ type: ImportCsvDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async importCsv(
-    @Req() request: Request,
-    @Headers() headers,
-    @UploadedFile() file,
-    @Body() importCsvDto: ImportCsvDto
-  ) {
-      const csvData = file.buffer.toString('utf-8').trim();
-      const lines = csvData.split('\n');
-
-      //ferch all fields 
-      const headersData = lines[0].split(',');
-      const data = lines.slice(1).map(line => {
-        const values = line.split(',');
-        const rowData = {};
-        headersData.forEach((headersData, index) => {
-          rowData[headersData] = values[index];
-        });
-        return rowData;
-      });
-  
-      var count = 1;
-      let success =0;
-      let error =0;
-      // Process each data item
-      const contextValue = importCsvDto.context;
-      
-      
-      for (const item of data) {
-        await this.userAdapter          
-          try {
-            const response = await this.userAdapter.buildUserAdapter().checkAndAddUser(request, item);
-            
-            if (response instanceof ErrorResponse) {
-              await logger.info(`${count}. ${item.username} : ${response.errorMessage} `);
-              error++;
-            }else{
-              if(!response.data.username){
-                await logger.info(`${count}. ${item.username} : User imported successfully `);
-                success++
-              }else{
-                await logger.info(`${count}. ${item.username} : User already exist.`);
-                error++;
-              }
-            }
-
-          } catch (error) {
-            await logger.error(`${count}. ${item.username} : Error importing user ${error.message}`);
-          }
-          count ++;
-      }
-      return new SuccessResponse({
-        statusCode: 200,
-        message: `Success: ${success} records imported successfully. ${error ? `Encountered ${error} errors during import.` : 'No errors encountered.'}`
-      });
-    }
-
 
   @Put("/:userid")
   @ApiBasicAuth("access-token")
@@ -252,10 +173,26 @@ export class UserController {
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
 
-
-
-
-
+  @Post("/bulkUser")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [UserCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async bulkUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userCreateDtos: [UserCreateDto]
+  ) {
+    let tenantid = headers["tenantid"];
+    
+    return this.userAdapter
+      .buildUserAdapter()
+      .multipleUsers(tenantid, request, userCreateDtos);
+  }
 
 
 }

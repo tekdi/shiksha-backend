@@ -35,21 +35,13 @@ import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
-import { ImportCsvDto } from "../import-csv.dto";
-import { SuccessResponse } from "src/success-response";
-import * as winston from 'winston';
-import { ErrorResponse } from "src/error-response";
 
-const logger = winston.createLogger({
-  transports: [
-    new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
-  ]
-});
 
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
   constructor(private cohortAdapter: CohortAdapter) {}
+
 
   //create cohort
   @Post()
@@ -89,66 +81,6 @@ export class CohortController {
       .createCohort(request, cohortCreateDto);
   }
 
-
-    // IMPORT CSV FILE
-    @Post("/importCsv")
-    @UseInterceptors(FileInterceptor('file'))
-    @ApiBasicAuth("access-token")
-    @ApiBody({ type: ImportCsvDto })
-    @ApiForbiddenResponse({ description: "Forbidden" })
-    @UseInterceptors(ClassSerializerInterceptor)
-    @ApiHeader({
-      name: "tenantid",
-    })
-    public async importCsv(
-      @Req() request: Request,
-      @Headers() headers,
-      @UploadedFile() file,
-      @Body() importCsvDto: ImportCsvDto
-    ) {
-        const csvData = file.buffer.toString('utf-8').trim();
-        const lines = csvData.split('\n');
-        
-        //ferch all fields 
-        const headersData = lines[0].split(',');
-        const data = lines.slice(1).map(line => {
-          const values = line.split(',');
-          const rowData = {};
-          headersData.forEach((headersData, index) => {
-            rowData[headersData] = values[index];
-          });
-          return rowData;
-        });
-        
-        var count = 1;
-        let success =0;
-        let error =0;
-        for (const item of data) {
-          
-          await this.cohortAdapter          
-            try {
-              const response = await this.cohortAdapter.buildCohortAdapter().createCohort(request, item);
-              
-              if (response instanceof ErrorResponse) {
-                await logger.info(`${count}. ${item.name} : ${response.errorMessage} `);
-                error++;
-              }else{
-                await logger.info(`${count}. ${item.name} : User imported successfully `);
-                success++;
-              }
-            } catch (error) {
-              await logger.error(`${count}. ${item.name} : Error importing user ${error.message}`);
-              error++;
-            }
-            count ++;
-        }
-        return new SuccessResponse({
-          statusCode: 200,
-          message: `Success: ${success} records imported successfully. ${error ? `Encountered ${error} errors during import.` : 'No errors encountered.'}`
-        });
-    }
-
-    
 
   //get cohort
   @Get("/:id")
@@ -231,4 +163,28 @@ export class CohortController {
       .buildCohortAdapter()
       .updateCohort(cohortId, request, cohortCreateDto);
   }
+
+  // Bulk Cohort Import
+  @Post("/bulkCohort")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [CohortCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async bulkCohort(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() CohortCreateDtos: [CohortCreateDto]
+  ) {
+    let tenantid = headers["tenantid"];
+    
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .multipleCohort(tenantid, request, CohortCreateDtos);
+  }
+
+
 }

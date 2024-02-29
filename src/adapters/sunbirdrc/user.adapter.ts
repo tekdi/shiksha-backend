@@ -49,6 +49,10 @@ export class UserService implements IServicelocator {
       );
   }
 
+  public async multipleUsers(tenantId: string, request: any, userDto: [UserCreateDto]) {
+    
+  }
+  
   public async createUser(request: any, teacherDto: UserDto) {
     return this.httpService
       .post(`${this.url}`, teacherDto, {

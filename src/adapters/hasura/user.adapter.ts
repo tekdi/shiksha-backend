@@ -137,9 +137,6 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async addDataUsingCsv(request: any){
-    return(request);
-  }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     try {

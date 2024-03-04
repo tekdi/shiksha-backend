@@ -187,4 +187,25 @@ export class CohortController {
   }
 
 
+  //Export cohort
+  @Post("/exportCohort")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort data exported successfully." })
+  @ApiBody({ type: CohortSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async exportCohortData(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortSearchDto: CohortSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .exportCohortData(tenantid, request, cohortSearchDto);
+  }
 }

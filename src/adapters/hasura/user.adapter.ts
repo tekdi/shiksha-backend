@@ -17,6 +17,19 @@ import {
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 
+import { FileInterceptor } from "@nestjs/platform-express";
+import csvParser from 'csv-parser';
+import * as fs from 'fs';
+import * as winston from 'winston';
+
+
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
+  ]
+});
+
+
 @Injectable()
 export class HasuraUserService implements IServicelocator {
   axios = require("axios");
@@ -141,8 +154,11 @@ export class HasuraUserService implements IServicelocator {
     const responses = [];
     const errors = [];
     try{
+      var count = 0;
+      let success =0;
+      let error =0;
+
       for (const userDto of userDtoData) {
-        console.log(userDto);
         userDto.tenantId = tenantId;
         const decoded: any = jwt_decode(request.headers.authorization);
         const altUserRoles =
@@ -160,48 +176,66 @@ export class HasuraUserService implements IServicelocator {
           !userDto.name
         ) {
           errors.push("Name, username, password, and role are required");
-        }
-  
-        const keycloakResponse = await getKeycloakAdminToken();
-        const token = keycloakResponse.data.access_token;
-  
-        const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-          userDto.username,
-          token
-        );
-        if (usernameExistsInKeycloak?.data[0]?.username) {
-          const usernameExistsInDB: any = await this.getUserByUsername(
-            usernameExistsInKeycloak?.data[0]?.username,
-            request
+          logger.info(`${count++}. ${userDto.username} : "Name, username, password, and role are required" `);
+          error++;
+        }else{
+          const keycloakResponse = await getKeycloakAdminToken();
+          const token = keycloakResponse.data.access_token;
+    
+          const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+            userDto.username,
+            token
           );
-          if (usernameExistsInDB?.statusCode === 200) {
-            if (usernameExistsInDB?.data) {
-              responses.push(usernameExistsInDB);
-            } else {
-              const resetPasswordRes: any = await this.resetKeycloakPassword(
-                request,
-                token,
-                userDto.password,
-                usernameExistsInKeycloak?.data[0]?.id
-              );
-  
-              if (resetPasswordRes.statusCode !== 204) {
-                errors.push("Something went wrong in password reset");
+          if (usernameExistsInKeycloak?.data[0]?.username) {
+            const usernameExistsInDB: any = await this.getUserByUsername(
+              usernameExistsInKeycloak?.data[0]?.username,
+              request
+            );
+            if (usernameExistsInDB?.statusCode === 200) {
+              if (usernameExistsInDB?.data) {
+                responses.push(usernameExistsInDB);
+              } else {
+                const resetPasswordRes: any = await this.resetKeycloakPassword(
+                  request,
+                  token,
+                  userDto.password,
+                  usernameExistsInKeycloak?.data[0]?.id
+                );
+    
+                if (resetPasswordRes.statusCode !== 204) {
+                  errors.push("Something went wrong in password reset");
+                  logger.info(`${count++}. ${userDto.username} : "Something went wrong in password reset" `);
+                  error++;
+                }
+    
+                userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+                const newlyCreatedDbUser = await this.createUserInDatabase(
+                  request,
+                  userDto
+                );
+                responses.push(newlyCreatedDbUser);
+                logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
+                success++;
               }
-  
-              userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
-              const newlyCreatedDbUser = await this.createUserInDatabase(
-                request,
-                userDto
-              );
-              responses.push(newlyCreatedDbUser);
+            } else {
+              responses.push(usernameExistsInDB);
+              logger.info(`${count++}. ${userDto.username} : "User already exist" `);
+              success++;
             }
           } else {
-            responses.push(usernameExistsInDB);
+            const createUserResponse = await this.createUser(request, userDto);
+            responses.push(createUserResponse);
+            if (createUserResponse instanceof SuccessResponse){
+              logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
+              success++;
+            }else{
+              if (createUserResponse instanceof ErrorResponse){
+                logger.info(`${count++}. ${userDto.username} : ${createUserResponse.errorMessage} :  `);
+                error++;
+              }
+            }
+            
           }
-        } else {
-          const createUserResponse = await this.createUser(request, userDto);
-          responses.push(createUserResponse);
         }
       }
     } catch (e) {
@@ -938,6 +972,123 @@ export class HasuraUserService implements IServicelocator {
     return userWithFields;
   }
 
+  public async exportUserData(
+    tenantId: string,
+    request: any,
+    userSearchDto: UserSearchDto
+  ) {
+    // function to search users within the user tables
+    try {
+      let offset = 0;
+      if (userSearchDto.page > 1) {
+        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
+      }
+
+      const filters = userSearchDto.filters;
+
+      //add tenantid
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+      Object.keys(userSearchDto.filters).forEach((item) => {
+        Object.keys(userSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
+      });
+      
+      const data = {
+        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
+        Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
+          aggregate {
+            count
+          }
+        }
+        Users(where:$filters, limit: $limit, offset: $offset,) {
+            userId
+            name
+            username
+            email
+            district
+            state 
+            address
+            pincode
+            mobile
+            dob
+            role
+            tenantId
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
+
+            userFieldValues {
+              value
+              fieldValuesId
+              itemId
+              fieldId
+
+              Field {
+                name
+                label
+                contextType
+                context
+              }
+            }
+          }
+        }`,
+
+        variables: {
+          limit: parseInt(userSearchDto.limit),
+          offset: offset,
+          filters: userSearchDto.filters,
+        },
+      };
+      
+
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      
+      const response = await this.axios(config);
+
+      if (response?.data?.errors) {
+        console.log(response?.data?.errors);
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      }else{
+        const userData = response.data;
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: userData,
+        });
+      }
+
+
+      
+
+      return response;
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+
+  }
+
+
+
   public async searchUserQuery(
     tenantId: string,
     userSearchDto: UserSearchDto,
@@ -1016,4 +1167,6 @@ export class HasuraUserService implements IServicelocator {
       return e;
     }
   }
+
+
 }

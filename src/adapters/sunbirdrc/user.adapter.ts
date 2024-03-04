@@ -21,6 +21,13 @@ export class UserService implements IServicelocator {
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 
+  public async exportUserData(    
+    tenantId: string,
+    request: any,
+    userSearchDto: UserSearchDto) {
+    
+  }
+
   public async getUser(tenantId: string, id: any, request: any) {
     return this.httpService
       .get(`${this.url}/${id}`, {

@@ -10,11 +10,13 @@ export interface IServicelocator {
     request: any,
     response: any
   );
+
   getUserByAuth(tenantId: string, request: any);
   checkAndAddUser(request: any, userDto: UserCreateDto);
   multipleUsers(tenantId: string,request: any,userDto: [UserCreateDto]);
   createUser(request: any, userDto: UserCreateDto);
   updateUser(id: string, request: any, userDto: UserCreateDto);
+  exportUserData(tenantId: string,request: any,userSearchDto: UserSearchDto);
   searchUser(
     tenantId: string,
     request: any,

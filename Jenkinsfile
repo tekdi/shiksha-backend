@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'oblf-139.59.50.217'
+    }
         stages {
          stage('clean workspace'){
             steps{
@@ -9,10 +11,7 @@ pipeline {
         stage('Checkout'){
             
             steps{
-               
-            //   git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
-                 checkout scmGit(branches: [[name: '*/prod-oblf']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-backend', url: 'https://github.com/tekdi/shiksha-backend.git']])
-                
+                checkout scmGit(branches: [[name: '*/prod-oblf']], extensions: [], userRemoteConfigs: [[credentialsId: 'Jenkins-github', url: 'https://github.com/tekdi/shiksha-backend.git']])
                 echo "========================== ***Repository cloned Successfully*** =========================="
             
           }
@@ -22,8 +21,8 @@ pipeline {
             
             steps {
                                     
-                        sh 'cp -r /home/prasad/backend-oblf/.env .'
-                        sh 'docker build -t backend-oblf-dgocean .'
+                        sh 'cp -r /opt/oblf-backend/.env .'
+                        sh 'docker build -t backend-oblf-prod .'
                         sh 'docker-compose up -d --force-recreate --no-deps'
                 }
             }

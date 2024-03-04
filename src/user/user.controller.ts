@@ -88,6 +88,7 @@ export class UserController {
     return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
   }
 
+  //Add users
   @Post()
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })

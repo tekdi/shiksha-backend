@@ -91,7 +91,7 @@ export class UserController {
   @Post()
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
-  @ApiBody({ type: UserCreateDto })
+  @ApiBody({ type: [UserCreateDto] })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -100,13 +100,15 @@ export class UserController {
   public async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Body() userCreateDto: UserCreateDto
+    @Body() userCreateDto: [UserCreateDto]
   ) {
-    userCreateDto.tenantId = headers["tenantid"];
+    userCreateDto.forEach(dto => {
+      dto.tenantId = headers["tenantid"];
+    });
     
     return this.userAdapter
       .buildUserAdapter()
-      .checkAndAddUser(request, userCreateDto);
+      .checkAndAddUsers(request, userCreateDto);
   }
 
 
@@ -172,27 +174,5 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
-
-  @Post("/bulkUser")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "User has been created successfully." })
-  @ApiBody({ type: [UserCreateDto] })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async bulkUser(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() userCreateDtos: [UserCreateDto]
-  ) {
-    let tenantid = headers["tenantid"];
-    
-    return this.userAdapter
-      .buildUserAdapter()
-      .multipleUsers(tenantid, request, userCreateDtos);
-  }
-
 
 }

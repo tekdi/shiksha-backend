@@ -149,6 +149,27 @@ export class UserController {
       .searchUser(tenantId, request, response, userSearchDto);
   }
 
+
+  @Post("/exportUser")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: UserSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async exportUserData(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userSearchDto: UserSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    
+    return this.userAdapter
+      .buildUserAdapter()
+      .exportUserData(tenantid, request, userSearchDto);
+  }
   
   @Post("/reset-password")
   @ApiBasicAuth("access-token")

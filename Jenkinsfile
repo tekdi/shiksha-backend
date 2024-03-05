@@ -5,9 +5,9 @@ pipeline {
         stage('SSH to UAT Server and Deploy') {
             steps {
                 script {
-                    sshagent(credentials: ['ssh-agent-uat']) {
+                    sshagent(credentials: ['Jenkins-agent']){
                         sh """
-                         //   ssh -o StrictHostKeyChecking=no -l ubuntu ${UAT_IP} << 'ENDSSH'
+                            ssh -o StrictHostKeyChecking=no -l root 143.110.179.209 << 'ENDSSH'
                             cd /home/jenkins
                             ./backend-deploy.sh
                         """

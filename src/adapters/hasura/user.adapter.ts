@@ -936,4 +936,120 @@ export class HasuraUserService implements IServicelocator {
       return e;
     }
   }
+  
+  //Export user data
+  public async exportUserData(
+    tenantId: string,
+    request: any,
+    userSearchDto: UserSearchDto
+  ) {
+    // function to search users within the user tables
+    try {
+      let offset = 0;
+      if (userSearchDto.page > 1) {
+        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
+      }
+
+      const filters = userSearchDto.filters;
+
+      //add tenantid
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+      Object.keys(userSearchDto.filters).forEach((item) => {
+        Object.keys(userSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
+      });
+      
+      const data = {
+        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
+        Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
+          aggregate {
+            count
+          }
+        }
+        Users(where:$filters, limit: $limit, offset: $offset,) {
+            userId
+            name
+            username
+            email
+            district
+            state 
+            address
+            pincode
+            mobile
+            dob
+            role
+            tenantId
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
+
+            userFieldValues {
+              value
+              fieldValuesId
+              itemId
+              fieldId
+
+              Field {
+                name
+                label
+                contextType
+                context
+              }
+            }
+          }
+        }`,
+
+        variables: {
+          limit: parseInt(userSearchDto.limit),
+          offset: offset,
+          filters: userSearchDto.filters,
+        },
+      };
+      
+
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      
+      const response = await this.axios(config);
+
+      if (response?.data?.errors) {
+        console.log(response?.data?.errors);
+        return new ErrorResponse({
+          errorCode: response.data.errors[0].extensions,
+          errorMessage: response.data.errors[0].message,
+        });
+      }else{
+        const userData = response.data;
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "Ok.",
+          data: userData,
+        });
+      }
+
+
+      
+
+      return response;
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+
+  }
 }

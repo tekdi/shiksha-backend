@@ -181,6 +181,6 @@ export class CohortController {
     
     return this.cohortAdapter
       .buildCohortAdapter()
-      .exportCohortData(tenantid, request, cohortSearchDto);
+      .exportCohortsData(tenantid, request, cohortSearchDto);
   }
 }

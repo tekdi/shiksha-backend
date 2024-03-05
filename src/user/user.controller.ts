@@ -168,7 +168,7 @@ export class UserController {
     
     return this.userAdapter
       .buildUserAdapter()
-      .exportUserData(tenantid, request, userSearchDto);
+      .exportUsersData(tenantid, request, userSearchDto);
   }
   
   @Post("/reset-password")

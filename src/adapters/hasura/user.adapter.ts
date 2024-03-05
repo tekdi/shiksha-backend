@@ -938,7 +938,7 @@ export class HasuraUserService implements IServicelocator {
   }
   
   //Export user data
-  public async exportUserData(
+  public async exportUsersData(
     tenantId: string,
     request: any,
     userSearchDto: UserSearchDto
@@ -984,11 +984,6 @@ export class HasuraUserService implements IServicelocator {
             dob
             role
             tenantId
-            createdAt
-            updatedAt
-            createdBy
-            updatedBy
-
             userFieldValues {
               value
               fieldValuesId

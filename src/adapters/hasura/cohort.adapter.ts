@@ -572,7 +572,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
     }
   }
 
-  public async exportCohortData(tenantId: any, request: any, cohortSearchDto: CohortSearchDto) {
+  public async exportCohortsData(tenantId: any, request: any, cohortSearchDto: CohortSearchDto) {
     try{
       var axios = require("axios");
 
@@ -607,10 +607,6 @@ export class HasuraCohortService implements IServicelocatorcohort {
                 status
                 image
                 metadata
-                createdAt
-                updatedAt
-                createdBy
-                updatedBy
                 cohortFieldValues{
                   value
                   fieldValuesId

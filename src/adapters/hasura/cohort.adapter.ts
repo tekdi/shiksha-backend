@@ -27,48 +27,8 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private fieldsService: FieldsService
   ) {}
 
-  //Create multiple cohort
-  public async CreateMultipleCohorts(request: any, cohortDto: [CohortCreateDto]) {
-    const responses = [];
-    const errorsMsg = [];
-    try{
-      //Generate log file 
-      const logger = winston.createLogger({
-        transports: [
-          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
-        ]
-      });
-      var count = 0;
-      let success =0;
-      let error =0;
 
-      for (const cohortCreateDto of cohortDto) {
-        let create_cohort = await this.createCohort(request, cohortCreateDto);
-        
-        if (create_cohort instanceof SuccessResponse){
-          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
-          success++;
-        }else{
-          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
-          error++;
-        } 
-      }
-    }catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
-        errorMessage: e,
-      });
-    }
-    return {
-      statusCode: 200,
-      totalCount: cohortDto.length,
-      successCount: responses.length,
-      responses,
-      errorsMsg,
-    };
-  }
-
+  //Create single cohort
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{
       var axios = require("axios");
@@ -165,7 +125,52 @@ export class HasuraCohortService implements IServicelocatorcohort {
       });
     }
   }
-  
+
+  //Create multiple cohort
+  public async createMultipleCohorts(request: any, cohortDto: [CohortCreateDto]) {
+
+    try{
+      //Generate log file 
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+        ]
+      });
+
+      const responses = [];
+      const errorsMsg = [];
+      var count = 0;
+      let success =0;
+      let error =0;
+
+      for (const cohortCreateDto of cohortDto) {
+        let create_cohort = await this.createCohort(request, cohortCreateDto);
+        
+        if (create_cohort instanceof SuccessResponse){
+          responses.push(create_cohort);
+          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
+          success++;
+        }else{
+          errorsMsg.push(create_cohort);
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
+          error++;
+        } 
+      }
+      return {
+        statusCode: 200,
+        totalCount: cohortDto.length,
+        successCount: responses.length,
+        responses,
+        errorsMsg,
+      };
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
+  }
 
   public async getCohort(
     tenantId: string,

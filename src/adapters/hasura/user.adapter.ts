@@ -141,25 +141,81 @@ export class HasuraUserService implements IServicelocator {
 
   //Create single user
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
-    const errorsMsg = [];
-    const responses = [];
-    let count = 0;
-    let success = 0;
-    let error = 0;
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const altUserRoles =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-    // Call singleCreateCohort function passing necessary arguments
-    await this.singleUserCreate(errorsMsg, responses, count, success, error, request, userDto);
-    return {
-      statusCode: 200,
-      // totalCount: cohortCreateDto.length,
-      successCount: responses.length,
-      responses,
-      errorsMsg,
-    };
+      const userId =
+        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      userDto.createdBy = userId;
+      userDto.updatedBy = userId;
+
+      if (
+        !userDto.username ||
+        !userDto.password ||
+        !userDto.role ||
+        !userDto.name
+      ) {
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: "Name, username, password and role are required",
+        });
+      }else{
+
+        const keycloakResponse = await getKeycloakAdminToken();
+        const token = keycloakResponse.data.access_token;
+
+        const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+          userDto.username,
+          token
+        );
+        if (usernameExistsInKeycloak?.data[0]?.username) {
+          const usernameExistsInDB: any = await this.getUserByUsername(
+            usernameExistsInKeycloak?.data[0]?.username,
+            request
+          );
+          if (usernameExistsInDB?.statusCode === 200) {
+            if (usernameExistsInDB?.data) {
+              return usernameExistsInDB;
+            } else {
+              const resetPasswordRes: any = await this.resetKeycloakPassword(
+                request,
+                token,
+                userDto.password,
+                usernameExistsInKeycloak?.data[0]?.id
+              );
+
+              if (resetPasswordRes.statusCode !== 204) {
+                return new ErrorResponse({
+                  errorCode: "400",
+                  errorMessage: "Something went wrong in password reset",
+                });
+              }
+
+              userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+              const newlyCreatedDbUser = await this.createUserInDatabase(
+                request,
+                userDto
+              );
+
+              return newlyCreatedDbUser;
+            }
+          } else {
+            return usernameExistsInDB;
+          }
+        } else {
+          return await this.createUser(request, userDto);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
   }
 
   //Create multiple Users
-  public async multipleUserCreate(request: any, userDto: [UserCreateDto]) {
+  public async createMultipleUser(request: any, userDto: [UserCreateDto]) {
 
     try{
       const logger = winston.createLogger({
@@ -167,7 +223,6 @@ export class HasuraUserService implements IServicelocator {
           new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
         ]
       });
-      
       const responses = [];
       const errorsMsg = [];
       var count = 0;
@@ -175,15 +230,24 @@ export class HasuraUserService implements IServicelocator {
       let error =0;
 
       for (const cohortCreateDto of userDto) {
-        let create_cohort = await this.createUser(request, cohortCreateDto);
-        if (create_cohort instanceof SuccessResponse){
-          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
+        let create_user = await this.checkAndAddUser(request, cohortCreateDto);
+        if (create_user instanceof SuccessResponse){
+          responses.push(create_user);
+          logger.info(`${count++}. ${cohortCreateDto.name} : "User created successfully." `);
           success++;
         }else{
-          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
+          errorsMsg.push(create_user);
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_user.errorMessage} `);
           error++;
         } 
       }
+      return {
+        statusCode: 200,
+        totalCount: userDto.length,
+        successCount: responses.length,
+        responses,
+        errorsMsg,
+      };
     }catch (e) {
       console.error(e);
       return new ErrorResponse({
@@ -191,14 +255,9 @@ export class HasuraUserService implements IServicelocator {
         errorMessage: e,
       });
     }
-    return {
-      statusCode: 200,
-      totalCount: userDto.length,
-      successCount: responses.length,
-      responses,
-      errorsMsg,
-    };
   }
+
+
 
   public async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
@@ -220,16 +279,7 @@ export class HasuraUserService implements IServicelocator {
       let resKeycloak = "";
 
       // if (altUserRoles.includes("systemAdmin")) {
-        if (
-          !userDto.username ||
-          !userDto.password ||
-          !userDto.role ||
-          !userDto.name
-        ) {
-          errorsMsg.push("Name, username, password, and role are required");
-          logger.info(`${count++}. ${userDto.username} : "Name, username, password, and role are required" `);
-          error++;
-        }else{}
+
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
 
@@ -243,6 +293,12 @@ export class HasuraUserService implements IServicelocator {
           });
         }
       );
+      // } else {
+      //   return new ErrorResponse({
+      //     errorCode: "401",
+      //     errorMessage: "Unauthorized",
+      //   });
+      // }
 
       // Add userId created in keycloak as user Id of ALT user
       userCreateDto.userId = resKeycloak;

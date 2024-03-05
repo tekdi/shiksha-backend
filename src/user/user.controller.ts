@@ -193,7 +193,7 @@ export class UserController {
     });
     return this.userAdapter
       .buildUserAdapter()
-      .multipleUserCreate(request, userCreateDto);
+      .createMultipleUser(request, userCreateDto);
   }
 
 

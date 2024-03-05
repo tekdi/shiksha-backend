@@ -18,7 +18,7 @@ export class UserService implements IServicelocator {
   checkAndAddUser(request: any, userDto: UserCreateDto) {
     throw new Error("Method not implemented.");
   }
-  multipleUserCreate(request: any, userDto: [UserCreateDto]) {
+  createMultipleUser(request: any, userDto: [UserCreateDto]) {
     throw new Error("Method not implemented.");
   }
 

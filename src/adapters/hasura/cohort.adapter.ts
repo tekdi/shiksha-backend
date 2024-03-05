@@ -28,17 +28,30 @@ export class HasuraCohortService implements IServicelocatorcohort {
   ) {}
 
   //Create multiple cohort
-  public async multipleCohortsCreate(request: any, cohortDto: [CohortCreateDto]) {
+  public async CreateMultipleCohorts(request: any, cohortDto: [CohortCreateDto]) {
     const responses = [];
     const errorsMsg = [];
     try{
+      //Generate log file 
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+        ]
+      });
       var count = 0;
       let success =0;
       let error =0;
-      // console.log(request);
-      
+
       for (const cohortCreateDto of cohortDto) {
-        await this.singleCreateCohort(errorsMsg, responses, count, success, error, request, cohortCreateDto);
+        let create_cohort = await this.createCohort(request, cohortCreateDto);
+        
+        if (create_cohort instanceof SuccessResponse){
+          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
+          success++;
+        }else{
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
+          error++;
+        } 
       }
     }catch (e) {
       console.error(e);
@@ -56,34 +69,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
     };
   }
 
-  //Create single cohort
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
-    const errorsMsg = [];
-    const responses = [];
-    let count = 0;
-    let success = 0;
-    let error = 0;
-
-    // Call singleCreateCohort function passing necessary arguments
-    await this.singleCreateCohort(errorsMsg, responses, count, success, error, request, cohortCreateDto);
-    return {
-      statusCode: 200,
-      // totalCount: cohortCreateDto.length,
-      successCount: responses.length,
-      responses,
-      errorsMsg,
-    };
-  }
-  
-  // Public function for creating Cohort
-  public async singleCreateCohort(errorsMsg:any, responses:any,count:any, success:any, error:any, request: any, cohortCreateDto: CohortCreateDto){
-
-    const logger = winston.createLogger({
-      transports: [
-        new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
-      ]
-    });
-
     try{
       var axios = require("axios");
 
@@ -125,8 +111,10 @@ export class HasuraCohortService implements IServicelocatorcohort {
 
       const response = await axios(config);
       if (response?.data?.errors) {
-        errorsMsg.push(response?.data?.errors[0]?.message);
-        logger.info(`${count++}. ${cohortCreateDto.name} : ${response?.data?.errors[0]?.message} `);
+        return new ErrorResponse({
+          errorCode: response?.data?.errors[0]?.extensions?.code,
+          errorMessage: response?.data?.errors[0]?.message,
+        });
       } else {
         const result = response.data.data.insert_Cohort_one;
         let fieldCreate = true;
@@ -157,16 +145,19 @@ export class HasuraCohortService implements IServicelocatorcohort {
         }
 
         if (fieldCreate) {
-          responses.push(result);
-          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
-          success++;
+          return new SuccessResponse({
+            statusCode: 200,
+            message: "Ok.",
+            data: result,
+          });
         } else {
-          errorsMsg.push(fieldError?.errors[0]?.message);
-          logger.info(`${count++}. ${cohortCreateDto.name} : ${fieldError?.errors[0]?.message} `);
-          error++;
+          return new ErrorResponse({
+            errorCode: fieldError?.errors[0]?.extensions?.code,
+            errorMessage: fieldError?.errors[0]?.message,
+          });
         }
       }
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "401",
@@ -174,7 +165,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
       });
     }
   }
-
+  
 
   public async getCohort(
     tenantId: string,

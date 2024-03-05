@@ -185,7 +185,7 @@ export class CohortController {
     
     return this.cohortAdapter
       .buildCohortAdapter()
-      .multipleCohortsCreate(request, cohortCreateDtos);
+      .CreateMultipleCohorts(request, cohortCreateDtos);
   }
 
 

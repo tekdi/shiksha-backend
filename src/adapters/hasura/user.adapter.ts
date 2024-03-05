@@ -160,16 +160,29 @@ export class HasuraUserService implements IServicelocator {
 
   //Create multiple Users
   public async multipleUserCreate(request: any, userDto: [UserCreateDto]) {
-    const responses = [];
-    const errorsMsg = [];
+
     try{
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
+        ]
+      });
+      
+      const responses = [];
+      const errorsMsg = [];
       var count = 0;
       let success =0;
       let error =0;
-      // console.log(request);
-      
+
       for (const cohortCreateDto of userDto) {
-        await this.singleUserCreate(errorsMsg, responses, count, success, error, request, cohortCreateDto);
+        let create_cohort = await this.createUser(request, cohortCreateDto);
+        if (create_cohort instanceof SuccessResponse){
+          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
+          success++;
+        }else{
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
+          error++;
+        } 
       }
     }catch (e) {
       console.error(e);
@@ -188,100 +201,150 @@ export class HasuraUserService implements IServicelocator {
   }
 
   //Common function for create user
-  public async singleUserCreate(errorsMsg:any, responses:any,count:any, success:any, error:any, request: any, userDto: UserCreateDto){
-    const logger = winston.createLogger({
-      transports: [
-        new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
-      ]
-    });
-    try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-      const altUserRoles =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+  // public async singleUserCreate(errorsMsg:any, responses:any,count:any, success:any, error:any, request: any, userDto: UserCreateDto){
+  //   const logger = winston.createLogger({
+  //     transports: [
+  //       new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
+  //     ]
+  //   });
+  //   try{
+  //     const decoded: any = jwt_decode(request.headers.authorization);
+  //     const altUserRoles =
+  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      const userId =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      userDto.createdBy = userId;
-      userDto.updatedBy = userId;
+  //     const userId =
+  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+  //     userDto.createdBy = userId;
+  //     userDto.updatedBy = userId;
 
-      if (
-        !userDto.username ||
-        !userDto.password ||
-        !userDto.role ||
-        !userDto.name
-      ) {
-        errorsMsg.push("Name, username, password, and role are required");
-        logger.info(`${count++}. ${userDto.username} : "Name, username, password, and role are required" `);
-        error++;
-      }else{
-        const keycloakResponse = await getKeycloakAdminToken();
-        const token = keycloakResponse.data.access_token;
+  //     if (
+  //       !userDto.username ||
+  //       !userDto.password ||
+  //       !userDto.role ||
+  //       !userDto.name
+  //     ) {
+  //       errorsMsg.push("Name, username, password, and role are required");
+  //       logger.info(`${count++}. ${userDto.username} : "Name, username, password, and role are required" `);
+  //       error++;
+  //     }else{
+  //       const keycloakResponse = await getKeycloakAdminToken();
+  //       const token = keycloakResponse.data.access_token;
   
-        const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-          userDto.username,
-          token
-        );
-        if (usernameExistsInKeycloak?.data[0]?.username) {
-          const usernameExistsInDB: any = await this.getUserByUsername(
-            usernameExistsInKeycloak?.data[0]?.username,
-            request
-          );
-          if (usernameExistsInDB?.statusCode === 200) {
-            if (usernameExistsInDB?.data) {
-              responses.push(usernameExistsInDB);
-            } else {
-              const resetPasswordRes: any = await this.resetKeycloakPassword(
-                request,
-                token,
-                userDto.password,
-                usernameExistsInKeycloak?.data[0]?.id
-              );
+  //       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+  //         userDto.username,
+  //         token
+  //       );
+  //       if (usernameExistsInKeycloak?.data[0]?.username) {
+  //         const usernameExistsInDB: any = await this.getUserByUsername(
+  //           usernameExistsInKeycloak?.data[0]?.username,
+  //           request
+  //         );
+  //         if (usernameExistsInDB?.statusCode === 200) {
+  //           if (usernameExistsInDB?.data) {
+  //             responses.push(usernameExistsInDB);
+  //           } else {
+  //             const resetPasswordRes: any = await this.resetKeycloakPassword(
+  //               request,
+  //               token,
+  //               userDto.password,
+  //               usernameExistsInKeycloak?.data[0]?.id
+  //             );
   
-              if (resetPasswordRes.statusCode !== 204) {
-                errorsMsg.push("Something went wrong in password reset");
-                logger.info(`${count++}. ${userDto.username} : "Something went wrong in password reset" `);
-                error++;
-              }
+  //             if (resetPasswordRes.statusCode !== 204) {
+  //               errorsMsg.push("Something went wrong in password reset");
+  //               logger.info(`${count++}. ${userDto.username} : "Something went wrong in password reset" `);
+  //               error++;
+  //             }
   
-              userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
-              const newlyCreatedDbUser = await this.createUserInDatabase(
-                request,
-                userDto
-              );
-              responses.push(newlyCreatedDbUser);
-              logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
-              success++;
-            }
-          } else {
-            responses.push(usernameExistsInDB);
-            logger.info(`${count++}. ${userDto.username} : "User already exist" `);
-            success++;
-          }
-        } else {
-          const createUserResponse = await this.createUser(request, userDto);
-          responses.push(createUserResponse);
-          if (createUserResponse instanceof SuccessResponse){
-            logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
-            success++;
-          }else{
-            if (createUserResponse instanceof ErrorResponse){
-              logger.info(`${count++}. ${userDto.username} : ${createUserResponse.errorMessage} :  `);
-              error++;
-            }
-          }
+  //             userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+  //             const newlyCreatedDbUser = await this.createUserInDatabase(
+  //               request,
+  //               userDto
+  //             );
+  //             responses.push(newlyCreatedDbUser);
+  //             logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
+  //             success++;
+  //           }
+  //         } else {
+  //           responses.push(usernameExistsInDB);
+  //           logger.info(`${count++}. ${userDto.username} : "User already exist" `);
+  //           success++;
+  //         }
+  //       } else {
+  //         const createUserResponse = await this.createUser(request, userDto);
+  //         responses.push(createUserResponse);
+  //         if (createUserResponse instanceof SuccessResponse){
+  //           logger.info(`${count++}. ${userDto.username} : "User imported successfully" `);
+  //           success++;
+  //         }else{
+  //           if (createUserResponse instanceof ErrorResponse){
+  //             logger.info(`${count++}. ${userDto.username} : ${createUserResponse.errorMessage} :  `);
+  //             error++;
+  //           }
+  //         }
           
-        }
-      }
-    }catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
-        errorMessage: e,
-      });
-    }
-  }
+  //       }
+  //     }
+  //   }catch (e) {
+  //     console.error(e);
+  //     return new ErrorResponse({
+  //       errorCode: "401",
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
 
 
+
+  // public async createUser(request: any, userCreateDto: UserCreateDto) {
+  //   // It is considered that if user is not present in keycloak it is not present in database as well
+  //   try {
+  //     const decoded: any = jwt_decode(request.headers.authorization);
+  //     const userRoles =
+  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+
+  //     const userId =
+  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+  //     userCreateDto.createdBy = userId;
+  //     userCreateDto.updatedBy = userId;
+
+  //     userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
+
+  //     const userSchema = new UserCreateDto(userCreateDto);
+
+  //     let errKeycloak = "";
+  //     let resKeycloak = "";
+
+  //     // if (altUserRoles.includes("systemAdmin")) {
+
+  //     const keycloakResponse = await getKeycloakAdminToken();
+  //     const token = keycloakResponse.data.access_token;
+
+  //     resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+  //       (error) => {
+  //         errKeycloak = error.response?.data.errorMessage;
+
+  //         return new ErrorResponse({
+  //           errorCode: "500",
+  //           errorMessage: "Someting went wrong",
+  //         });
+  //       }
+  //     );
+  //     // } else {
+  //     //   return new ErrorResponse({
+  //     //     errorCode: "401",
+  //     //     errorMessage: "Unauthorized",
+  //     //   });
+  //     // }
+
+  //     // Add userId created in keycloak as user Id of ALT user
+  //     userCreateDto.userId = resKeycloak;
+  //     return await this.createUserInDatabase(request, userCreateDto);
+  //   } catch (e) {
+  //     console.error(e);
+  //     return e;
+  //   }
+  // }
 
   public async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well

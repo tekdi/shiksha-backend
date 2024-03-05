@@ -149,6 +149,7 @@ export class UserController {
       .searchUser(tenantId, request, response, userSearchDto);
   }
 
+  
   @Post("/reset-password")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Password reset successfully." })

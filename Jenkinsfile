@@ -7,7 +7,7 @@ pipeline {
                 script {
                     sshagent(credentials: ['Jenkins-agent']){
                         sh """
-                            ssh -o StrictHostKeyChecking=no -l root 143.110.179.209 << 'ENDSSH'
+                            sudo ssh -o StrictHostKeyChecking=no -l root 143.110.179.209 << 'ENDSSH'
                             'echo Hello, remote world!'
                             sh 'cp -r /opt/oblf-backend/.env .'
                             sh 'docker build -t backend-oblf-prod .'

@@ -3,9 +3,10 @@ version: '3.7'
 services:
   main:
     container_name: shiksha-backend-oblf-digiocean
-    build:
-      context: .
-      target: development
+    image name: backend-oblf-prod
+    #build:
+      #context: .
+     # target: development
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

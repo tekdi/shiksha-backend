@@ -9,7 +9,7 @@ pipeline {
                         sh """
                             ssh  -o StrictHostKeyChecking=no -l root 143.110.179.209 << 'ENDSSH'
                             cd /home/jenkins
-                            git clone -b prod-oblf https://github.com/tekdi/shiksha-backend.git
+                            ./deploy.sh
                             docker build -t backend-oblf-prod .
                             docker-compose up -d --force-recreate --no-deps
                         """

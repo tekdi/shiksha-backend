@@ -88,11 +88,10 @@ export class UserController {
     return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
   }
 
-  //Add users
   @Post()
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
-  @ApiBody({ type: [UserCreateDto] })
+  @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -101,15 +100,13 @@ export class UserController {
   public async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Body() userCreateDto: [UserCreateDto]
+    @Body() userCreateDto: UserCreateDto
   ) {
-    userCreateDto.forEach(dto => {
-      dto.tenantId = headers["tenantid"];
-    });
+    userCreateDto.tenantId = headers["tenantid"];
     
     return this.userAdapter
       .buildUserAdapter()
-      .checkAndAddUsers(request, userCreateDto);
+      .checkAndAddUser(request, userCreateDto);
   }
 
 
@@ -156,6 +153,7 @@ export class UserController {
       .buildUserAdapter()
       .searchUser(tenantId, request, response, userSearchDto);
   }
+  
 
   @Post("/reset-password")
   @ApiBasicAuth("access-token")
@@ -175,5 +173,28 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+  @Post("/multiple-users-create")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [UserCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async bulkUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userCreateDto: [UserCreateDto]
+  ) {
+    userCreateDto.forEach(dto => {
+      dto.tenantId = headers["tenantid"];
+    });
+    return this.userAdapter
+      .buildUserAdapter()
+      .multipleUserCreate(request, userCreateDto);
+  }
+
 
 }

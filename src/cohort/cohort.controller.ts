@@ -57,16 +57,16 @@ export class CohortController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: [CohortCreateDto] })
+  @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
-  public async createCohorts(
+  public async createCohort(
     @Headers() headers,
     @Req() request: Request,
-    @Body() cohortCreateDto: [CohortCreateDto],
+    @Body() cohortCreateDto: CohortCreateDto,
     @UploadedFile() image
   ) {
     let tenantid = headers["tenantid"];
@@ -78,7 +78,7 @@ export class CohortController {
 
     return this.cohortAdapter
       .buildCohortAdapter()
-      .createCohorts(request, cohortCreateDto);
+      .createCohort(request, cohortCreateDto);
   }
 
 
@@ -165,26 +165,30 @@ export class CohortController {
   }
 
   // Bulk Cohort Import
-  // @Post("/bulkCohort")
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "User has been created successfully." })
-  // @ApiBody({ type: [CohortCreateDto] })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async bulkCohort(
-  //   @Headers() headers,
-  //   @Req() request: Request,
-  //   @Body() CohortCreateDtos: [CohortCreateDto]
-  // ) {
-  //   let tenantid = headers["tenantid"];
+  @Post("/multiple-cohorts-create")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [CohortCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async multipleCohortsCreate(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortCreateDtos: [CohortCreateDto]
+  ) {
+    cohortCreateDtos.forEach(dto => {
+      dto.tenantId = headers["tenantid"];
+    });
     
-  //   return this.cohortAdapter
-  //     .buildCohortAdapter()
-  //     .multipleCohort(tenantid, request, CohortCreateDtos);
-  // }
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .multipleCohortsCreate(request, cohortCreateDtos);
+  }
 
+
+  
 
 }

@@ -13,6 +13,10 @@ import { StudentDto } from "src/student/dto/student.dto";
 import { FieldsService } from "./services/fields.service";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import * as winston from 'winston';
+
+
+
 export const HasuraCohortToken = "HasuraCohort";
 @Injectable()
 export class HasuraCohortService implements IServicelocatorcohort {
@@ -23,87 +27,18 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private fieldsService: FieldsService
   ) {}
 
-  public async createCohorts(request: any, cohortDto: [CohortCreateDto]) {
+  //Create multiple cohort
+  public async multipleCohortsCreate(request: any, cohortDto: [CohortCreateDto]) {
     const responses = [];
-    const errors = [];
+    const errorsMsg = [];
     try{
+      var count = 0;
+      let success =0;
+      let error =0;
+      // console.log(request);
+      
       for (const cohortCreateDto of cohortDto) {
-        var axios = require("axios");
-
-        let query = "";
-        Object.keys(cohortCreateDto).forEach((e) => {
-          if (
-            cohortCreateDto[e] &&
-            cohortCreateDto[e] != "" &&
-            e != "fieldValues"
-          ) {
-            if (Array.isArray(cohortCreateDto[e])) {
-              query += `${e}: "${JSON.stringify(cohortCreateDto[e])}", `;
-            } else {
-              query += `${e}: "${cohortCreateDto[e]}", `;
-            }
-          }
-        });
-
-        var data = {
-          query: `mutation CreateCohort {
-            insert_Cohort_one(object: {${query}}) {
-            cohortId
-            }
-          }
-          `,
-          variables: {},
-        };
-
-        var config = {
-          method: "post",
-          url: process.env.REGISTRYHASURA,
-          headers: {
-            Authorization: request.headers.authorization,
-            "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-            "Content-Type": "application/json",
-          },
-          data: data,
-        };
-
-        const response = await axios(config);
-        if (response?.data?.errors) {
-          errors.push(response?.data?.errors[0]?.message);
-        } else {
-          const result = response.data.data.insert_Cohort_one;
-          let fieldCreate = true;
-          let fieldError = null;
-          //create fields values
-          let cohortId = result?.cohortId;
-          let field_value_array = cohortCreateDto.fieldValues.split("|");
-
-          if (field_value_array.length > 0) {
-            let field_values = [];
-            for (let i = 0; i < field_value_array.length; i++) {
-              let fieldValues = field_value_array[i].split(":");
-              field_values.push({
-                value: fieldValues[1] ? fieldValues[1] : "",
-                itemId: cohortId,
-                fieldId: fieldValues[0] ? fieldValues[0] : "",
-                createdBy: cohortCreateDto?.createdBy,
-                updatedBy: cohortCreateDto?.updatedBy,
-              });
-            }
-
-            const response_field_values =
-              await this.fieldsService.createFieldValuesBulk(field_values);
-            if (response_field_values?.data?.errors) {
-              fieldCreate = false;
-              fieldError = response_field_values?.data;
-            }
-          }
-
-          if (fieldCreate) {
-            responses.push(result);
-          } else {
-            errors.push(fieldError?.errors[0]?.message);
-          }
-        }
+        await this.singleCreateCohort(errorsMsg, responses, count, success, error, request, cohortCreateDto);
       }
     }catch (e) {
       console.error(e);
@@ -117,105 +52,129 @@ export class HasuraCohortService implements IServicelocatorcohort {
       totalCount: cohortDto.length,
       successCount: responses.length,
       responses,
-      errors,
+      errorsMsg,
     };
   }
-  // public async createCohorts(request: any, cohortCreateDto: [CohortCreateDto]) {
-  //   try{
-  //     var axios = require("axios");
 
-  //     let query = "";
-  //     Object.keys(cohortCreateDto).forEach((e) => {
-  //       if (
-  //         cohortCreateDto[e] &&
-  //         cohortCreateDto[e] != "" &&
-  //         e != "fieldValues"
-  //       ) {
-  //         if (Array.isArray(cohortCreateDto[e])) {
-  //           query += `${e}: "${JSON.stringify(cohortCreateDto[e])}", `;
-  //         } else {
-  //           query += `${e}: "${cohortCreateDto[e]}", `;
-  //         }
-  //       }
-  //     });
+  //Create single cohort
+  public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
+    const errorsMsg = [];
+    const responses = [];
+    let count = 0;
+    let success = 0;
+    let error = 0;
 
-  //     var data = {
-  //       query: `mutation CreateCohort {
-  //         insert_Cohort_one(object: {${query}}) {
-  //         cohortId
-  //         }
-  //       }
-  //       `,
-  //       variables: {},
-  //     };
+    // Call singleCreateCohort function passing necessary arguments
+    await this.singleCreateCohort(errorsMsg, responses, count, success, error, request, cohortCreateDto);
+    return {
+      statusCode: 200,
+      // totalCount: cohortCreateDto.length,
+      successCount: responses.length,
+      responses,
+      errorsMsg,
+    };
+  }
+  
+  // Public function for creating Cohort
+  public async singleCreateCohort(errorsMsg:any, responses:any,count:any, success:any, error:any, request: any, cohortCreateDto: CohortCreateDto){
 
-  //     var config = {
-  //       method: "post",
-  //       url: process.env.REGISTRYHASURA,
-  //       headers: {
-  //         Authorization: request.headers.authorization,
-  //         "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-  //         "Content-Type": "application/json",
-  //       },
-  //       data: data,
-  //     };
+    const logger = winston.createLogger({
+      transports: [
+        new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+      ]
+    });
 
-  //     const response = await axios(config);
-  //     if (response?.data?.errors) {
-  //       return new ErrorResponse({
-  //         errorCode: response?.data?.errors[0]?.extensions?.code,
-  //         errorMessage: response?.data?.errors[0]?.message,
-  //       });
-  //     } else {
-  //       const result = response.data.data.insert_Cohort_one;
-  //       let fieldCreate = true;
-  //       let fieldError = null;
-  //       //create fields values
-  //       let cohortId = result?.cohortId;
-  //       let field_value_array = cohortCreateDto.fieldValues.split("|");
+    try{
+      var axios = require("axios");
 
-  //       if (field_value_array.length > 0) {
-  //         let field_values = [];
-  //         for (let i = 0; i < field_value_array.length; i++) {
-  //           let fieldValues = field_value_array[i].split(":");
-  //           field_values.push({
-  //             value: fieldValues[1] ? fieldValues[1] : "",
-  //             itemId: cohortId,
-  //             fieldId: fieldValues[0] ? fieldValues[0] : "",
-  //             createdBy: cohortCreateDto?.createdBy,
-  //             updatedBy: cohortCreateDto?.updatedBy,
-  //           });
-  //         }
+      let query = "";
+      Object.keys(cohortCreateDto).forEach((e) => {
+        if (
+          cohortCreateDto[e] &&
+          cohortCreateDto[e] != "" &&
+          e != "fieldValues"
+        ) {
+          if (Array.isArray(cohortCreateDto[e])) {
+            query += `${e}: "${JSON.stringify(cohortCreateDto[e])}", `;
+          } else {
+            query += `${e}: "${cohortCreateDto[e]}", `;
+          }
+        }
+      });
 
-  //         const response_field_values =
-  //           await this.fieldsService.createFieldValuesBulk(field_values);
-  //         if (response_field_values?.data?.errors) {
-  //           fieldCreate = false;
-  //           fieldError = response_field_values?.data;
-  //         }
-  //       }
+      var data = {
+        query: `mutation CreateCohort {
+          insert_Cohort_one(object: {${query}}) {
+          cohortId
+          }
+        }
+        `,
+        variables: {},
+      };
 
-  //       if (fieldCreate) {
-  //         return new SuccessResponse({
-  //           statusCode: 200,
-  //           message: "Ok.",
-  //           data: result,
-  //         });
-  //       } else {
-  //         return new ErrorResponse({
-  //           errorCode: fieldError?.errors[0]?.extensions?.code,
-  //           errorMessage: fieldError?.errors[0]?.message,
-  //         });
-  //       }
-  //     }
-  //   }catch (e) {
-  //     console.error(e);
-  //     return new ErrorResponse({
-  //       errorCode: "401",
-  //       errorMessage: e,
-  //     });
-  //   }
-  // }
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await axios(config);
+      if (response?.data?.errors) {
+        errorsMsg.push(response?.data?.errors[0]?.message);
+        logger.info(`${count++}. ${cohortCreateDto.name} : ${response?.data?.errors[0]?.message} `);
+      } else {
+        const result = response.data.data.insert_Cohort_one;
+        let fieldCreate = true;
+        let fieldError = null;
+        //create fields values
+        let cohortId = result?.cohortId;
+        let field_value_array = cohortCreateDto.fieldValues.split("|");
+
+        if (field_value_array.length > 0) {
+          let field_values = [];
+          for (let i = 0; i < field_value_array.length; i++) {
+            let fieldValues = field_value_array[i].split(":");
+            field_values.push({
+              value: fieldValues[1] ? fieldValues[1] : "",
+              itemId: cohortId,
+              fieldId: fieldValues[0] ? fieldValues[0] : "",
+              createdBy: cohortCreateDto?.createdBy,
+              updatedBy: cohortCreateDto?.updatedBy,
+            });
+          }
+
+          const response_field_values =
+            await this.fieldsService.createFieldValuesBulk(field_values);
+          if (response_field_values?.data?.errors) {
+            fieldCreate = false;
+            fieldError = response_field_values?.data;
+          }
+        }
+
+        if (fieldCreate) {
+          responses.push(result);
+          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
+          success++;
+        } else {
+          errorsMsg.push(fieldError?.errors[0]?.message);
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${fieldError?.errors[0]?.message} `);
+          error++;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
+  }
+
 
   public async getCohort(
     tenantId: string,

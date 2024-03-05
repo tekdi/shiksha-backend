@@ -15,9 +15,13 @@ export const SunbirdUserToken = "SunbirdUser";
 @Injectable()
 export class UserService implements IServicelocator {
   constructor(private httpService: HttpService) {}
-  checkAndAddUsers(request: any, userDto: [UserCreateDto]) {
+  checkAndAddUser(request: any, userDto: UserCreateDto) {
     throw new Error("Method not implemented.");
   }
+  multipleUserCreate(request: any, userDto: [UserCreateDto]) {
+    throw new Error("Method not implemented.");
+  }
+
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 

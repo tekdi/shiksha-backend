@@ -233,8 +233,13 @@ export class HasuraUserService implements IServicelocator {
         let create_user = await this.checkAndAddUser(request, cohortCreateDto);
         if (create_user instanceof SuccessResponse){
           responses.push(create_user);
-          logger.info(`${count++}. ${cohortCreateDto.name} : "User created successfully." `);
-          success++;
+          if((create_user.data as UserDto).username){
+            logger.info(`${count++}. ${cohortCreateDto.name} : "User already exists." `);
+            success++;
+          }else{
+            logger.info(`${count++}. ${cohortCreateDto.name} : "User created successfully." `);
+            success++;
+          }          
         }else{
           errorsMsg.push(create_user);
           logger.info(`${count++}. ${cohortCreateDto.name} : ${create_user.errorMessage} `);
@@ -244,7 +249,8 @@ export class HasuraUserService implements IServicelocator {
       return {
         statusCode: 200,
         totalCount: userDto.length,
-        successCount: responses.length,
+        successCount: success,
+        errorCount: error,
         responses,
         errorsMsg,
       };

@@ -2,7 +2,7 @@ name: Deploy to DEV
 on: 
   push: 
     branches:
-      - main
+      - prod-oblf
 jobs:
   build:
     name: Generate Build and Deploy to DEV
@@ -21,7 +21,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
+          REMOTE_USER: ${{ secrets.USERNAME_OBLF }}
           TARGET: ${{ secrets.TARGET_DIR }}
 
       - name: Set up SSH key
@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to server
         run: |
-          sshpass -p '${{ secrets.EC2_SSH_KEY }}' ssh -v -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} <<'ENDSSH'
+          sshpass -p '${{ secrets.EC2_SSH_KEY }}' ssh -v -o StrictHostKeyChecking=no ${{ secrets.USERNAME_OBLF }}@${{ secrets.HOST_DNS }} <<'ENDSSH'
           cd /home/ubuntu/onest/onest-vistar-backend-githubaction
           ./deploy.sh
           ENDSSH

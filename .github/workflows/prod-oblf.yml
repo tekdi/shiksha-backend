@@ -36,7 +36,7 @@ jobs:
       - name: Deploy to server
         run: |
           sshpass -p '${{ secrets.EC2_SSH_KEY }}' ssh -v -o StrictHostKeyChecking=no ${{ secrets.USERNAME_OBLF }}@${{ secrets.HOST_DNS }} <<'ENDSSH'
-          cd /home/ubuntu/onest/onest-vistar-backend-githubaction
+          cd /home/oblf-21Feb/oblf-githubaction-backend
           ./deploy.sh
           ENDSSH
       

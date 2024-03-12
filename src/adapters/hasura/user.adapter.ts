@@ -315,15 +315,16 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  public async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     try{
       let query = "";
-      Object.keys(userCreateDto).forEach((e) => {
+      for (let e of Object.keys(userCreateDto)) {
         if (
           userCreateDto[e] &&
           userCreateDto[e] !== "" &&
           e != "password" &&
-          e != "fieldValues"
+          e != "fieldValues" &&
+          e !== "cohortId"
         ) {
           if (e === "role") {
             query += `${e}: ${userCreateDto[e]},`;
@@ -333,7 +334,7 @@ export class HasuraUserService implements IServicelocator {
             query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
           }
         }
-      });
+      };
 
       const data = {
         query: `mutation CreateUser {
@@ -344,6 +345,7 @@ export class HasuraUserService implements IServicelocator {
       `,
         variables: {},
       };
+      
 
       var config = {
         method: "post",
@@ -365,6 +367,10 @@ export class HasuraUserService implements IServicelocator {
       } else {
         const result = response.data.data.insert_Users_one;
 
+        if(userCreateDto.cohortId){     
+          let cohortMember =  await this.createCohortMember(result.userId, userCreateDto.cohortId, userCreateDto.role, userCreateDto.tenantId);          
+        }
+        
         let fieldCreate = true;
         let fieldError = null;
         //create fields values
@@ -409,6 +415,50 @@ export class HasuraUserService implements IServicelocator {
       console.error(e);
       return e;
     }
+  }
+
+  
+  public async createCohortMember(userId: any, cohortId: any, role:any, tenantId:any){
+    var axios = require("axios");
+    var data = {
+      query: `mutation insert_cohort_members($userId:uuid!, $cohortId:uuid!, $role:String!, $tenantId:uuid!) {
+        insert_CohortMembers_one(object: {userId: $userId, cohortId: $cohortId, role: $role, tenantId: $tenantId}) {
+          cohortMembershipId
+        }
+      }
+      `,
+      variables: {
+        userId: userId,
+        cohortId: cohortId,
+        role:role,
+        tenantId:tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    if (response?.data?.errors ) {
+      return new ErrorResponse({
+        errorCode: response.data.errors[0].extensions,
+        errorMessage: response.data.errors[0].message,
+      });
+    } else {
+      return {
+        statusCode: 200,
+        data: response.data,
+      }; 
+    }
+
+    
   }
 
   public async updateUser(

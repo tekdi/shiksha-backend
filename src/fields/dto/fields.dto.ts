@@ -180,6 +180,15 @@ export class FieldsDto {
   @Expose()
   onlyUseInSubform: Boolean;
 
+
+  //fieldOption
+  @ApiProperty({
+    type: String,
+    description: "The fieldOption Object",
+  })
+  @Expose()
+  fieldOption: string;
+
   //createdBy
   @ApiProperty({
     type: String,
@@ -201,4 +210,6 @@ export class FieldsDto {
   constructor(obj: any) {
     Object.assign(this, obj);
   }
+
+  
 }

@@ -20,7 +20,7 @@ export class FieldsService {
 
       let query = "";
       Object.keys(fieldsDto).forEach((e) => {
-        if (fieldsDto[e] && fieldsDto[e] != "") {
+        if (fieldsDto[e] && fieldsDto[e] != "" && e != "fieldOption") {
           if (e === "render") {
             query += `${e}: ${fieldsDto[e]}, `;
           } else if (Array.isArray(fieldsDto[e])) {
@@ -53,6 +53,20 @@ export class FieldsService {
       };
 
       const response = await axios(config);
+
+      const fieldId = response.data.data.insert_Fields_one.fieldId;
+      let field_option_array = fieldsDto.fieldOption?.split("|");
+      
+      if (field_option_array?.length > 0) {
+        let count = 1;
+        for (let i = 0; i < field_option_array.length; i++) {
+          let fieldOption = field_option_array[i].split(":");
+          let value = fieldOption[0] ? fieldOption[0] : ""
+          let option = fieldOption[1] ? fieldOption[1] : ""
+          await this.createOption(value,option,fieldId,count)
+          count++;
+        }
+      }
       return response;
     }catch (e) {
       console.error(e);
@@ -62,6 +76,50 @@ export class FieldsService {
       });
     }
   }
+
+  
+  public async createOption(value,option,fieldId,count){
+    try{
+      var axios = require("axios");
+      var data = {
+        query: `mutation insert_field_option($fieldId:uuid!, $option:String!, $value:String!, $count:Int!) {
+          insert_FieldOption_one(object: {field_id: $fieldId, options: $option, value: $value, ordering: $count}) {
+            field_id
+            options
+            value
+          }
+        }`,
+        variables: {
+          fieldId: fieldId,
+          option: option,
+          value: value,
+          count: count,
+        },
+      }
+
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          // Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
+  }
+
+
 
   public async getFields(tenantId: string, fieldsId: any) {
     var axios = require("axios");

@@ -22,12 +22,8 @@ export class FieldsService {
       Object.keys(fieldsDto).forEach((e) => {
         if (fieldsDto[e] && fieldsDto[e] != "") {
           if (e === "render") {
-
-            
             query += `${e}: ${fieldsDto[e]}, `;
           } else if (Array.isArray(fieldsDto[e])) {
-
-            
             query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
           } else {
             if(e === "fieldOption"){
@@ -40,7 +36,6 @@ export class FieldsService {
         }
       });
 
-      
       var data = {
         query: `mutation CreateFields {
           insert_Fields_one(object: {${query}}) {
@@ -50,7 +45,6 @@ export class FieldsService {
         `,
         variables: {},
       };
-      console.log(data.query);
       
       var config = {
         method: "post",

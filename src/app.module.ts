@@ -30,6 +30,7 @@ import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
 import { AuthModule } from "./auth/auth.module";
+import { DatabaseModule } from "./common/database.module";
 // Below modules no longer required in Shiksha 2.0
 // import { GroupModule } from "./group/group.module";
 // import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
@@ -37,7 +38,7 @@ import { AuthModule } from "./auth/auth.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     MulterModule.register({
       dest: "./uploads",
     }),
@@ -67,7 +68,8 @@ import { AuthModule } from "./auth/auth.module";
     CohortModule,
     CohortMembersModule,
     FieldsModule,
-    AuthModule
+    AuthModule,
+    DatabaseModule
   ],
   controllers: [AppController],
   providers: [AppService],

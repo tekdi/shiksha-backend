@@ -278,7 +278,6 @@ export class HasuraUserService implements IServicelocator {
         }
       }
     });
-
     const data = {
       query: `mutation CreateUser {
       insert_Users_one(object: {${query}}) {

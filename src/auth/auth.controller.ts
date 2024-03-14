@@ -42,6 +42,7 @@ export class AuthController {
     @Res() response: Response,
     @Body() authDto: AuthDto
   ) {
+    console.log(request)
     return this.authService.login(request, response, authDto);
   }
 }

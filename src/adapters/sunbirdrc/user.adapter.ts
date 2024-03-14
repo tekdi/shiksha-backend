@@ -18,6 +18,9 @@ export class UserService implements IServicelocator {
   checkAndAddUser(request: any, userDto: UserCreateDto) {
     throw new Error("Method not implemented.");
   }
+  exportUsersData(tenantId: string, request: any, userSearchDto: UserSearchDto) {
+    throw new Error("Method not implemented.");
+  }
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 

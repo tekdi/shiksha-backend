@@ -571,4 +571,83 @@ export class HasuraCohortService implements IServicelocatorcohort {
       });
     }
   }
+
+  public async exportCohortsData(tenantId: any, request: any, cohortSearchDto: CohortSearchDto) {
+    try{
+      var axios = require("axios");
+
+      let offset = 0;
+      if (cohortSearchDto.page > 1) {
+        offset = parseInt(cohortSearchDto.limit) * (cohortSearchDto.page - 1);
+      }
+
+      let temp_filters = cohortSearchDto.filters;
+      //add tenantid
+      let filters = new Object(temp_filters);
+      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+
+      Object.keys(cohortSearchDto.filters).forEach((item) => {
+        Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
+          if (!e.startsWith("_")) {
+            filters[item][`_${e}`] = filters[item][e];
+            delete filters[item][e];
+          }
+        });
+      });
+      var data = {
+        query: `query SearchCohort($filters:Cohort_bool_exp,$limit:Int, $offset:Int) {
+            Cohort(where:$filters, limit: $limit, offset: $offset,) {
+                tenantId
+                programId
+                cohortId
+                parentId
+                referenceId
+                name
+                type
+                status
+                image
+                metadata
+                cohortFieldValues{
+                  value
+                  fieldValuesId
+                  itemId
+                  fieldId
+            
+                  Field {
+                    name
+                    label
+                    contextType
+                    context
+                  }     
+                }
+              }
+            }`,
+        variables: {
+          limit: parseInt(cohortSearchDto.limit),
+          offset: offset,
+          filters: cohortSearchDto.filters,
+        },
+      };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
+
+      const response = await axios(config);
+      return response.data;
+
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
+  }
 }

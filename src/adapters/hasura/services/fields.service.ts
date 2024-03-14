@@ -102,6 +102,7 @@ export class FieldsService {
           metadata
           access
           onlyUseInSubform
+          fieldOption
           createdAt
           updatedAt
           createdBy

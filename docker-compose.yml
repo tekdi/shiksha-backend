@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   main:
-    container_name: shiksha-backend
+    container_name: shiksha-backend-oblf-21stFeb-cicd1
     build:
       context: .
       target: development

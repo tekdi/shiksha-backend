@@ -3,7 +3,6 @@ import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
 import { ErrorResponse } from "src/error-response";
 const resolvePath = require("object-resolve-path");
-import jwt_decode from "jwt-decode";
 import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
 import { CohortMembersSearchDto } from "src/cohortMembers/dto/cohortMembers-search.dto";
 import { IServicelocatorcohortMembers } from "../cohortMembersservicelocator";
@@ -19,7 +18,6 @@ export class HasuraCohortMembersService
     cohortMembers: CohortMembersDto
   ) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
       var axios = require("axios");
       let query = "";
       Object.keys(cohortMembers).forEach((e) => {
@@ -67,7 +65,7 @@ export class HasuraCohortMembersService
           data: result,
         });
       }
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -146,7 +144,6 @@ export class HasuraCohortMembersService
     cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
       var axios = require("axios");
 
       let offset = 0;
@@ -217,7 +214,7 @@ export class HasuraCohortMembersService
           data: cohortMembersResponse,
         });
       }
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",

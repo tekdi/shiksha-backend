@@ -23,26 +23,18 @@ export class HasuraFieldsService implements IServicelocatorfields {
 
   //fields
   public async createFields(request: any, fieldsDto: FieldsDto) {
-    try{
-      const response = await this.fieldsService.createFields(request, fieldsDto);
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response?.data?.errors[0]?.extensions?.code,
-          errorMessage: response?.data?.errors[0]?.message,
-        });
-      } else {
-        const result = response.data.data.insert_Fields_one;
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });
-      }
-    } catch (e) {
-      console.error(e);
+    const response = await this.fieldsService.createFields(request,fieldsDto);
+    if (response?.data?.errors) {
       return new ErrorResponse({
-        errorCode: "400",
-        errorMessage: e,
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      const result = response.data.data.insert_Fields_one;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: result,
       });
     }
   }
@@ -70,35 +62,27 @@ export class HasuraFieldsService implements IServicelocatorfields {
     request: any,
     fieldsSearchDto: FieldsSearchDto
   ) {
-    try{
-      const response = await this.fieldsService.searchFields(
-        request,
-        tenantId,
-        fieldsSearchDto
-      );
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response?.data?.errors[0]?.extensions?.code,
-          errorMessage: response?.data?.errors[0]?.message,
-        });
-      } else {
-        let result = response.data.data.Fields;
-        const fieldsResponse = await this.mappedResponse(result);
-        const count = fieldsResponse.length;
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          totalCount: count,
-          data: fieldsResponse,
-        });
-      }
-      } catch (e) {
-        console.error(e);
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: e,
-        });
-      }
+    const response = await this.fieldsService.searchFields(
+      request,
+      tenantId,
+      fieldsSearchDto
+    );
+    if (response?.data?.errors) {
+      return new ErrorResponse({
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data.Fields;
+      const fieldsResponse = await this.mappedResponse(result);
+      const count = fieldsResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: fieldsResponse,
+      });
+    }
   }
 
   public async updateFields(
@@ -124,7 +108,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
 
   //field values
   public async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
-    const response = await this.fieldsService.createFieldValues(request, fieldValuesDto);
+    const response = await this.fieldsService.createFieldValues(request,fieldValuesDto);
     if (response?.data?.errors) {
       return new ErrorResponse({
         errorCode: response?.data?.errors[0]?.extensions?.code,
@@ -162,32 +146,24 @@ export class HasuraFieldsService implements IServicelocatorfields {
     request: any,
     fieldValuesSearchDto: FieldValuesSearchDto
   ) {
-    try{
-      const response = await this.fieldsService.searchFieldValues(
-        request,
-        fieldValuesSearchDto
-      );
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response?.data?.errors[0]?.extensions?.code,
-          errorMessage: response?.data?.errors[0]?.message,
-        });
-      } else {
-        let result = response.data.data.FieldValues;
-        const fieldValuesResponse = await this.mappedResponseValues(result);
-        const count = fieldValuesResponse.length;
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          totalCount: count,
-          data: fieldValuesResponse,
-        });
-      }
-    } catch (e) {
-      console.error(e);
+    const response = await this.fieldsService.searchFieldValues(
+      request,
+      fieldValuesSearchDto
+    );
+    if (response?.data?.errors) {
       return new ErrorResponse({
-        errorCode: "400",
-        errorMessage: e,
+        errorCode: response?.data?.errors[0]?.extensions?.code,
+        errorMessage: response?.data?.errors[0]?.message,
+      });
+    } else {
+      let result = response.data.data.FieldValues;
+      const fieldValuesResponse = await this.mappedResponseValues(result);
+      const count = fieldValuesResponse.length;
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        totalCount: count,
+        data: fieldValuesResponse,
       });
     }
   }

@@ -45,6 +45,17 @@ async function bootstrap() {
     exclude: [{ path: "health", method: RequestMethod.GET }],
   });
 
+
+  // const config = new DocumentBuilder()
+  //   .setTitle("Shiksha Platform")
+  //   .setDescription("CRUD API")
+  //   .setVersion("1.0")
+  //   .addTag("V1")
+  //   .addApiKey(
+  //     { type: "apiKey", name: "Authorization", in: "header" },
+  //     "access-token"
+  //   )
+
   // const config = new DocumentBuilder()
   //   .setTitle("Shiksha Platform")
   //   .setDescription("CRUD API")

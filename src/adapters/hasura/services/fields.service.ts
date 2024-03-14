@@ -11,10 +11,8 @@ export class FieldsService {
   constructor() {}
 
   //fields
-  async createFields(request: any, fieldsDto: FieldsDto) {
+  async createFields(request:any,fieldsDto: FieldsDto) {
     try{
-
-      const decoded: any = jwt_decode(request.headers.authorization);
       var axios = require("axios");
 
       //add render json object
@@ -56,8 +54,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-      
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -127,107 +124,116 @@ export class FieldsService {
   }
 
   public async getFieldsContext(
+    request:any,
     tenantId: string,
     context: string,
     contextId: string
   ) {
-    var axios = require("axios");
+    try{
+      var axios = require("axios");
 
-    var data = {
-      query: `query GetFields($context:String!, $contextId:uuid!, $tenantId:uuid!) {
-        Fields(
-          where:{
-            _or:[
-              {
-                tenantId:{
-                  _eq:$tenantId
-                }
-                context:{
-                  _eq:$context
-                }
-                contextId:{
-                  _is_null:true
-                }
-              },
-              {
-                tenantId:{
-                  _eq:$tenantId
-                }
-                context:{
-                  _eq:$context
-                }
-                contextId:{
-                  _eq:$contextId
-                }
-              }
-            ]
-          }
-        ){
-          tenantId
-          fieldId
-          assetId
-          context
-          contextId
-          render
-          groupId
-          name
-          label
-          defaultValue
-          type
-          note
-          description
-          state
-          required
-          ordering
-          metadata
-          access
-          onlyUseInSubform
-          createdAt
-          updatedAt
-          createdBy
-          updatedBy
-          fieldValues: FieldValues(
+      var data = {
+        query: `query GetFields($context:String!, $contextId:uuid!, $tenantId:uuid!) {
+          Fields(
             where:{
-              itemId:{
-                _eq:$contextId
-              },
+              _or:[
+                {
+                  tenantId:{
+                    _eq:$tenantId
+                  }
+                  context:{
+                    _eq:$context
+                  }
+                  contextId:{
+                    _is_null:true
+                  }
+                },
+                {
+                  tenantId:{
+                    _eq:$tenantId
+                  }
+                  context:{
+                    _eq:$context
+                  }
+                  contextId:{
+                    _eq:$contextId
+                  }
+                }
+              ]
             }
           ){
-              value
-              fieldValuesId
-              itemId
-              fieldId
-              createdAt
-              updatedAt
-              createdBy
-              updatedBy
+            tenantId
+            fieldId
+            assetId
+            context
+            contextId
+            render
+            groupId
+            name
+            label
+            defaultValue
+            type
+            note
+            description
+            state
+            required
+            ordering
+            metadata
+            access
+            onlyUseInSubform
+            createdAt
+            updatedAt
+            createdBy
+            updatedBy
+            fieldValues: FieldValues(
+              where:{
+                itemId:{
+                  _eq:$contextId
+                },
+              }
+            ){
+                value
+                fieldValuesId
+                itemId
+                fieldId
+                createdAt
+                updatedAt
+                createdBy
+                updatedBy
+          }
         }
-      }
-    }`,
-      variables: {
-        context: context,
-        contextId: contextId,
-        tenantId: tenantId,
-      },
-    };
+      }`,
+        variables: {
+          context: context,
+          contextId: contextId,
+          tenantId: tenantId,
+        },
+      };
 
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
+      var config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: data,
+      };
 
-    const response = await axios(config);
-    return response;
+      const response = await axios(config);
+      return response;
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
-  async searchFields(request:any, tenantId: string, fieldsSearchDto: FieldsSearchDto) {
+  async searchFields(request: any, tenantId: string, fieldsSearchDto: FieldsSearchDto) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
       var axios = require("axios");
 
       let offset = 0;
@@ -292,15 +298,16 @@ export class FieldsService {
         },
         data: data,
       };
-    } catch (e) {
+
+      const response = await axios(config);
+      return response;
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
         errorMessage: e,
       });
     }
-    const response = await axios(config);
-    return response;
   }
 
   async updateFields(fieldsId: string, fieldsDto: FieldsDto) {
@@ -466,10 +473,8 @@ export class FieldsService {
   }
 
   //field values
-  async createFieldValues(request:any, fieldValuesDto: FieldValuesDto) {
+  async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-
       var axios = require("axios");
 
       let query = "";
@@ -497,6 +502,7 @@ export class FieldsService {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
+          Authorization: request.headers.authorization,
           "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
           "Content-Type": "application/json",
         },
@@ -505,7 +511,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -513,7 +519,6 @@ export class FieldsService {
       });
     }
   }
-  
 
   async createFieldValuesBulk(field_values: any) {
     var axios = require("axios");
@@ -634,8 +639,6 @@ export class FieldsService {
 
   async searchFieldValues(request:any, fieldValuesSearchDto: FieldValuesSearchDto) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-
       var axios = require("axios");
 
       let offset = 0;
@@ -677,6 +680,7 @@ export class FieldsService {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
+          Authorization: request.headers.authorization,
           "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
           "Content-Type": "application/json",
         },
@@ -685,19 +689,17 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-  } catch (e) {
-    console.error(e);
-    return new ErrorResponse({
-      errorCode: "400",
-      errorMessage: e,
-    });
-  }
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: e,
+      });
+    }
   }
 
-  async searchFieldValuesFilter(request:any, filter: any) {
+  async searchFieldValuesFilter(request:any,filter: any) {
     try{
-      const decoded: any = jwt_decode(request.headers.authorization);
-
       let obj_filter = [];
       Object.keys(filter).forEach((item) => {
         Object.keys(filter[item]).forEach((e) => {
@@ -734,16 +736,16 @@ export class FieldsService {
         },
         data: data,
       };
+
       const response = await axios(config);
       return response;
-    } catch (e) {
+    }catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
         errorMessage: e,
       });
     }
-
   }
 
   async updateFieldValues(id: string, fieldValuesDto: FieldValuesDto) {

@@ -31,6 +31,13 @@ export class HasuraCohortService implements IServicelocatorcohort {
   //Create single cohort
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{
+      //Generate log file 
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+        ]
+      });
+      
       var axios = require("axios");
 
       let query = "";
@@ -105,16 +112,20 @@ export class HasuraCohortService implements IServicelocatorcohort {
         }
 
         if (fieldCreate) {
+          logger.info(`${cohortCreateDto.name} : "Cohort imported successfully." `);
           return new SuccessResponse({
             statusCode: 200,
             message: "Ok.",
             data: result,
           });
         } else {
-          return new ErrorResponse({
+          const errorResponse = new ErrorResponse({
             errorCode: fieldError?.errors[0]?.extensions?.code,
             errorMessage: fieldError?.errors[0]?.message,
           });
+          // Log the error message
+          logger.error(`${cohortCreateDto.name} : "${errorResponse.errorMessage}" `);
+          return errorResponse;
         }
       }
     }catch (e) {
@@ -130,30 +141,16 @@ export class HasuraCohortService implements IServicelocatorcohort {
   public async createMultipleCohorts(request: any, cohortDto: [CohortCreateDto]) {
 
     try{
-      //Generate log file 
-      const logger = winston.createLogger({
-        transports: [
-          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
-        ]
-      });
-
       const responses = [];
       const errorsMsg = [];
-      var count = 0;
-      let success =0;
-      let error =0;
 
       for (const cohortCreateDto of cohortDto) {
         let create_cohort = await this.createCohort(request, cohortCreateDto);
         
         if (create_cohort instanceof SuccessResponse){
           responses.push(create_cohort);
-          logger.info(`${count++}. ${cohortCreateDto.name} : "Cohort imported successfully." `);
-          success++;
         }else{
           errorsMsg.push(create_cohort);
-          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_cohort.errorMessage} `);
-          error++;
         } 
       }
       return {

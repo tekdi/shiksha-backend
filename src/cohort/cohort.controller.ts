@@ -172,7 +172,7 @@ export class CohortController {
   @ApiHeader({
     name: "tenantid",
   })
-  public async exportCohortData(
+  public async exportCohortsData(
     @Headers() headers,
     @Req() request: Request,
     @Body() cohortSearchDto: CohortSearchDto

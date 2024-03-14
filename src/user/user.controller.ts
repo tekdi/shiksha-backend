@@ -159,7 +159,7 @@ export class UserController {
   @ApiHeader({
     name: "tenantid",
   })
-  public async exportUserData(
+  public async exportUsersData(
     @Headers() headers,
     @Req() request: Request,
     @Body() userSearchDto: UserSearchDto

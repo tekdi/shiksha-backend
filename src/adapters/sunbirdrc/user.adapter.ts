@@ -18,6 +18,10 @@ export class UserService implements IServicelocator {
   checkAndAddUser(request: any, userDto: UserCreateDto) {
     throw new Error("Method not implemented.");
   }
+  createMultipleUser(request: any, userDto: [UserCreateDto]) {
+    throw new Error("Method not implemented.");
+  }
+
   url = `${process.env.BASEAPIURL}/User`;
   templaterURL = process.env.TEMPLATERURL;
 
@@ -48,7 +52,7 @@ export class UserService implements IServicelocator {
         })
       );
   }
-
+  
   public async createUser(request: any, teacherDto: UserDto) {
     return this.httpService
       .post(`${this.url}`, teacherDto, {

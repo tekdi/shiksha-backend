@@ -16,6 +16,8 @@ import {
 } from "./keycloak.adapter.util";
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import * as winston from 'winston';
+
 
 @Injectable()
 export class HasuraUserService implements IServicelocator {
@@ -137,6 +139,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
+  //Create single user
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
@@ -158,57 +161,109 @@ export class HasuraUserService implements IServicelocator {
           errorCode: "400",
           errorMessage: "Name, username, password and role are required",
         });
-      }
+      }else{
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
+        const keycloakResponse = await getKeycloakAdminToken();
+        const token = keycloakResponse.data.access_token;
 
-      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userDto.username,
-        token
-      );
-      if (usernameExistsInKeycloak?.data[0]?.username) {
-        const usernameExistsInDB: any = await this.getUserByUsername(
-          usernameExistsInKeycloak?.data[0]?.username,
-          request
+        const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+          userDto.username,
+          token
         );
-        if (usernameExistsInDB?.statusCode === 200) {
-          if (usernameExistsInDB?.data) {
-            return usernameExistsInDB;
-          } else {
-            const resetPasswordRes: any = await this.resetKeycloakPassword(
-              request,
-              token,
-              userDto.password,
-              usernameExistsInKeycloak?.data[0]?.id
-            );
+        if (usernameExistsInKeycloak?.data[0]?.username) {
+          const usernameExistsInDB: any = await this.getUserByUsername(
+            usernameExistsInKeycloak?.data[0]?.username,
+            request
+          );
+          if (usernameExistsInDB?.statusCode === 200) {
+            if (usernameExistsInDB?.data) {
+              return usernameExistsInDB;
+            } else {
+              const resetPasswordRes: any = await this.resetKeycloakPassword(
+                request,
+                token,
+                userDto.password,
+                usernameExistsInKeycloak?.data[0]?.id
+              );
 
-            if (resetPasswordRes.statusCode !== 204) {
-              return new ErrorResponse({
-                errorCode: "400",
-                errorMessage: "Something went wrong in password reset",
-              });
+              if (resetPasswordRes.statusCode !== 204) {
+                return new ErrorResponse({
+                  errorCode: "400",
+                  errorMessage: "Something went wrong in password reset",
+                });
+              }
+
+              userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+              const newlyCreatedDbUser = await this.createUserInDatabase(
+                request,
+                userDto
+              );
+
+              return newlyCreatedDbUser;
             }
-
-            userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
-            const newlyCreatedDbUser = await this.createUserInDatabase(
-              request,
-              userDto
-            );
-
-            return newlyCreatedDbUser;
+          } else {
+            return usernameExistsInDB;
           }
         } else {
-          return usernameExistsInDB;
+          return await this.createUser(request, userDto);
         }
-      } else {
-        return await this.createUser(request, userDto);
       }
     } catch (e) {
       console.error(e);
       return e;
     }
   }
+
+  //Create multiple Users
+  public async createMultipleUser(request: any, userDto: [UserCreateDto]) {
+
+    try{
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_user.log' }) // Log file for import
+        ]
+      });
+      const responses = [];
+      const errorsMsg = [];
+      var count = 0;
+      let success =0;
+      let error =0;
+
+      for (const cohortCreateDto of userDto) {
+        let create_user = await this.checkAndAddUser(request, cohortCreateDto);
+        if (create_user instanceof SuccessResponse){
+          responses.push(create_user);
+          if((create_user.data as UserDto).username){
+            logger.info(`${count++}. ${cohortCreateDto.name} : "User already exists." `);
+            success++;
+          }else{
+            logger.info(`${count++}. ${cohortCreateDto.name} : "User created successfully." `);
+            success++;
+          }          
+        }else{
+          errorsMsg.push(create_user);
+          logger.info(`${count++}. ${cohortCreateDto.name} : ${create_user.errorMessage} `);
+          error++;
+        } 
+      }
+      return {
+        statusCode: 200,
+        totalCount: userDto.length,
+        successCount: success,
+        errorCount: error,
+        responses,
+        errorsMsg,
+      };
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
+  }
+
+
 
   public async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
@@ -260,15 +315,16 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  public async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     try{
       let query = "";
-      Object.keys(userCreateDto).forEach((e) => {
+      for (let e of Object.keys(userCreateDto)) {
         if (
           userCreateDto[e] &&
           userCreateDto[e] !== "" &&
           e != "password" &&
-          e != "fieldValues"
+          e != "fieldValues" &&
+          e !== "cohortId"
         ) {
           if (e === "role") {
             query += `${e}: ${userCreateDto[e]},`;
@@ -278,7 +334,7 @@ export class HasuraUserService implements IServicelocator {
             query += `${e}: ${JSON.stringify(userCreateDto[e])}, `;
           }
         }
-      });
+      };
 
       const data = {
         query: `mutation CreateUser {
@@ -289,6 +345,7 @@ export class HasuraUserService implements IServicelocator {
       `,
         variables: {},
       };
+      
 
       var config = {
         method: "post",
@@ -310,6 +367,10 @@ export class HasuraUserService implements IServicelocator {
       } else {
         const result = response.data.data.insert_Users_one;
 
+        if(userCreateDto.cohortId){     
+          let cohortMember =  await this.createCohortMember(result.userId, userCreateDto.cohortId, userCreateDto.role, userCreateDto.tenantId);          
+        }
+        
         let fieldCreate = true;
         let fieldError = null;
         //create fields values
@@ -354,6 +415,50 @@ export class HasuraUserService implements IServicelocator {
       console.error(e);
       return e;
     }
+  }
+
+  
+  public async createCohortMember(userId: any, cohortId: any, role:any, tenantId:any){
+    var axios = require("axios");
+    var data = {
+      query: `mutation insert_cohort_members($userId:uuid!, $cohortId:uuid!, $role:String!, $tenantId:uuid!) {
+        insert_CohortMembers_one(object: {userId: $userId, cohortId: $cohortId, role: $role, tenantId: $tenantId}) {
+          cohortMembershipId
+        }
+      }
+      `,
+      variables: {
+        userId: userId,
+        cohortId: cohortId,
+        role:role,
+        tenantId:tenantId,
+      },
+    };
+
+    var config = {
+      method: "post",
+      url: process.env.REGISTRYHASURA,
+      headers: {
+        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios(config);
+    if (response?.data?.errors ) {
+      return new ErrorResponse({
+        errorCode: response.data.errors[0].extensions,
+        errorMessage: response.data.errors[0].message,
+      });
+    } else {
+      return {
+        statusCode: 200,
+        data: response.data,
+      }; 
+    }
+
+    
   }
 
   public async updateUser(

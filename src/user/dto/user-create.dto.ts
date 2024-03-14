@@ -105,6 +105,13 @@ export class UserCreateDto {
   @Expose()
   updatedBy: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    description: "The cohort id of the user",
+  })
+  @Expose()
+  cohortId: string;
+
   //fieldValues
   @ApiProperty({
     type: String,

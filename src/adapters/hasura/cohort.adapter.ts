@@ -13,6 +13,10 @@ import { StudentDto } from "src/student/dto/student.dto";
 import { FieldsService } from "./services/fields.service";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import * as winston from 'winston';
+
+
+
 export const HasuraCohortToken = "HasuraCohort";
 @Injectable()
 export class HasuraCohortService implements IServicelocatorcohort {
@@ -23,8 +27,17 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private fieldsService: FieldsService
   ) {}
 
+
+  //Create single cohort
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{
+      //Generate log file 
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({ filename: 'import_cohort.log' }) // Log file for import
+        ]
+      });
+      
       var axios = require("axios");
 
       let query = "";
@@ -99,18 +112,54 @@ export class HasuraCohortService implements IServicelocatorcohort {
         }
 
         if (fieldCreate) {
+          logger.info(`${cohortCreateDto.name} : "Cohort imported successfully." `);
           return new SuccessResponse({
             statusCode: 200,
             message: "Ok.",
             data: result,
           });
         } else {
-          return new ErrorResponse({
+          const errorResponse = new ErrorResponse({
             errorCode: fieldError?.errors[0]?.extensions?.code,
             errorMessage: fieldError?.errors[0]?.message,
           });
+          // Log the error message
+          logger.error(`${cohortCreateDto.name} : "${errorResponse.errorMessage}" `);
+          return errorResponse;
         }
       }
+    }catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
+  }
+
+  //Create multiple cohort
+  public async createMultipleCohorts(request: any, cohortDto: [CohortCreateDto]) {
+
+    try{
+      const responses = [];
+      const errorsMsg = [];
+
+      for (const cohortCreateDto of cohortDto) {
+        let create_cohort = await this.createCohort(request, cohortCreateDto);
+        
+        if (create_cohort instanceof SuccessResponse){
+          responses.push(create_cohort);
+        }else{
+          errorsMsg.push(create_cohort);
+        } 
+      }
+      return {
+        statusCode: 200,
+        totalCount: cohortDto.length,
+        successCount: responses.length,
+        responses,
+        errorsMsg,
+      };
     }catch (e) {
       console.error(e);
       return new ErrorResponse({

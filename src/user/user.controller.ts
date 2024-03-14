@@ -14,6 +14,7 @@ import {
   Query,
   Headers,
   Res,
+  UploadedFile,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -36,6 +37,8 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
+
+
 @ApiTags("User")
 @Controller("user")
 export class UserController {
@@ -100,10 +103,12 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
+    
     return this.userAdapter
       .buildUserAdapter()
       .checkAndAddUser(request, userCreateDto);
   }
+
 
   @Put("/:userid")
   @ApiBasicAuth("access-token")
@@ -148,6 +153,7 @@ export class UserController {
       .buildUserAdapter()
       .searchUser(tenantId, request, response, userSearchDto);
   }
+  
 
   @Post("/reset-password")
   @ApiBasicAuth("access-token")
@@ -167,4 +173,28 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+  @Post("/multiple-users-create")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [UserCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async bulkUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userCreateDto: [UserCreateDto]
+  ) {
+    userCreateDto.forEach(dto => {
+      dto.tenantId = headers["tenantid"];
+    });
+    return this.userAdapter
+      .buildUserAdapter()
+      .createMultipleUser(request, userCreateDto);
+  }
+
+
 }

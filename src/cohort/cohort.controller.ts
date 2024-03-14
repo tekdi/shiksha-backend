@@ -36,10 +36,12 @@ import { Response } from "express";
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 
+
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
   constructor(private cohortAdapter: CohortAdapter) {}
+
 
   //create cohort
   @Post()
@@ -78,6 +80,7 @@ export class CohortController {
       .buildCohortAdapter()
       .createCohort(request, cohortCreateDto);
   }
+
 
   //get cohort
   @Get("/:id")
@@ -160,4 +163,32 @@ export class CohortController {
       .buildCohortAdapter()
       .updateCohort(cohortId, request, cohortCreateDto);
   }
+
+  // Bulk Cohort Import
+  @Post("/multiple-cohorts-create")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User has been created successfully." })
+  @ApiBody({ type: [CohortCreateDto] })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async multipleCohortsCreate(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortCreateDtos: [CohortCreateDto]
+  ) {
+    cohortCreateDtos.forEach(dto => {
+      dto.tenantId = headers["tenantid"];
+    });
+    
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .createMultipleCohorts(request, cohortCreateDtos);
+  }
+
+
+  
+
 }

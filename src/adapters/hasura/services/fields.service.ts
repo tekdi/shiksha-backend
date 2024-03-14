@@ -26,7 +26,12 @@ export class FieldsService {
           } else if (Array.isArray(fieldsDto[e])) {
             query += `${e}: "${JSON.stringify(fieldsDto[e])}", `;
           } else {
-            query += `${e}: "${fieldsDto[e]}", `;
+            if(e === "fieldOption"){
+              const fieldOptionJSONStringNew = JSON.stringify(JSON.stringify(fieldsDto[e]));
+              query += `${e}: ${fieldOptionJSONStringNew}, `;
+            }else{
+              query += `${e}: "${fieldsDto[e]}", `;
+            }
           }
         }
       });
@@ -40,7 +45,7 @@ export class FieldsService {
         `,
         variables: {},
       };
-
+      
       var config = {
         method: "post",
         url: process.env.REGISTRYHASURA,
@@ -97,6 +102,7 @@ export class FieldsService {
           metadata
           access
           onlyUseInSubform
+          fieldOption
           createdAt
           updatedAt
           createdBy

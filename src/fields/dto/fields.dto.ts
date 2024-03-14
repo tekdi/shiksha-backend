@@ -180,6 +180,14 @@ export class FieldsDto {
   @Expose()
   onlyUseInSubform: Boolean;
 
+  //Field Option
+  @ApiProperty({
+    type: Object,
+    description: "The field option json of the fields",
+  })
+  @Expose()
+  fieldOption: any;
+
   //createdBy
   @ApiProperty({
     type: String,

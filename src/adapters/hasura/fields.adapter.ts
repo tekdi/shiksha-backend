@@ -213,6 +213,7 @@ export class HasuraFieldsService implements IServicelocatorfields {
         ordering: item?.ordering ? item.ordering : null,
         metadata: item?.metadata ? `${item.metadata}` : "",
         access: item?.access ? `${item.access}` : "",
+        fieldOption:item?.fieldOption ? `${item.fieldOption}` : "",
         onlyUseInSubform: item?.onlyUseInSubform ? item.onlyUseInSubform : null,
         createdAt: item?.createdAt ? `${item.createdAt}` : "",
         updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",

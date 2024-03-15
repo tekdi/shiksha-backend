@@ -1,32 +1,20 @@
 pipeline {
     agent any
-        stages {
-         stage('clean workspace'){
-            steps{
-                cleanWs()
-            }
-        }
-        stage('Checkout'){
-            
-            steps{
-               
-            //   git branch: 'main', credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git'
-                 checkout scmGit(branches: [[name: '*/oblf-21stFeb']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-1', url: 'https://github.com/tekdi/shiksha-backend.git']])
-                
-                echo "========================== ***Repository cloned Successfully*** =========================="
-            
-          }
-        }
-    
-        stage ('Build&Deploy') {
-            
-            steps {
-                                    
-                        sh 'cp -r /shiksha/.env .'
-                        sh 'docker build -t backend .'
-                        sh 'docker-compose up -d --force-recreate --no-deps'
-                }
-            }
 
-       }
+    stages {
+        stage('SSH to UAT Server and Deploy') {
+            steps {
+                script {
+                    sshagent(credentials: ['Jenkins-agent']){
+                        sh """
+                            ssh  -o StrictHostKeyChecking=no -l root 143.110.179.209 << 'ENDSSH'
+                            cd /home/jenkins
+                            ./deploy.sh
+                        """
+                    }
+                }
+            
+            }
+        }
+    }
 }

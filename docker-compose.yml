@@ -8,4 +8,4 @@ services:
     ports:
       - 3000:3000
     env_file:
-      - /home/ubuntu/onest/onest-backend-network-p/.env
+      - /home/ubuntu-backend-shiksha2.0/.env

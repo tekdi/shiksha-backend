@@ -36,13 +36,22 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
+import { UsersService1 } from "./user.service";
 @ApiTags("User")
 @Controller("user")
 export class UserController {
   constructor(
     private readonly service: UserService,
-    private userAdapter: UserAdapter
+    private userAdapter: UserAdapter,
+    private userService1:UsersService1
   ) {}
+
+  // @Get('/shubham/:userId')
+  // @UseInterceptors(CacheInterceptor)
+  // async getUser1(@Param("userid") userId: string){
+  //   console.log("Hi");
+  //   return await this.userService1.getUsers(userId);
+  // }
 
   @Get("/:userid")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -64,9 +73,7 @@ export class UserController {
     @Res() response: Response
   ) {
     const tenantId = headers["tenantid"];
-    return this.userAdapter
-      .buildUserAdapter()
-      .getUser(tenantId, userId, accessRole, request, response);
+    return this.userAdapter.buildUserAdapter().getUser(tenantId, userId, accessRole, request, response);
   }
 
   @Get()
@@ -99,6 +106,7 @@ export class UserController {
     @Req() request: Request,
     @Body() userCreateDto: UserCreateDto
   ) {
+    console.log(userCreateDto);
     userCreateDto.tenantId = headers["tenantid"];
     return this.userAdapter
       .buildUserAdapter()
@@ -167,4 +175,15 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+  @Post('/createShubhamUser')
+  async createShubhamUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() userCreateDto: UserCreateDto
+  ) {
+    userCreateDto.tenantId = headers["tenantid"];
+    return this.userService1.createShubhamUser(request, userCreateDto);
+  }
+
 }

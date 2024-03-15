@@ -10,6 +10,7 @@ export class HasuraAuthService {
 
   public async login(request: any, response: any, loginDto: AuthDto) {
     const qs = require("qs");
+    console.log(loginDto);
     const data = qs.stringify({
       username: loginDto.username,
       password: loginDto.password,
@@ -17,7 +18,7 @@ export class HasuraAuthService {
       client_id: "hasura",
       client_secret: process.env.KEYCLOAK_HASURA_CLIENT_SECRET,
     });
-
+    console.log(data);
     const config = {
       method: "post",
       url: process.env.KEYCLOAK + process.env.KEYCLOAK_USER_TOKEN,

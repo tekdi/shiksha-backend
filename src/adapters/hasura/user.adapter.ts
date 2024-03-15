@@ -843,7 +843,7 @@ export class HasuraUserService implements IServicelocator {
         request,
         tenantId,
         "Users",
-        // userId
+        userId
       );
       if (response?.data?.errors) {
       } else {

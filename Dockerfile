@@ -1,8 +1,8 @@
 FROM node:20 as dependencies
 WORKDIR usr/src/app
 COPY package*.json  ./
-RUN npm install
+RUN yarn install
 COPY . .
-RUN npm run build
+RUN yarn run build
 EXPOSE 3000
 CMD ["npm", "start"]

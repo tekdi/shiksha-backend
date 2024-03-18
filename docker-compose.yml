@@ -1,0 +1,20 @@
+version: '3.7'
+
+services:
+  main:
+    container_name: shiksha-backend-2.0
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+      - 9229:9229
+    command: yarn run start:dev
+    env_file:
+      - /home/ubuntu-backend-shiksha2.0/.env
+    networks:
+      - webnet
+    restart: always

@@ -17,7 +17,6 @@ import {
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
-  UserService,
 } from "../adapters/sunbirdrc/user.adapter";
 import { Request, Response } from "@nestjs/common";
 import {
@@ -36,14 +35,14 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
-import { UsersService1 } from "./user.service";
+import { UserService } from "./user.service";
 @ApiTags("User")
 @Controller("user")
 export class UserController {
   constructor(
     private readonly service: UserService,
     private userAdapter: UserAdapter,
-    private userService1:UsersService1
+    private userService:UserService
   ) {}
 
   // @Get('/shubham/:userId')
@@ -183,7 +182,7 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userService1.createShubhamUser(request, userCreateDto);
+    return this.userService.createShubhamUser(request, userCreateDto);
   }
 
 }

@@ -26,6 +26,8 @@ import {
   CacheInterceptor,
   Query,
   Headers,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 import { AttendanceDto } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -68,7 +70,10 @@ export class AttendanceController {
       .getAttendance(tenantid, attendanceId, request);
   }
 
+
   @Post()
+  
+  @UsePipes(new ValidationPipe())
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
@@ -97,10 +102,43 @@ export class AttendanceController {
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
+    return this.attendaceService
       .checkAndAddAttendance(request, attendanceDto);
   }
+
+  // @Post()
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Attendance has been created successfully.",
+  // })
+  // @UseInterceptors(
+  //   FileInterceptor("image", {
+  //     storage: diskStorage({
+  //       destination: process.env.IMAGEPATH,
+  //       filename: editFileName,
+  //     }),
+  //     fileFilter: imageFileFilter,
+  //   })
+  // )
+  // @ApiBody({ type: AttendanceDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async createAttendace(
+  //   @Headers() headers,
+  //   @Req() request: Request,
+  //   @Body() attendanceDto: AttendanceDto,
+  //   @UploadedFile() image
+  // ) {
+  //   attendanceDto.tenantId = headers["tenantid"];
+  //   attendanceDto.image = image?.filename;
+  //   return this.attendaceAdapter
+  //     .buildAttenceAdapter()
+  //     .checkAndAddAttendance(request, attendanceDto);
+  // }
 
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
@@ -130,8 +168,7 @@ export class AttendanceController {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
+    return this.attendaceService
       .updateAttendance(attendanceId, request, attendanceDto);
   }
 
@@ -165,6 +202,7 @@ export class AttendanceController {
   @ApiBody({ type: AttendanceSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
+  @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
   })

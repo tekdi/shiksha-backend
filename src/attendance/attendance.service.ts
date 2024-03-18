@@ -4,7 +4,7 @@ import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "./entities/attendance.entity";
 import { Repository } from "typeorm";
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { ErrorResponse } from "src/error-response";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
@@ -22,17 +22,14 @@ export class AttendanceService {
 
         try {
             let { limit, page, filters } = attendanceSearchDto;
+            if (!limit) {
+                limit = '0';
+            }
 
             let offset = 0;
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-
-            if (limit.trim() === '') {
-                limit = '0';
-            }
-
-
             const whereClause = {};
             if (filters && Object.keys(filters).length > 0) {
                 Object.entries(filters).forEach(([key, value]) => {
@@ -92,6 +89,131 @@ export class AttendanceService {
         });
 
         return attendanceResponse;
+    }
+
+    public async checkAndAddAttendance(
+        request: any,
+        attendanceDto: AttendanceDto
+    ) {
+        try {
+            const decoded: any = jwt_decode(request.headers.authorization);
+
+            const userId =
+                decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+            attendanceDto.createdBy = userId;
+            attendanceDto.updatedBy = userId;
+            const attendanceToSearch = new AttendanceSearchDto({});
+
+            attendanceToSearch.filters = {
+                attendanceDate: attendanceDto.attendanceDate,
+                userId: attendanceDto.userId,
+            };
+
+
+            const attendanceFound: any = await this.searchAttendance(
+                attendanceDto.tenantId,
+                request,
+                attendanceToSearch
+            );
+
+
+            if (attendanceFound?.errorCode) {
+                return new ErrorResponse({
+                    errorCode: "500",
+                    errorMessage: attendanceFound?.errorMessage,
+                });
+            }
+
+            if (
+                attendanceFound.data.length > 0 &&
+                attendanceFound.statusCode === 200
+            ) {
+
+                return await this.updateAttendance(
+                    attendanceFound.data[0].attendanceId,
+                    request,
+                    attendanceDto
+                );
+            } else {
+
+                return await this.createAttendance(request, attendanceDto);
+            }
+        } catch (e) {
+            return e;
+        }
+    }
+
+
+    public async updateAttendance(
+        attendanceId: string,
+        request: any,
+        attendanceDto: AttendanceDto
+    ) {
+        try {
+
+            const attendanceRecord = await this.attendanceRepository.findOne({
+                where: { attendanceId },
+            });
+
+            if (!attendanceRecord) {
+                return new ErrorResponse({
+                    errorCode: "404",
+                    errorMessage: "Attendance record not found",
+                });
+            }
+
+
+            this.attendanceRepository.merge(attendanceRecord, attendanceDto);
+
+            // Save the updated attendance record
+            const updatedAttendanceRecord = await this.attendanceRepository.save(
+                attendanceRecord
+            );
+
+            return new SuccessResponse({
+                statusCode: 200,
+                message: "Attendance record updated successfully",
+                data: updatedAttendanceRecord,
+            });
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                console.error("Error updating attendance:", error);
+                return new ErrorResponse({
+                    errorCode: "500",
+                    errorMessage: "Internal Server Error",
+
+                });
+            }
+        }
+    }
+
+
+    public async createAttendance(request: any, attendanceDto: AttendanceDto) {
+        try {
+
+            const attendance = this.attendanceRepository.create(attendanceDto);
+            const result = await this.attendanceRepository.save(attendance);
+
+            return new SuccessResponse({
+                statusCode: 200,
+                message: "Ok.",
+                data: result,
+            });
+        } catch (error) {
+            if (error.code === '23503' && error.constraint === 'Attendance_userId_fkey') {
+                // Handle foreign key constraint violation
+                return new ErrorResponse({
+                    errorCode: "23503",
+                    errorMessage: "Please provide valid userID",
+                });
+            } else {
+                console.error('Error creating attendance:', error);
+                return new ErrorResponse({
+                    errorCode: "500",
+                    errorMessage: 'Internal Server Error',
+                });
+            }
+        }
     }
 }
 

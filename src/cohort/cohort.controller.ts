@@ -35,11 +35,15 @@ import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
+import { CohortService } from "./entities/cohort.service";
 
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
-  constructor(private cohortAdapter: CohortAdapter) {}
+  constructor(
+    private cohortAdapter: CohortAdapter,
+    private readonly cohortService: CohortService
+  ) {}
 
   //create cohort
   @Post()
@@ -79,6 +83,30 @@ export class CohortController {
       .createCohort(request, cohortCreateDto);
   }
 
+  // //get cohort
+  // @Get("/:id")
+  // @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Cohort detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async getCohort(
+  //   @Headers() headers,
+  //   @Param("id") cohortId: string,
+  //   @Req() request: Request,
+  //   @Res() res: Response
+  // ) {
+  //   let tenantid = headers["tenantid"];
+  //   return this.cohortAdapter
+  //     .buildCohortAdapter()
+  //     .getCohort(tenantid, cohortId, request, res);
+  // }
+
   //get cohort
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -98,11 +126,8 @@ export class CohortController {
     @Res() res: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .getCohort(tenantid, cohortId, request, res);
+    return this.cohortService.getCohort(tenantid, cohortId, request, res);
   }
-
   //search
   @Post("/search")
   @ApiBasicAuth("access-token")

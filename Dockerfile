@@ -1,7 +1,7 @@
 FROM node:20 as dependencies
 WORKDIR usr/src/app
 COPY package*.json  ./
-RUN npm install
+RUN npm run install
 COPY . .
 RUN npm run build
 EXPOSE 3000

@@ -3,7 +3,7 @@ import { CohortController } from "./cohort.controller";
 import { HttpModule } from "@nestjs/axios";
 import { CohortAdapter } from "./cohortadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
-import { CohortService } from "./entities/cohort.service";
+import { CohortService } from "./cohort.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Cohort } from "./entities/cohort.entity";
 const ttl = process.env.TTL as never;

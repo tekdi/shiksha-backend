@@ -35,7 +35,7 @@ import { Response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
-import { CohortService } from "./entities/cohort.service";
+import { CohortService } from "./cohort.service";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -122,11 +122,10 @@ export class CohortController {
   public async getCohort(
     @Headers() headers,
     @Param("id") cohortId: string,
-    @Req() request: Request,
-    @Res() res: Response
+    @Req() request: Request
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.getCohort(tenantid, cohortId, request, res);
+    return this.cohortService.getCohort(tenantid, cohortId, request);
   }
   //search
   @Post("/search")

@@ -1,3 +1,4 @@
+// import { AttendanceService } from 'src/adapters/sunbirdrc/attendance.adapter';
 import {
   ApiTags,
   ApiBody,
@@ -34,13 +35,15 @@ import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { AttendanceHasuraService } from "src/adapters/hasura/attendance.adapter";
 import { AttendaceAdapter } from "./attendanceadapter";
 import { AttendanceDateDto } from "./dto/attendance-date.dto";
+import { AttendanceService } from './attendance.service';
 
 @ApiTags("Attendance")
 @Controller("attendance")
 export class AttendanceController {
   constructor(
     private service: AttendanceHasuraService,
-    private attendaceAdapter: AttendaceAdapter
+    private attendaceAdapter: AttendaceAdapter,
+    private attendaceService: AttendanceService
   ) {}
 
   @Get("/:id")
@@ -152,6 +155,29 @@ export class AttendanceController {
     let tenantid = headers["tenantid"];
     return this.attendaceAdapter
       .buildAttenceAdapter()
+      .searchAttendance(tenantid, request, studentSearchDto);
+  }
+
+
+  @Post("/searchNew")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiBody({ type: AttendanceSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchAttendanceNew(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() studentSearchDto: AttendanceSearchDto
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.attendaceService
       .searchAttendance(tenantid, request, studentSearchDto);
   }
 

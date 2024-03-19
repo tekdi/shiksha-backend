@@ -6,7 +6,7 @@ import { SunbirdModule } from "src/adapters/sunbirdrc/subnbird.module";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./entities/user-create-entity";
-import { UsersService1 } from "./user.service";
+import { UserService } from "./user.service";
 import { FieldValue } from "./entities/field-entities";
 const ttl = process.env.TTL as never;
 @Module({
@@ -23,6 +23,6 @@ const ttl = process.env.TTL as never;
     }),
   ],
   controllers: [UserController],
-  providers: [UserAdapter,UsersService1],
+  providers: [UserAdapter,UserService],
 })
 export class UserModule {}

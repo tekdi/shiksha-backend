@@ -17,7 +17,7 @@ import { SuccessResponse } from 'src/success-response';
 
 @Injectable()
 @Injectable()
-export class UsersService1 {
+export class UserService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -38,6 +38,7 @@ export class UsersService1 {
   public async createShubhamUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
     try {
+      console.log("Hi");
       const decoded: any = jwt_decode(request.headers.authorization);
     //   const userRoles = decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];

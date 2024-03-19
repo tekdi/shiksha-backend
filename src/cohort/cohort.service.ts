@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { CohortInterface } from "./interfaces/cohort.interface";
 import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
@@ -16,6 +16,10 @@ import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { InjectRepository } from "@nestjs/typeorm";
+import { FieldsService } from "src/adapters/hasura/services/fields.service";
+import { FieldValues } from "src/fields/entities/field-values.entity";
+import { response } from "express";
+import APIResponse from "src/utils/response";
 
 @Injectable()
 export class CohortService {
@@ -23,33 +27,57 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-    private cohortRepository: Repository<Cohort>
+    @InjectRepository(FieldValues)
+    private cohortRepository: Repository<Cohort>,
+    private readonly fieldsService: FieldsService
   ) {}
 
-  public async getCohort(tenantId: string, cohortId: string, request: any) {
+  public async getCohort(
+    tenantId: string,
+    cohortId: string,
+    request: any,
+    response: any
+  ) {
+    const apiId = "api.concept.editminiScreeningAnswer";
+    console.log("tenantId", tenantId);
+    console.log("cohortId", cohortId);
+
     try {
       const cohort = await this.cohortRepository.findOne({
         where: { tenantId: tenantId, cohortId: cohortId },
       });
-
+      console.log("cohort", cohort);
       if (!cohort) {
-        return new ErrorResponse({
-          errorCode: "404",
-          errorMessage: "Cohort not found.",
-        });
+        return response
+          .status(HttpStatus.NOT_FOUND) // Change status to 404 Not Found
+          .send(
+            APIResponse.error(
+              apiId,
+              `Cohort Id is wrong`,
+              `Cohort not found`,
+              "COHORT_NOT_FOUND"
+            )
+          );
       }
 
-      let cohortResponse = await this.mappedResponse(cohort);
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok.",
-        data: cohortResponse,
-      });
+      return response.status(HttpStatus.OK).send(
+        APIResponse.success(
+          apiId,
+          cohort, // Send cohort data
+          "Cohort Retrieved Successfully"
+        )
+      );
     } catch (error) {
-      return new ErrorResponse({
-        errorCode: "500",
-        errorMessage: "Something went wrong",
-      });
+      return response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            "Something went wrong",
+            `Failure Retrieving Cohort. Error is: ${error}`,
+            "INTERNAL_SERVER_ERROR"
+          )
+        );
     }
   }
 

@@ -31,7 +31,7 @@ import { CohortDto } from "./dto/cohort.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
-import { Response } from "express";
+import { Response, response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
@@ -122,35 +122,36 @@ export class CohortController {
   public async getCohort(
     @Headers() headers,
     @Param("id") cohortId: string,
-    @Req() request: Request
+    @Req() request: Request,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.getCohort(tenantid, cohortId, request);
+    return this.cohortService.getCohort(tenantid, cohortId, request, response);
   }
   //search
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort list." })
-  @ApiBody({ type: CohortSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async searchCohort(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() cohortSearchDto: CohortSearchDto,
-    @Res() res: Response
-  ) {
-    let tenantid = headers["tenantid"];
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .searchCohort(tenantid, request, cohortSearchDto, res);
-  }
+  // @Post("/search")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Cohort list." })
+  // @ApiBody({ type: CohortSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async searchCohort(
+  //   @Headers() headers,
+  //   @Req() request: Request,
+  //   @Body() cohortSearchDto: CohortSearchDto,
+  //   @Res() res: Response
+  // ) {
+  //   let tenantid = headers["tenantid"];
+  //   return this.cohortAdapter
+  //     .buildCohortAdapter()
+  //     .searchCohort(tenantid, request, cohortSearchDto, res);
+  // }
 
   //update
   @Put("/:id")

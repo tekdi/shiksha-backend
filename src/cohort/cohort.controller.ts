@@ -83,30 +83,6 @@ export class CohortController {
       .createCohort(request, cohortCreateDto);
   }
 
-  // //get cohort
-  // @Get("/:id")
-  // @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "Cohort detail" })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async getCohort(
-  //   @Headers() headers,
-  //   @Param("id") cohortId: string,
-  //   @Req() request: Request,
-  //   @Res() res: Response
-  // ) {
-  //   let tenantid = headers["tenantid"];
-  //   return this.cohortAdapter
-  //     .buildCohortAdapter()
-  //     .getCohort(tenantid, cohortId, request, res);
-  // }
-
   //get cohort
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -128,30 +104,30 @@ export class CohortController {
     let tenantid = headers["tenantid"];
     return this.cohortService.getCohort(tenantid, cohortId, request, response);
   }
-  //search
-  // @Post("/search")
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "Cohort list." })
-  // @ApiBody({ type: CohortSearchDto })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async searchCohort(
-  //   @Headers() headers,
-  //   @Req() request: Request,
-  //   @Body() cohortSearchDto: CohortSearchDto,
-  //   @Res() res: Response
-  // ) {
-  //   let tenantid = headers["tenantid"];
-  //   return this.cohortAdapter
-  //     .buildCohortAdapter()
-  //     .searchCohort(tenantid, request, cohortSearchDto, res);
-  // }
+  search;
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort list." })
+  @ApiBody({ type: CohortSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchCohort(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortSearchDto: CohortSearchDto,
+    @Res() res: Response
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortAdapter
+      .buildCohortAdapter()
+      .searchCohort(tenantid, request, cohortSearchDto, res);
+  }
 
   //update
   @Put("/:id")

@@ -7,10 +7,8 @@ const resolvePath = require("object-resolve-path");
 import jwt_decode from "jwt-decode";
 import { CohortDto } from "src/cohort/dto/cohort.dto";
 import { CohortSearchDto } from "src/cohort/dto/cohort-search.dto";
-// import { IServicelocatorcohort } from "../cohortservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
-// import { FieldsService } from "./services/fields.service";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
@@ -39,14 +37,11 @@ export class CohortService {
     response: any
   ) {
     const apiId = "api.concept.editminiScreeningAnswer";
-    console.log("tenantId", tenantId);
-    console.log("cohortId", cohortId);
 
     try {
       const cohort = await this.cohortRepository.findOne({
         where: { tenantId: tenantId, cohortId: cohortId },
       });
-      console.log("cohort", cohort);
       if (!cohort) {
         return response
           .status(HttpStatus.NOT_FOUND) // Change status to 404 Not Found

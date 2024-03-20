@@ -3,9 +3,13 @@ import { CohortController } from "./cohort.controller";
 import { HttpModule } from "@nestjs/axios";
 import { CohortAdapter } from "./cohortadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
+import { CohortService } from "./cohort.service";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Cohort } from "./entities/cohort.entity";
 const ttl = process.env.TTL as never;
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Cohort]),
     HttpModule,
     HasuraModule,
     CacheModule.register({
@@ -13,6 +17,6 @@ const ttl = process.env.TTL as never;
     }),
   ],
   controllers: [CohortController],
-  providers: [CohortAdapter],
+  providers: [CohortAdapter, CohortService],
 })
 export class CohortModule {}

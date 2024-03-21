@@ -260,15 +260,22 @@ export class AttendanceService {
         attendanceSearchDto: AttendanceDateDto
     ) {
         try {
+
+            
+            let { limit, page } = attendanceSearchDto;
+            if (!limit) {
+                limit = '0';
+            }
+
             let offset = 0;
-            if (attendanceSearchDto.page > 1) {
-                offset = parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+            if (page > 1) {
+                offset = parseInt(limit) * (page - 1);
             }
 
             const fromDate = new Date(attendanceSearchDto.fromDate);
             const toDate = new Date(attendanceSearchDto.toDate);
 
-            const whereClause: any = {
+            let whereClause: any = {
                 tenantId: tenantId ? tenantId : '',
                 attendanceDate: Between(fromDate, toDate),
             };
@@ -282,7 +289,7 @@ export class AttendanceService {
 
             const [results, totalCount] = await this.attendanceRepository.findAndCount({
                 where: whereClause,
-                take: parseInt(attendanceSearchDto.limit),
+                take: parseInt(limit),
                 skip: offset,
             });
 
@@ -298,7 +305,7 @@ export class AttendanceService {
             console.error(e);
             return new ErrorResponse({
                 errorCode: "500",
-                errorMessage: "Internal Server Error",
+                errorMessage: e,
             });
         }
     }

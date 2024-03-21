@@ -21,6 +21,14 @@ export class AttendanceService {
         @InjectRepository(AttendanceEntity)
         private readonly attendanceRepository: Repository<AttendanceEntity>,) { }
 
+
+
+    /*
+    Method to search attendance for all or for the key value pair provided in filter object 
+    @body an object of details consisting of attendance details of user (attendance dto)  
+    @return Attendance records from attendance table for provided filters
+    */
+
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
 
         try {
@@ -42,8 +50,6 @@ export class AttendanceService {
             else {
                 whereClause['tenantId'] = tenantId;
             }
-
-
             const [results, totalCount] = await this.attendanceRepository.findAndCount({
                 where: whereClause,
                 take: parseInt(limit),
@@ -94,72 +100,80 @@ export class AttendanceService {
         return attendanceResponse;
     }
 
+    /* 
+    Method to create,update or add attendance for valid user in attendance table
+    @body an object of details consisting of attendance details of user (attendance dto)  
+    @return updated details of attendance record 
+    */
+
     public async updateAttendanceRecord(
         request: any,
         attendanceDto: AttendanceDto
     ) {
 
-     
+
         try {
-            if( !isAfter(new Date(attendanceDto.attendanceDate), new Date()) && attendanceDto.attendanceDate){
-            const decoded: any = jwt_decode(request.headers.authorization);
+            if (!isAfter(new Date(attendanceDto.attendanceDate), new Date()) && attendanceDto.attendanceDate) {
+                const decoded: any = jwt_decode(request?.headers?.authorization);
 
-            const userId =
-                decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-            attendanceDto.createdBy = userId;
-            attendanceDto.updatedBy = userId;
-            const attendanceToSearch = new AttendanceSearchDto({});
-
-
-
-            attendanceToSearch.filters = {
-                attendanceDate: attendanceDto.attendanceDate,
-                userId: attendanceDto.userId,
-            };
-            console.log("attendanceToSearch.filters",attendanceToSearch.filters)
+                const userId =
+                    decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+                attendanceDto.createdBy = userId;
+                attendanceDto.updatedBy = userId;
+                const attendanceToSearch = new AttendanceSearchDto({});
 
 
-            const attendanceFound: any = await this.searchAttendance(
-                attendanceDto.tenantId,
-                request,
-                attendanceToSearch
-            );
+
+                attendanceToSearch.filters = {
+                    attendanceDate: attendanceDto.attendanceDate,
+                    userId: attendanceDto.userId,
+                };
 
 
-            if (attendanceFound?.errorCode) {
+                const attendanceFound: any = await this.searchAttendance(
+                    attendanceDto.tenantId,
+                    request,
+                    attendanceToSearch
+                );
+
+
+                if (attendanceFound?.errorCode) {
+                    return new ErrorResponse({
+                        errorCode: "500",
+                        errorMessage: attendanceFound?.errorMessage,
+                    });
+                }
+
+                if (
+                    attendanceFound.data.length > 0 &&
+                    attendanceFound.statusCode === 200
+                ) {
+
+                    return await this.updateAttendance(
+                        attendanceFound.data[0].attendanceId,
+                        request,
+                        attendanceDto
+                    );
+                } else {
+
+                    return await this.createAttendance(request, attendanceDto);
+                }
+            }
+            else {
                 return new ErrorResponse({
-                    errorCode: "500",
-                    errorMessage: attendanceFound?.errorMessage,
+                    errorCode: '500',
+                    errorMessage: "Date cannot be from future",
                 });
             }
-
-            if (
-                attendanceFound.data.length > 0 &&
-                attendanceFound.statusCode === 200
-            ) {
-
-                return await this.updateAttendance(
-                    attendanceFound.data[0].attendanceId,
-                    request,
-                    attendanceDto
-                );
-            } else {
-
-                return await this.createAttendance(request, attendanceDto);
-            }
-        }
-        else{
-            return  new ErrorResponse({
-                errorCode: '500',
-                errorMessage: "Date cannot be from future",
-            });
-        }
         } catch (e) {
             return e;
         }
     }
 
-
+    /*Method to update attendance for userId 
+    @body an object of details consisting of attendance details of user (attendance dto),attendanceId
+    @return updated attendance record based on attendanceId
+    */
     public async updateAttendance(
         attendanceId: string,
         request: any,
@@ -169,7 +183,7 @@ export class AttendanceService {
             const attendanceRecord = await this.attendanceRepository.findOne({
                 where: { attendanceId },
             });
-           
+
             if (!attendanceRecord) {
                 return new ErrorResponse({
                     errorCode: "404",
@@ -202,10 +216,13 @@ export class AttendanceService {
         }
     }
 
-
+    /*method to add attendance of new user in attendance
+    @body object containing details related to attendance details (AttendanceDto)
+    @return attendance record for newly added user in Attendance table 
+    */
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
 
-      console.log("created")
+        console.log("created")
         try {
 
             const attendance = this.attendanceRepository.create(attendanceDto);
@@ -233,110 +250,117 @@ export class AttendanceService {
         }
     }
 
-   public async attendanceByDate(
-    tenantId: string,
-    request: any,
-    attendanceSearchDto: AttendanceDateDto
-  ) {
-    try {
-      let offset = 0;
-      if (attendanceSearchDto.page > 1) {
-          offset = parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
-      }
+    /*Method to search attendance fromDate to toDate 
+    @body object containing attendance date details for user (AttendanceDateDto)
+    @return attendance records from fromDate to toDate     */
 
-      const fromDate = new Date(attendanceSearchDto.fromDate);
-      const toDate = new Date(attendanceSearchDto.toDate);
+    public async attendanceByDate(
+        tenantId: string,
+        request: any,
+        attendanceSearchDto: AttendanceDateDto
+    ) {
+        try {
+            let offset = 0;
+            if (attendanceSearchDto.page > 1) {
+                offset = parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+            }
 
-      const whereClause: any = {
-        tenantId: tenantId ? tenantId : '',
-        attendanceDate: Between(fromDate, toDate),
-      };
+            const fromDate = new Date(attendanceSearchDto.fromDate);
+            const toDate = new Date(attendanceSearchDto.toDate);
 
-      // Add additional filters if present
-      if (attendanceSearchDto.filters) {
-        Object.keys(attendanceSearchDto.filters).forEach((key) => {
-          whereClause[key] = attendanceSearchDto.filters[key];
-        });
-      }
+            const whereClause: any = {
+                tenantId: tenantId ? tenantId : '',
+                attendanceDate: Between(fromDate, toDate),
+            };
 
-      const [results, totalCount] = await this.attendanceRepository.findAndCount({
-        where: whereClause,
-        take: parseInt(attendanceSearchDto.limit),
-        skip: offset,
-      });
+            // Add additional filters if present
+            if (attendanceSearchDto.filters) {
+                Object.keys(attendanceSearchDto.filters).forEach((key) => {
+                    whereClause[key] = attendanceSearchDto.filters[key];
+                });
+            }
 
-      const mappedResponse = await this.mappedResponse(results);
+            const [results, totalCount] = await this.attendanceRepository.findAndCount({
+                where: whereClause,
+                take: parseInt(attendanceSearchDto.limit),
+                skip: offset,
+            });
 
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "Ok",
-        totalCount: totalCount,
-        data: mappedResponse,
-      });
-    } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "500",
-        errorMessage: "Internal Server Error",
-      });
+            const mappedResponse = await this.mappedResponse(results);
+
+            return new SuccessResponse({
+                statusCode: 200,
+                message: "Ok",
+                totalCount: totalCount,
+                data: mappedResponse,
+            });
+        } catch (e) {
+            console.error(e);
+            return new ErrorResponse({
+                errorCode: "500",
+                errorMessage: "Internal Server Error",
+            });
+        }
     }
-  }
 
-  public async multipleAttendance(
-    tenantId: string,
-    request: any,
-    attendanceData: [AttendanceDto]
-  ) {
-    const responses = [];
-    const errors = [];
-    try {
-      let count = 1;
-      
-      for (const attendance of attendanceData) {
-        console.log("new Date(attendance.attendanceDate)",attendance.attendanceDate)
-        if(attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate  && attendance.attendance){
-         
-        attendance.tenantId = tenantId;
-        const attendanceRes: any = await this.updateAttendanceRecord(
-          request,
-          attendance
-        );
-        if (attendanceRes?.statusCode === 200) {
-          responses.push(attendanceRes.data);
-        } else {
-          errors.push({
-            userId: attendance.userId,
-            attendanceRes,
-          });
+    /*Method to add multiple attendance records in Attendance table
+    @body Array of objects containing attendance details of user (AttendanceDto)
+    */
+
+    public async multipleAttendance(
+        tenantId: string,
+        request: any,
+        attendanceData: [AttendanceDto]
+    ) {
+        const responses = [];
+        const errors = [];
+        try {
+            let count = 1;
+
+            for (const attendance of attendanceData) {
+                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance) {
+
+                    attendance.tenantId = tenantId;
+                    const attendanceRes: any = await this.updateAttendanceRecord(
+                        request,
+                        attendance
+                    );
+                    if (attendanceRes?.statusCode === 200) {
+                        responses.push(attendanceRes.data);
+                    } else {
+                        errors.push({
+                            userId: attendance.userId,
+                            attendanceRes,
+                        });
+                    }
+                    count++;
+                }
+
+                else {
+                    errors.push({
+                        message: `userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday]`
+
+                    });
+                    count++;
+                }
+
+            }
+        } catch (e) {
+            console.error(e);
+            return e;
         }
-       count++;
-        }
-        
-        else{
-          errors.push({
-            message:`userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday]`
-            
-          });
-          count++;
-        }
-     
-      }
-    } catch (e) {
-      console.error(e);
-      return e;
+
+
+        return {
+            statusCode: 200,
+            totalCount: attendanceData.length,
+            successCount: responses.length,
+            errorCount: errors.length,
+            responses,
+            errors,
+        };
     }
-    
-    
-    return {
-      statusCode: 200,
-      totalCount: attendanceData.length,
-      successCount: responses.length,
-      errorCount:errors.length,
-      responses,
-      errors,
-    };
-  }
-  
+
 }
 
 

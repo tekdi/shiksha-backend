@@ -46,7 +46,7 @@ export class AttendanceController {
     private service: AttendanceHasuraService,
     private attendaceAdapter: AttendaceAdapter,
     private attendaceService: AttendanceService
-  ) {}
+  ) { }
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -72,7 +72,7 @@ export class AttendanceController {
 
 
   @Post()
-  
+
   @UsePipes(new ValidationPipe())
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -102,8 +102,7 @@ export class AttendanceController {
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    return this.attendaceService
-      .checkAndAddAttendance(request, attendanceDto);
+    return this.attendaceService.updateAttendanceRecord(request, attendanceDto);
   }
 
   @Put("/:id")
@@ -217,5 +216,5 @@ export class AttendanceController {
     return await this.service.userSegment(groupId, attendance, date, request);
   }
   */
- 
+
 }

@@ -106,40 +106,6 @@ export class AttendanceController {
       .checkAndAddAttendance(request, attendanceDto);
   }
 
-  // @Post()
-  // @ApiConsumes("multipart/form-data")
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({
-  //   description: "Attendance has been created successfully.",
-  // })
-  // @UseInterceptors(
-  //   FileInterceptor("image", {
-  //     storage: diskStorage({
-  //       destination: process.env.IMAGEPATH,
-  //       filename: editFileName,
-  //     }),
-  //     fileFilter: imageFileFilter,
-  //   })
-  // )
-  // @ApiBody({ type: AttendanceDto })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async createAttendace(
-  //   @Headers() headers,
-  //   @Req() request: Request,
-  //   @Body() attendanceDto: AttendanceDto,
-  //   @UploadedFile() image
-  // ) {
-  //   attendanceDto.tenantId = headers["tenantid"];
-  //   attendanceDto.image = image?.filename;
-  //   return this.attendaceAdapter
-  //     .buildAttenceAdapter()
-  //     .checkAndAddAttendance(request, attendanceDto);
-  // }
-
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")

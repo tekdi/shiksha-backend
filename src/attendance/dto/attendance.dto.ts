@@ -1,14 +1,19 @@
 import { ManyToOne, JoinColumn } from 'typeorm';
-import { IsDate, IsDateString, IsEnum, IsUUID, Matches } from 'class-validator';
-import { Exclude, Expose } from "class-transformer";
+import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { Exclude, Expose, Transform } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-create-entity';
+import { format, isAfter } from 'date-fns'; // Import isAfter function from date-fns
+import { HttpException, HttpStatus } from '@nestjs/common';
+
 
 enum Attendance{
   present="present",
-  absent="absent"
+  absent="absent",
+  halfDay="halfday"
 }
+
 export class AttendanceDto {
   @Expose()
   attendanceId: string;
@@ -21,6 +26,7 @@ export class AttendanceDto {
     description: "The userid of the attendance",
     default: "",
   })
+  @IsDefined()
   @IsNotEmpty()
   @IsUUID()
   @Expose()
@@ -38,6 +44,13 @@ export class AttendanceDto {
   @IsNotEmpty()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })  
   @Expose()
+  @Transform(({ value }) => new Date(value)) // Transform the incoming value to a Date object
+  @Transform(({ value }) => { // Custom transform function to validate date
+    if (isAfter(value, new Date())) {
+      throw new HttpException('Attendance date cannot be of future', HttpStatus.BAD_REQUEST);
+    }
+    return value;
+  })
   attendanceDate: Date;
 
   @ApiProperty({

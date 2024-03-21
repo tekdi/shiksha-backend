@@ -1,14 +1,17 @@
+import { isAfter } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'pg';
 import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "./entities/attendance.entity";
 import { Repository } from "typeorm";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { ErrorResponse } from "src/error-response";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto } from './dto/attendance.dto';
+import { AttendanceDateDto } from './dto/attendance-date.dto';
+import { Between } from 'typeorm';
 
 
 
@@ -95,6 +98,8 @@ export class AttendanceService {
         request: any,
         attendanceDto: AttendanceDto
     ) {
+
+     
         try {
             const decoded: any = jwt_decode(request.headers.authorization);
 
@@ -104,10 +109,13 @@ export class AttendanceService {
             attendanceDto.updatedBy = userId;
             const attendanceToSearch = new AttendanceSearchDto({});
 
+
+
             attendanceToSearch.filters = {
                 attendanceDate: attendanceDto.attendanceDate,
                 userId: attendanceDto.userId,
             };
+            console.log("attendanceToSearch.filters",attendanceToSearch.filters)
 
 
             const attendanceFound: any = await this.searchAttendance(
@@ -150,11 +158,10 @@ export class AttendanceService {
         attendanceDto: AttendanceDto
     ) {
         try {
-
             const attendanceRecord = await this.attendanceRepository.findOne({
                 where: { attendanceId },
             });
-
+           
             if (!attendanceRecord) {
                 return new ErrorResponse({
                     errorCode: "404",
@@ -189,6 +196,8 @@ export class AttendanceService {
 
 
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
+
+      console.log("created")
         try {
 
             const attendance = this.attendanceRepository.create(attendanceDto);
@@ -215,6 +224,110 @@ export class AttendanceService {
             }
         }
     }
+
+   public async attendanceByDate(
+    tenantId: string,
+    request: any,
+    attendanceSearchDto: AttendanceDateDto
+  ) {
+    try {
+      let offset = 0;
+      if (attendanceSearchDto.page > 1) {
+          offset = parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+      }
+
+      const fromDate = new Date(attendanceSearchDto.fromDate);
+      const toDate = new Date(attendanceSearchDto.toDate);
+
+      const whereClause: any = {
+        tenantId: tenantId ? tenantId : '',
+        attendanceDate: Between(fromDate, toDate),
+      };
+
+      // Add additional filters if present
+      if (attendanceSearchDto.filters) {
+        Object.keys(attendanceSearchDto.filters).forEach((key) => {
+          whereClause[key] = attendanceSearchDto.filters[key];
+        });
+      }
+
+      const [results, totalCount] = await this.attendanceRepository.findAndCount({
+        where: whereClause,
+        take: parseInt(attendanceSearchDto.limit),
+        skip: offset,
+      });
+
+      const mappedResponse = await this.mappedResponse(results);
+
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok",
+        totalCount: totalCount,
+        data: mappedResponse,
+      });
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "500",
+        errorMessage: "Internal Server Error",
+      });
+    }
+  }
+
+  public async multipleAttendance(
+    tenantId: string,
+    request: any,
+    attendanceData: [AttendanceDto]
+  ) {
+    const responses = [];
+    const errors = [];
+    try {
+      let count = 1;
+      
+      for (const attendance of attendanceData) {
+        console.log("new Date(attendance.attendanceDate)",attendance.attendanceDate)
+        if(attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate  && attendance.attendance){
+         
+        attendance.tenantId = tenantId;
+        const attendanceRes: any = await this.checkAndAddAttendance(
+          request,
+          attendance
+        );
+        if (attendanceRes?.statusCode === 200) {
+          responses.push(attendanceRes.data);
+        } else {
+          errors.push({
+            userId: attendance.userId,
+            attendanceRes,
+          });
+        }
+       count++;
+        }
+        else{
+          errors.push({
+            message:`userId should not be empty null or undefined for record or attendance date should not be of future for${count}`
+            
+          });
+          count++;
+        }
+     
+      }
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+    
+    
+    return {
+      statusCode: 200,
+      totalCount: attendanceData.length,
+      successCount: responses.length,
+      errorCount:errors.length,
+      responses,
+      errors,
+    };
+  }
+  
 }
 
 

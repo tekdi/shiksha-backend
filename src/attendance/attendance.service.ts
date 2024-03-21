@@ -101,6 +101,7 @@ export class AttendanceService {
 
      
         try {
+            if( !isAfter(new Date(attendanceDto.attendanceDate), new Date()) && attendanceDto.attendanceDate){
             const decoded: any = jwt_decode(request.headers.authorization);
 
             const userId =
@@ -146,6 +147,13 @@ export class AttendanceService {
 
                 return await this.createAttendance(request, attendanceDto);
             }
+        }
+        else{
+            return  new ErrorResponse({
+                errorCode: '500',
+                errorMessage: "Date cannot be from future",
+            });
+        }
         } catch (e) {
             return e;
         }
@@ -303,9 +311,10 @@ export class AttendanceService {
         }
        count++;
         }
+        
         else{
           errors.push({
-            message:`userId should not be empty null or undefined for record or attendance date should not be of future for${count}`
+            message:`userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday]`
             
           });
           count++;

@@ -44,13 +44,6 @@ export class AttendanceDto {
   @IsNotEmpty()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })  
   @Expose()
-  @Transform(({ value }) => new Date(value)) // Transform the incoming value to a Date object
-  @Transform(({ value }) => { // Custom transform function to validate date
-    if (isAfter(value, new Date())) {
-      throw new HttpException('Attendance date cannot be of future', HttpStatus.BAD_REQUEST);
-    }
-    return value;
-  })
   attendanceDate: Date;
 
   @ApiProperty({

@@ -94,7 +94,7 @@ export class AttendanceService {
         return attendanceResponse;
     }
 
-    public async checkAndAddAttendance(
+    public async updateAttendanceRecord(
         request: any,
         attendanceDto: AttendanceDto
     ) {
@@ -297,7 +297,7 @@ export class AttendanceService {
         if(attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate  && attendance.attendance){
          
         attendance.tenantId = tenantId;
-        const attendanceRes: any = await this.checkAndAddAttendance(
+        const attendanceRes: any = await this.updateAttendanceRecord(
           request,
           attendance
         );

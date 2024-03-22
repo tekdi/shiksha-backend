@@ -11,13 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class FieldsDto {
   //generated fields
   @Expose()
-  tenantId: string;
-  @Expose()
   fieldId: string;
-  @Expose()
-  createdAt: string;
-  @Expose()
-  updatedAt: string;
 
   //assetId
   @ApiProperty({
@@ -36,32 +30,6 @@ export class FieldsDto {
   })
   @Expose()
   context: string;
-
-  //contextId
-  @ApiProperty({
-    type: String,
-    description: "The contextId of the fields",
-    default: "",
-  })
-  @Expose()
-  contextId: string;
-
-  //contexType
-  @ApiProperty({
-    type: String,
-    description: "The contexType of the fields",
-    default: "",
-  })
-  @Expose()
-  contexType: string;
-
-  //render
-  @ApiProperty({
-    type: Object,
-    description: "The form render json of the fields",
-  })
-  @Expose()
-  render: any;
 
   //groupId
   @ApiProperty({
@@ -180,6 +148,15 @@ export class FieldsDto {
   @Expose()
   onlyUseInSubform: Boolean;
 
+  @Expose()
+  tenantId: string;
+
+  @Expose()
+  createdAt: string;
+
+  @Expose()
+  updatedAt: string;
+
   //createdBy
   @ApiProperty({
     type: String,
@@ -197,6 +174,41 @@ export class FieldsDto {
   })
   @Expose()
   updatedBy: string;
+
+  //contextId
+  @ApiProperty({
+    type: String,
+    description: "The contextId of the fields",
+    default: "",
+  })
+  @Expose()
+  contextId: string;
+
+  //render
+  @ApiProperty({
+    type: Object,
+    description: "The form render json of the fields",
+  })
+  @Expose()
+  render: any;
+
+  //contexType
+  @ApiProperty({
+    type: String,
+    description: "The contexType of the fields",
+    default: "",
+  })
+  @Expose()
+  contexType: string;
+
+  //contexType
+  @ApiProperty({
+    type: Object,
+    description: "The fieldParams of the fields",
+    default: "",
+  })
+  @Expose()
+  fieldParams: object;
 
   constructor(obj: any) {
     Object.assign(this, obj);

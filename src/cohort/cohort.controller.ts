@@ -104,7 +104,8 @@ export class CohortController {
     let tenantid = headers["tenantid"];
     return this.cohortService.getCohort(tenantid, cohortId, request, response);
   }
-  search;
+  
+  // search
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort list." })

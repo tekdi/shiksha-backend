@@ -45,10 +45,6 @@ export class FieldsController {
   //fields
   //create fields
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Fields has been created successfully." })
-  @ApiBody({ type: FieldsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
@@ -71,11 +67,6 @@ export class FieldsController {
  
   //search
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Fields list." })
-  @ApiBody({ type: FieldsSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -88,9 +79,7 @@ export class FieldsController {
     @Body() fieldsSearchDto: FieldsSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.fieldsAdapter
-      .buildFieldsAdapter()
-      .searchFields(tenantid, request, fieldsSearchDto);
+    return this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
   }
 
  

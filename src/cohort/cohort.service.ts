@@ -205,7 +205,6 @@ export class CohortService {
   ) {
     try {
 
-
       let { limit, page, filters } = cohortSearchDto;
 
       let offset = 0;
@@ -227,20 +226,18 @@ export class CohortService {
         whereClause['tenantId'] = tenantId;
       }
 
-
-
       const [results, totalCount] = await this.cohortRepository.findAndCount({
         where: whereClause,
         skip: offset,
       });
 
-      console.log(results);
+      const mappedResponse = await this.mappedResponse(results);
 
       return new SuccessResponse({
-        statusCode: 200,
-        message: 'Ok.',
-        totalCount,
-        data: results,
+          statusCode: 200,
+          message: 'Ok.',
+          totalCount,
+          data: mappedResponse,
       });
 
     } catch (e) {
@@ -253,23 +250,26 @@ export class CohortService {
   }
 
   public async mappedResponse(result: any) {
-    const cohortMapping = {
-      tenantId: result?.tenantId ? `${result.tenantId}` : "",
-      programId: result?.programId ? `${result.programId}` : "",
-      cohortId: result?.cohortId ? `${result.cohortId}` : "",
-      parentId: result?.parentId ? `${result.parentId}` : "",
-      name: result?.name ? `${result.name}` : "",
-      type: result?.type ? `${result.type}` : "",
-      status: result?.status ? `${result.status}` : "",
-      image: result?.image ? `${result.image}` : "",
-      createdAt: result?.createdAt ? `${result.createdAt}` : "",
-      updatedAt: result?.updatedAt ? `${result.updatedAt}` : "",
-      createdBy: result?.createdBy ? `${result.createdBy}` : "",
-      updatedBy: result?.updatedBy ? `${result.updatedBy}` : "",
-      referenceId: result?.referenceId ? `${result.referenceId}` : "",
-      metadata: result?.metadata ? `${result.metadata}` : "",
-    };
-
-    return new CohortDto(cohortMapping);
+    const cohortValueResponse = result.map((item: any) => {
+      const cohortMapping = {
+        tenantId: item?.tenantId ? `${item.tenantId}` : "",
+        programId: item?.programId ? `${item.programId}` : "",
+        cohortId: item?.cohortId ? `${item.cohortId}` : "",
+        parentId: item?.parentId ? `${item.parentId}` : "",
+        name: item?.name ? `${item.name}` : "",
+        type: item?.type ? `${item.type}` : "",
+        status: item?.status ? `${item.status}` : "",
+        image: item?.image ? `${item.image}` : "",
+        createdAt: item?.createdAt ? `${item.createdAt}` : "",
+        updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+        createdBy: item?.createdBy ? `${item.createdBy}` : "",
+        updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+        referenceId: item?.referenceId ? `${item.referenceId}` : "",
+        metadata: item?.metadata ? `${item.metadata}` : "",
+      };
+      return new CohortDto(cohortMapping);
+    })
+    return cohortValueResponse;
+    
   }
 }

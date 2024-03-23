@@ -118,7 +118,7 @@ export class CohortService {
           await this.fieldsService.createFieldValues(request, fieldValueDto);
         }
       }
-      
+
       return new SuccessResponse({
         statusCode: 200,
         message: "Ok.",
@@ -139,162 +139,118 @@ export class CohortService {
     request: any,
     cohortUpdateDto: CohortCreateDto
   ) {
-    const cohortUpdateData: any = {};
+    try {
+      const cohortUpdateData: any = {};
 
-    Object.keys(cohortUpdateDto).forEach((e) => {
-      if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
-      ) {
-        if (Array.isArray(cohortUpdateDto[e])) {
-          cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
-        } else {
-          cohortUpdateData[e] = cohortUpdateDto[e];
+      Object.keys(cohortUpdateDto).forEach((e) => {
+        if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
+        ) {
+          if (Array.isArray(cohortUpdateDto[e])) {
+            cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
+          } else {
+            cohortUpdateData[e] = cohortUpdateDto[e];
+          }
+        }
+      });
+
+      const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
+      console.log(response);
+
+
+      let field_value_array = cohortUpdateDto.fieldValues.split("|");
+
+      if (field_value_array.length > 0) {
+        let field_values = [];
+        for (let i = 0; i < field_value_array.length; i++) {
+
+          let fieldValues = field_value_array[i].split(":");
+          let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
+          const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+          const rowid = fieldVauesRowId.fieldValuesId;
+
+          let fieldValueDto: FieldValuesDto = {
+            fieldValuesId: rowid,
+            value: fieldValues[1] ? fieldValues[1].trim() : "",
+            itemId: cohortId,
+            fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+            createdBy: cohortUpdateDto?.createdBy,
+            updatedBy: cohortUpdateDto?.updatedBy,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
         }
       }
-    });
 
-
-    const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
-
-    // if (response?.data?.errors) {
-    //   return new ErrorResponse({
-    //     errorCode: response?.data?.errors[0]?.extensions?.code,
-    //     errorMessage: response?.data?.errors[0]?.message,
-    //   });
-    // } 
-    // else {
-    //   let result = response.data.update_Cohort_by_pk;
-    //   let fieldCreate = true;
-    //   let fieldError = [];
-    //   //update fields values
-    //   let field_value_array = cohortUpdateDto.fieldValues.split("|");
-    //   if (field_value_array.length > 0) {
-    //     for (let i = 0; i < field_value_array.length; i++) {
-    //       let fieldValues = field_value_array[i].split(":");
-    //       //update values
-    //       let fieldValuesUpdate = new FieldValuesDto({
-    //         value: fieldValues[1] ? fieldValues[1] : "",
-    //       });
-
-    //       const response_field_values =
-    //         await this.fieldsService.updateFieldValues(
-    //           fieldValues[0] ? fieldValues[0] : "",
-    //           fieldValuesUpdate
-    //         );
-    //       if (response_field_values?.data?.errors) {
-    //         fieldCreate = false;
-    //         fieldError.push(response_field_values?.data);
-    //       }
-    //     }
-    //   }
-    //   if (fieldCreate) {
-    //     return new SuccessResponse({
-    //       statusCode: 200,
-    //       message: "Ok.",
-    //       data: result,
-    //     });
-    //   } else {
-    //     return new ErrorResponse({
-    //       errorCode: "filed value update error",
-    //       errorMessage: JSON.stringify(fieldError),
-    //     });
-    //   }
-    // }
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: {
+          rowCount: response.affected,
+        }
+      });
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
   }
 
-  // public async searchCohort(
-  //   tenantId: string,
-  //   request: any,
-  //   cohortSearchDto: CohortSearchDto,
-  //   res: any
-  // ) {
-  //   try{
-  //     let entityFilter = cohortSearchDto;
-  //     let filedsFilter = entityFilter?.filters["fields"];
-  //     //remove fields from filter
-  //     delete entityFilter.filters["fields"];
-  //     let newCohortSearchDto = null;
-  //     //check fields value present or not
-  //     if (filedsFilter) {
-  //       //apply filter on fields value
-  //       let response_fields_value =
-  //         await this.fieldsService.searchFieldValuesFilter(request,filedsFilter);
-  //       if (response_fields_value?.data?.errors) {
-  //         return res.status(200).send({
-  //           errorCode: response_fields_value?.data?.errors[0]?.extensions?.code,
-  //           errorMessage: response_fields_value?.data?.errors[0]?.message,
-  //         });
-  //       } else {
-  //         //get filter result
-  //         let result_FieldValues = response_fields_value?.data?.data?.FieldValues;
-  //         //fetch cohot id list
-  //         let cohort_id_list = [];
-  //         for (let i = 0; i < result_FieldValues.length; i++) {
-  //           cohort_id_list.push(result_FieldValues[i].itemId);
-  //         }
-  //         //remove duplicate entries
-  //         cohort_id_list = cohort_id_list.filter(
-  //           (item, index) => cohort_id_list.indexOf(item) === index
-  //         );
-  //         let cohort_filter = new Object(entityFilter.filters);
-  //         cohort_filter["cohortId"] = {
-  //           _in: cohort_id_list,
-  //         };
-  //         newCohortSearchDto = new CohortSearchDto({
-  //           limit: entityFilter.limit,
-  //           page: entityFilter.page,
-  //           filters: cohort_filter,
-  //         });
-  //       }
-  //     } else {
-  //       newCohortSearchDto = new CohortSearchDto({
-  //         limit: entityFilter.limit,
-  //         page: entityFilter.page,
-  //         filters: entityFilter.filters,
-  //       });
-  //     }
-  //     if (newCohortSearchDto) {
-  //       const response = await this.searchCohortQuery(
-  //         request,
-  //         tenantId,
-  //         newCohortSearchDto
-  //       );
-  //       if (response?.data?.errors) {
-  //         return res.status(200).send({
-  //           errorCode: response?.data?.errors[0]?.extensions?.code,
-  //           errorMessage: response?.data?.errors[0]?.message,
-  //         });
-  //       } else {
-  //         let result = response?.data?.data?.Cohort;
-  //         let cohortResponse = await this.mappedResponse(result);
-  //         //const count = cohortResponse.length;
-  //         const count = result.length;
-  //         //get cohort fields value
-  //         let result_data = await this.searchCohortFields(
-  //           request,
-  //           tenantId,
-  //           cohortResponse
-  //         );
-  //         return res.status(200).send({
-  //           statusCode: 200,
-  //           message: "Ok.",
-  //           totalCount: count,
-  //           data: result_data,
-  //         });
-  //       }
-  //     } else {
-  //       return res.status(200).send({
-  //         errorCode: "filter invalid",
-  //         errorMessage: "filter invalid",
-  //       });
-  //     }
-  //   }catch (e) {
-  //     console.error(e);
-  //     return new ErrorResponse({
-  //       errorCode: "401",
-  //       errorMessage: e,
-  //     });
-  //   }
-  // }
+  public async searchCohort(
+    tenantId: string,
+    request: any,
+    cohortSearchDto: CohortSearchDto,
+  ) {
+    try {
+
+
+      let { limit, page, filters } = cohortSearchDto;
+
+      let offset = 0;
+      if (page > 1) {
+        offset = parseInt(limit) * (page - 1);
+      }
+
+      if (limit.trim() === '') {
+        limit = '0';
+      }
+
+      const whereClause = {};
+      if (filters && Object.keys(filters).length > 0) {
+        Object.entries(filters).forEach(([key, value]) => {
+          whereClause[key] = value;
+        });
+      }
+      else {
+        whereClause['tenantId'] = tenantId;
+      }
+
+
+
+      const [results, totalCount] = await this.cohortRepository.findAndCount({
+        where: whereClause,
+        skip: offset,
+      });
+
+      console.log(results);
+
+      return new SuccessResponse({
+        statusCode: 200,
+        message: 'Ok.',
+        totalCount,
+        data: results,
+      });
+
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
+  }
 
   public async mappedResponse(result: any) {
     const cohortMapping = {

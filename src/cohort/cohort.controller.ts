@@ -103,27 +103,26 @@ export class CohortController {
   }
   
   // search
-  // @Post("/search")
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "Cohort list." })
-  // @ApiBody({ type: CohortSearchDto })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async searchCohort(
-  //   @Headers() headers,
-  //   @Req() request: Request,
-  //   @Body() cohortSearchDto: CohortSearchDto,
-  //   @Res() res: Response
-  // ) {
-  //   let tenantid = headers["tenantid"];
-  //   return this.cohortService.searchCohort(tenantid, request, cohortSearchDto, res);
-  // }
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort list." })
+  @ApiBody({ type: CohortSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchCohort(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() cohortSearchDto: CohortSearchDto,
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortService.searchCohort(tenantid, request, cohortSearchDto);
+  }
 
   //update
   @Put("/:id")

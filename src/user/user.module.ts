@@ -28,4 +28,3 @@ const ttl = process.env.TTL as never;
   providers: [UserAdapter,UserService],
 })
 export class UserModule {}
-

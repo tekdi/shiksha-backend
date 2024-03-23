@@ -20,14 +20,14 @@ import {
   Response,
   Headers,
 } from "@nestjs/common";
-import { HasuraAuthService } from "src/adapters/auth/auth.adapter";
 import { AuthDto } from "./dto/auth-dto";
+import { AuthService } from "./auth-service";
 
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(
-    private authService: HasuraAuthService
+    private authService:AuthService
   ) {}
 
   @Post("/login")
@@ -43,6 +43,6 @@ export class AuthController {
     @Body() authDto: AuthDto
   ) {
     console.log(request)
-    return this.authService.login(request, response, authDto);
+    return this.authService.login(authDto,response);
   }
 }

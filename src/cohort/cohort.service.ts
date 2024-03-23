@@ -24,7 +24,7 @@ import { FieldValues } from "../fields/entities/fields-values.entity";
 export class CohortService {
   private cohort: CohortInterface;
 
-  
+
   constructor(
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
@@ -32,7 +32,7 @@ export class CohortService {
     // @InjectRepository(FieldValues)
     // private fieldsValuesRepository: Repository<FieldValues>,
     // private readonly fieldsService: FieldsService,
-  ) {}
+  ) { }
 
   public async getCohort(
     tenantId: string,
@@ -81,65 +81,51 @@ export class CohortService {
   }
 
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
-    try{
+    try {
       const cohortData: any = {};
       Object.keys(cohortCreateDto).forEach((e) => {
-          if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
-              if (Array.isArray(cohortCreateDto[e])) {
-                  cohortData[e] = JSON.stringify(cohortCreateDto[e]);
-              } else {
-                  cohortData[e] = cohortCreateDto[e];
-              }
+        if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
+          if (Array.isArray(cohortCreateDto[e])) {
+            cohortData[e] = JSON.stringify(cohortCreateDto[e]);
+          } else {
+            cohortData[e] = cohortCreateDto[e];
           }
+        }
       });
 
       const response = await this.cohortRepository.save(cohortData);
 
-        // const result = response.data.data.insert_Cohort_one;
-        // let fieldCreate = true;
-        // let fieldError = null;
-        // //create fields values
-        let cohortId = response?.cohortId;
-        
-        let field_value_array = cohortCreateDto.fieldValues.split("|");
-        
-        if (field_value_array.length > 0) {
-          let field_values = [];
-          for (let i = 0; i < field_value_array.length; i++) {
-            let fieldValues = field_value_array[i].split(":");
-            field_values.push({
-              value: fieldValues[1] ? fieldValues[1] : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0] : "",
-              createdBy: cohortCreateDto?.createdBy,
-              updatedBy: cohortCreateDto?.updatedBy,
-            });
-          }
+      let cohortId = response?.cohortId;
 
-          console.log(field_values);
-          
-          // const response_field_values =
-          //   await this.fieldsService.createFieldValuesBulk(field_values);
-          // if (response_field_values?.data?.errors) {
-          //   fieldCreate = false;
-          //   fieldError = response_field_values?.data;
-          // }
+      let field_value_array = cohortCreateDto.fieldValues.split("|");
+
+      if (field_value_array.length > 0) {
+        let field_values = [];
+        for (let i = 0; i < field_value_array.length; i++) {
+
+          let fieldValues = field_value_array[i].split(":");
+          let fieldValueDto: FieldValuesDto = {
+            fieldValuesId: "", // Provide a value for fieldValuesId
+            value: fieldValues[1] ? fieldValues[1].trim() : "",
+            itemId: cohortId,
+            fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+            createdBy: cohortCreateDto?.createdBy,
+            updatedBy: cohortCreateDto?.updatedBy,
+            createdAt: new Date().toISOString(), // Provide appropriate values for createdAt and updatedAt
+            updatedAt: new Date().toISOString(),
+          };
+
+          await this.fieldsService.createFieldValues(request, fieldValueDto);
         }
-
-        // if (fieldCreate) {
-        //   return new SuccessResponse({
-        //     statusCode: 200,
-        //     message: "Ok.",
-        //     data: result,
-        //   });
-        // } else {
-        //   return new ErrorResponse({
-        //     errorCode: fieldError?.errors[0]?.extensions?.code,
-        //     errorMessage: fieldError?.errors[0]?.message,
-        //   });
-        // }
+      }
       
-    }catch (e) {
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Ok.",
+        data: response,
+      });
+
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "401",
@@ -159,15 +145,15 @@ export class CohortService {
       if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
       ) {
         if (Array.isArray(cohortUpdateDto[e])) {
-            cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
+          cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
         } else {
-            cohortUpdateData[e] = cohortUpdateDto[e];
+          cohortUpdateData[e] = cohortUpdateDto[e];
         }
       }
     });
 
-    
-    const response = await this.cohortRepository.update(cohortId ,cohortUpdateData);
+
+    const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
 
     // if (response?.data?.errors) {
     //   return new ErrorResponse({
@@ -309,7 +295,7 @@ export class CohortService {
   //     });
   //   }
   // }
-  
+
   public async mappedResponse(result: any) {
     const cohortMapping = {
       tenantId: result?.tenantId ? `${result.tenantId}` : "",

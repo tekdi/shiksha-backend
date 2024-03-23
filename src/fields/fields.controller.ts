@@ -88,9 +88,7 @@ export class FieldsController {
     @Body() fieldsSearchDto: FieldsSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.fieldsAdapter
-      .buildFieldsAdapter()
-      .searchFields(tenantid, request, fieldsSearchDto);
+    return this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
   }
 
  

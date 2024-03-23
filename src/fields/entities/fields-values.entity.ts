@@ -2,13 +2,13 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 // import { Field } from './Field'; // Assuming you have a Field entity defined
 
 @Entity({ name: 'FieldValues' })
-export class FieldValue {
-    
-    @PrimaryGeneratedColumn('uuid', { name: 'fieldValuesId' })
-    fieldValuesId: string;
+export class FieldValues {
 
     @Column({ type: 'text', nullable: false })
     value: string;
+
+    @PrimaryGeneratedColumn('uuid', { name: 'fieldValuesId' })
+    fieldValuesId: string;
 
     @Column({ type: 'uuid', nullable: false, default: () => 'gen_random_uuid()' })
     itemId: string;
@@ -16,15 +16,27 @@ export class FieldValue {
     @Column({ type: 'uuid', nullable: false, name: 'fieldId' })
     fieldId: string;
 
-    @CreateDateColumn({ name: 'createdAt', type: 'timestamp with time zone' })
+    @CreateDateColumn({
+        type: "timestamp with time zone",
+        default: () => "CURRENT_TIMESTAMP",
+    })
     createdAt: Date;
 
-    @UpdateDateColumn({ name: 'updatedAt', type: 'timestamp with time zone' })
+    @UpdateDateColumn({
+        type: "timestamp with time zone",
+        default: () => "CURRENT_TIMESTAMP",
+    })
     updatedAt: Date;
 
-    @Column({ type: 'text', nullable: true, name: 'createdBy' })
-    createdBy: string;
+    @CreateDateColumn({
+        type: "timestamp with time zone",
+        default: () => "CURRENT_TIMESTAMP",
+    })
+    createdBy: Date;
 
-    @Column({ type: 'text', nullable: true, name: 'updatedBy' })
-    updatedBy: string;
+    @UpdateDateColumn({
+        type: "timestamp with time zone",
+        default: () => "CURRENT_TIMESTAMP",
+    })
+    updatedBy: Date;
 }

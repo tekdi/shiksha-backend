@@ -6,6 +6,7 @@ import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import jwt_decode from "jwt-decode";
 import { ErrorResponse } from "src/error-response";
 import { Fields } from "./entities/fields.entity";
+import { FieldValues } from "./entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { SuccessResponse } from "src/success-response";
@@ -14,8 +15,9 @@ import { SuccessResponse } from "src/success-response";
 export class FieldsService {
     constructor(
         @InjectRepository(Fields)
-        // @InjectRepository(FieldValues)
         private fieldsRepository: Repository<Fields>,
+        @InjectRepository(FieldValues)
+        private fieldsValuesRepository: Repository<FieldValues>,
     ) { }
 
     //fields
@@ -94,5 +96,103 @@ export class FieldsService {
                 errorMessage: e,
             });
         }
+    }
+
+    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
+        try {
+
+            const fieldsData: any = {};
+            Object.keys(fieldValuesDto).forEach((e) => {
+                if (fieldValuesDto[e] && fieldValuesDto[e] != "") {
+                    if (Array.isArray(fieldValuesDto[e])) {
+                        fieldsData[e] = JSON.stringify(fieldValuesDto[e]);
+                    } else {
+                        fieldsData[e] = fieldValuesDto[e];
+                    }
+                }
+            });
+
+            console.log(fieldsData);
+            
+            let result = await this.fieldsValuesRepository.save(fieldsData);
+            return new SuccessResponse({
+                statusCode: 200,
+                message: "Ok.",
+                data: result,
+            });
+
+        } catch (e) {
+            console.error(e);
+            return new ErrorResponse({
+                errorCode: "400",
+                errorMessage: e,
+            });
+        }
+    }
+
+    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto) {
+        try {
+
+            let { limit, page, filters } = fieldValuesSearchDto;
+
+            let offset = 0;
+            if (page > 1) {
+                offset = parseInt(limit) * (page - 1);
+            }
+        
+            if (limit.trim() === '') {
+                limit = '0';
+            }
+
+            const whereClause = {};
+            if (filters && Object.keys(filters).length > 0) {
+                Object.entries(filters).forEach(([key, value]) => {
+                    whereClause[key] = value;
+                });
+            }
+
+            console.log(whereClause);
+            
+            const [results, totalCount] = await this.fieldsValuesRepository.findAndCount({
+                where: whereClause,
+                take: parseInt(limit),
+                skip: offset,
+            });
+        
+            const mappedResponse = await this.mappedResponse(results);
+
+            return new SuccessResponse({
+                statusCode: 200,
+                message: 'Ok.',
+                totalCount,
+                data: mappedResponse,
+            });
+
+        } catch (e) {
+            console.error(e);
+            return new ErrorResponse({
+                errorCode: "400",
+                errorMessage: e,
+            });
+        }
+    }
+
+    public async mappedResponse(result: any) {
+        const fieldValueResponse = result.map((item: any) => {
+            const fieldValueMapping = {
+                value: item?.value ? `${item.value}` : "",
+                fieldValuesId: item?.fieldValuesId ? `${item.fieldValuesId}` : "",
+                itemId: item?.itemId ? `${item.itemId}` : "",
+                fieldId: item?.fieldId ? `${item.fieldId}` : "",
+                createdAt: item?.createdAt ? `${item.createdAt}` : "",
+                updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+                createdBy: item?.createdBy ? `${item.createdBy}` : "",
+                updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+            };
+
+            return new FieldValuesDto(fieldValueMapping);
+        });
+
+        return fieldValueResponse;
     }
 }

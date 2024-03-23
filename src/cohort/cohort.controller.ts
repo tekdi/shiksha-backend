@@ -78,9 +78,7 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, payload);
 
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .createCohort(request, cohortCreateDto);
+    return this.cohortService.createCohort(request, cohortCreateDto);
   }
 
   //get cohort

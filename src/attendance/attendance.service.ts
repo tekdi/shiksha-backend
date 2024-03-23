@@ -118,8 +118,6 @@ export class AttendanceService {
 
                 const userId =
                     decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-                attendanceDto.createdBy = userId;
-                attendanceDto.updatedBy = userId;
                 const attendanceToSearch = new AttendanceSearchDto({});
 
 
@@ -222,10 +220,8 @@ export class AttendanceService {
     */
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
 
-        console.log("created")
         try {
-
-            const attendance = this.attendanceRepository.create(attendanceDto);
+    const attendance = this.attendanceRepository.create(attendanceDto);
             const result = await this.attendanceRepository.save(attendance);
 
             return new SuccessResponse({
@@ -325,7 +321,7 @@ export class AttendanceService {
             let count = 1;
 
             for (const attendance of attendanceData) {
-                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance) {
+                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance && attendance.contextId) {
 
                     attendance.tenantId = tenantId;
                     const attendanceRes: any = await this.updateAttendanceRecord(
@@ -345,7 +341,7 @@ export class AttendanceService {
 
                 else {
                     errors.push({
-                        message: `userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday]`
+                        message: `userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday] or contextId should be present`
 
                     });
                     count++;

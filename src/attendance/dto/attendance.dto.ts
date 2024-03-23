@@ -118,6 +118,7 @@ export class AttendanceDto {
     description: "The contextId of the attendance",
     default: "",
   })
+  @IsNotEmpty()
   @Expose()
   contextId: string;
 

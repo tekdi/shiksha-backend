@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { User } from './entities/user-create-entity'
-import { FieldValue } from './entities/field-entities';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { User } from './entities/user-entity'
+import { FieldValue } from './entities/field-value-entities';
+import ApiResponse from '../utils/response'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCreateDto } from './dto/user-create.dto';
@@ -13,6 +14,8 @@ import {
   } from "../common/keycloak";
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
+import { Field } from './entities/field-entity';
+import APIResponse from '../utils/response';
 
 
 @Injectable()
@@ -22,25 +25,85 @@ export class UserService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     @InjectRepository(FieldValue)
-    private fieldsValueRepository: Repository<User>
+    private fieldsValueRepository: Repository<User>,
+    @InjectRepository(Field)
+    private fieldsRepository : Repository<Field>
   ) {}
+  
+  async getUsersDetailsById(userData:Record<string,string>,response){
+    let apiId='api.users.getUsersDetails'
+    try {
+      const result = {
+        customFields: []
+    };
 
-  async getUsers(userID){
-    let result = await this.usersRepository.findOne({
-        where:{
-            userId:userID
-        }
-    });
-    console.log(result);
+    // const customFields = await this.findCustomFields(userData);
+    // const filledValues = await this.findFilledValues(userData?.userId);
+    const [customFields, filledValues,userDetails] = await Promise.all([
+      this.findCustomFields(userData),
+      this.findFilledValues(userData.userId),
+      this.findUserDetails(userData.userId)
+  ]);
+    const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+    for (const data of customFields) {
+        const fieldValue = filledValuesMap.get(data.fieldId);
+        const customField = {
+            fieldId: data.fieldId,
+            label: data.label,
+            value: fieldValue || '',
+            options: data.fieldParams || {},
+            type: data.type || ''
+        };
+        result.customFields.push(customField);
+    }
+    result['userData']=userDetails;
+    return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, result, 'OK'));
+    } catch (e) {
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
+    }
+}
+
+  async findUserDetails(userId){
+    let userDetails = await this.usersRepository.findOne({
+      where:{
+        userId:userId
+      }
+    })
+    return userDetails;
+  }
+  async findCustomFields(userData){
+    let customFields = await this.fieldsRepository.find({
+      where:{
+        context:userData.context,
+        contextType:userData.contextType
+      }
+    })
+    return customFields;
+  }
+  async findFilledValues(userId:string){
+    let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
+    LEFT JOIN public."FieldValues" F
+    ON U."userId" = F."itemId" where U."userId" =$1`;
+    let result = await this.usersRepository.query(query,[userId]);
     return result;
   }
 
-  public async createShubhamUser(request: any, userCreateDto: UserCreateDto) {
+  public async createUser(request: any, userCreateDto: UserCreateDto,response) {
     // It is considered that if user is not present in keycloak it is not present in database as well
+    let apiId='api.user.creatUser'
     try {
-      console.log("Hi");
       const decoded: any = jwt_decode(request.headers.authorization);
-    //   const userRoles = decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
       userCreateDto.createdBy = userId
       userCreateDto.updatedBy = userId;
@@ -51,9 +114,7 @@ export class UserService {
 
       let errKeycloak = "";
       let resKeycloak = "";
-
-      // if (altUserRoles.includes("systemAdmin")) {
-
+      
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
 
@@ -69,42 +130,51 @@ export class UserService {
       ); userCreateDto.userId = resKeycloak;
       return await this.createUserInDatabase(request, userCreateDto);
     } catch (e) {
-      console.error(e);
-      return e;
+      response
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .send(
+        ApiResponse.error(
+          apiId,
+          'Something went wrong',
+          `Failure Posting Data. Error is: ${e}`,
+          'INTERNAL_SERVER_ERROR',
+        ),
+      );
     }
   }
 
+// Can be Implemeneted after we know what are the unique entties
+async checkUserinKeyCloakandDb(userDto){
+  const keycloakResponse = await getKeycloakAdminToken();
+  const token = keycloakResponse.data.access_token;
+  const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+        userDto.username,
+        token
+      );
+  if(usernameExistsInKeycloak){
+    return usernameExistsInKeycloak;
+  }
+}
+
 async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-    let result = await this.usersRepository.save(userCreateDto);
+      let userData = {
+        username:userCreateDto?.username,
+        name:userCreateDto?.name,
+        role:userCreateDto.role,
+        password:userCreateDto.password,
+        mobile:userCreateDto.mobile,
+        tenantId:userCreateDto.tenantId,
+        createdBy:userCreateDto.createdBy,
+        updatedby:userCreateDto.updatedBy,
+        userId:userCreateDto.userId,
+      }
+      let result = await this.usersRepository.create(userData);
         return new SuccessResponse({
           statusCode: 200,
           message: "Ok.",
           data: result,
-        });
-      }
-    // if(result){
-    //     let fieldCreate = true;
-    //     let fieldError = null;
-    //     //create fields values
-    //     let userId = result?.userId;
-    //     let field_value_array = userCreateDto.fieldValues?.split("|");
-    //     if (field_value_array?.length > 0) {
-    //       console.log("Hi");
-    //       let field_values = [];
-    //       for (let i = 0; i < field_value_array.length; i++) {
-    //         let fieldValues = field_value_array[i].split(":");
-    //         field_values.push({
-    //           value: fieldValues[1] ? fieldValues[1] : "",
-    //           itemId: userId,
-    //           fieldId: fieldValues[0] ? fieldValues[0] : "",
-    //           createdBy: userCreateDto?.createdBy,
-    //           updatedBy: userCreateDto?.updatedBy,
-    //         });
-    //       }
-    //       console.log(field_values,"Checking");
-    //       const response_field_values = await this.fieldsValueRepository.save(field_values);
-    //       console.log(response_field_values);
-        }
+        });}
+}
     
     
 

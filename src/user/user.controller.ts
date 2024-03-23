@@ -45,13 +45,16 @@ export class UserController {
     private userService:UserService
   ) {}
 
-  // @Get('/shubham/:userId')
-  // @UseInterceptors(CacheInterceptor)
-  // async getUser1(@Param("userid") userId: string){
-  //   console.log("Hi");
-  //   return await this.userService1.getUsers(userId);
-  // }
-
+  
+  /**
+	 * Method to get The User Details and Custome Fields Data.
+	 *
+	 * @param   userId    $data     User Id of User
+	 *
+	 * @return  UserData Object containing all teh detals
+	 *
+	 * @since   1.6
+	 */
   @Get("/:userid")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
@@ -63,16 +66,20 @@ export class UserController {
   @ApiHeader({
     name: "tenantid",
   })
-  @ApiQuery({ name: "accessrole" })
   public async getUser(
     @Headers() headers,
     @Param("userid") userId: string,
-    @Query("accessrole") accessRole: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().getUser(tenantId, userId, accessRole, request, response);
+    // const tenantId = headers["tenantid"];   Can be Used In future
+    // Context and ContextType can be taked from .env later
+    let userData  = {
+      userId:userId,
+      context:"USERS",
+      contextType:"TEACHER"
+    }
+    return this.userService.getUsersDetailsById(userData,response);
   }
 
   @Get()
@@ -100,18 +107,16 @@ export class UserController {
   @ApiHeader({
     name: "tenantid",
   })
-  public async createUser(
+  async createUser(
     @Headers() headers,
     @Req() request: Request,
+    @Res() response:Response,
     @Body() userCreateDto: UserCreateDto
   ) {
-    console.log(userCreateDto);
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userAdapter
-      .buildUserAdapter()
-      .checkAndAddUser(request, userCreateDto);
+    return this.userService.createUser(request, userCreateDto,response);
   }
-
+  
   @Put("/:userid")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been updated successfully." })
@@ -175,14 +180,5 @@ export class UserController {
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
 
-  @Post('/createShubhamUser')
-  async createShubhamUser(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() userCreateDto: UserCreateDto
-  ) {
-    userCreateDto.tenantId = headers["tenantid"];
-    return this.userService.createShubhamUser(request, userCreateDto);
-  }
 
 }

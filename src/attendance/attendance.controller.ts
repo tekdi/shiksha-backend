@@ -26,6 +26,8 @@ import {
   CacheInterceptor,
   Query,
   Headers,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 import { AttendanceDto } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -44,7 +46,7 @@ export class AttendanceController {
     private service: AttendanceHasuraService,
     private attendaceAdapter: AttendaceAdapter,
     private attendaceService: AttendanceService
-  ) {}
+  ) { }
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -68,7 +70,10 @@ export class AttendanceController {
       .getAttendance(tenantid, attendanceId, request);
   }
 
+
   @Post()
+
+  @UsePipes(new ValidationPipe())
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
@@ -97,9 +102,7 @@ export class AttendanceController {
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
-      .checkAndAddAttendance(request, attendanceDto);
+    return this.attendaceService.updateAttendanceRecord(request, attendanceDto);
   }
 
   @Put("/:id")
@@ -130,41 +133,16 @@ export class AttendanceController {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
+    return this.attendaceService
       .updateAttendance(attendanceId, request, attendanceDto);
   }
-
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
   @ApiBody({ type: AttendanceSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async searchAttendance(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() studentSearchDto: AttendanceSearchDto
-  ) {
-    let tenantid = headers["tenantid"];
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
-      .searchAttendance(tenantid, request, studentSearchDto);
-  }
-
-
-  @Post("/searchNew")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance list." })
-  @ApiBody({ type: AttendanceSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -195,9 +173,7 @@ export class AttendanceController {
     @Body() attendanceDateDto: AttendanceDateDto
   ) {
     const tenantId = headers["tenantid"];
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
-      .attendanceByDate(tenantId, request, attendanceDateDto);
+    return this.attendaceService.attendanceByDate(tenantId, request, attendanceDateDto);
   }
 
   @Post("bulkAttendance")
@@ -211,14 +187,14 @@ export class AttendanceController {
   @ApiHeader({
     name: "tenantid",
   })
+  @UsePipes(ValidationPipe)
   public async multipleAttendance(
     @Headers() headers,
     @Req() request: Request,
     @Body() attendanceDtos: [AttendanceDto]
   ) {
     let tenantid = headers["tenantid"];
-    return this.attendaceAdapter
-      .buildAttenceAdapter()
+    return this.attendaceService
       .multipleAttendance(tenantid, request, attendanceDtos);
   }
 
@@ -240,5 +216,5 @@ export class AttendanceController {
     return await this.service.userSegment(groupId, attendance, date, request);
   }
   */
- 
+
 }

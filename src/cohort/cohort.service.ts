@@ -48,7 +48,7 @@ export class CohortService {
       });
       if (!cohort) {
         return response
-          .status(HttpStatus.NOT_FOUND) // Change status to 404 Not Found
+          .status(HttpStatus.NOT_FOUND)
           .send(
             APIResponse.error(
               apiId,
@@ -62,7 +62,7 @@ export class CohortService {
       return response.status(HttpStatus.OK).send(
         APIResponse.success(
           apiId,
-          cohort, // Send cohort data
+          cohort,
           "Cohort Retrieved Successfully"
         )
       );

@@ -1,5 +1,18 @@
-import { Exclude, Expose } from "class-transformer";
+import { ManyToOne, JoinColumn } from 'typeorm';
+import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { Exclude, Expose, Transform } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNotEmpty, IsString, IsObject } from 'class-validator';
+import { User } from 'src/user/entities/user-entity';
+import { format, isAfter } from 'date-fns'; // Import isAfter function from date-fns
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+
+enum Attendance{
+  present="present",
+  absent="absent",
+  halfDay="halfday"
+}
 
 export class AttendanceDto {
   @Expose()
@@ -13,16 +26,25 @@ export class AttendanceDto {
     description: "The userid of the attendance",
     default: "",
   })
+  @IsDefined()
+  @IsNotEmpty()
+  @IsUUID()
   @Expose()
   userId: string;
+
+  @ManyToOne(() => User, {nullable:true})
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @ApiProperty({
     type: String,
     description: "The date of the attendance in format yyyy-mm-dd",
-    default: new Date(),
+    default: new Date()
   })
+  @IsNotEmpty()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })  
   @Expose()
-  attendanceDate: string;
+  attendanceDate: Date;
 
   @ApiProperty({
     type: String,
@@ -30,6 +52,8 @@ export class AttendanceDto {
     default: "",
   })
   @Expose()
+  @IsNotEmpty()
+  @IsEnum(Attendance,{message:"Please enter valid enum [present or absent]"})
   attendance: string;
 
   @ApiProperty({
@@ -48,7 +72,7 @@ export class AttendanceDto {
   })
   @Expose()
   @ApiPropertyOptional()
-  latitude: Number;
+  latitude: number;
 
   @ApiProperty({
     type: String,
@@ -57,7 +81,7 @@ export class AttendanceDto {
   })
   @Expose()
   @ApiPropertyOptional()
-  longitude: Number;
+  longitude: number;
 
   @ApiProperty({
     type: "string",
@@ -94,6 +118,7 @@ export class AttendanceDto {
     description: "The contextId of the attendance",
     default: "",
   })
+  @IsNotEmpty()
   @Expose()
   contextId: string;
 

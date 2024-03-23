@@ -24,9 +24,11 @@ import { FieldValues } from "../fields/entities/fields-values.entity";
 export class CohortService {
   private cohort: CohortInterface;
 
+  
   constructor(
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
+    private fieldsService: FieldsService
     // @InjectRepository(FieldValues)
     // private fieldsValuesRepository: Repository<FieldValues>,
     // private readonly fieldsService: FieldsService,
@@ -217,100 +219,100 @@ export class CohortService {
     // }
   }
 
-  public async searchCohort(
-    tenantId: string,
-    request: any,
-    cohortSearchDto: CohortSearchDto,
-    res: any
-  ) {
-    try{
-      let entityFilter = cohortSearchDto;
-      let filedsFilter = entityFilter?.filters["fields"];
-      //remove fields from filter
-      delete entityFilter.filters["fields"];
-      let newCohortSearchDto = null;
-      //check fields value present or not
-      if (filedsFilter) {
-        //apply filter on fields value
-        let response_fields_value =
-          await this.fieldsService.searchFieldValuesFilter(request,filedsFilter);
-        if (response_fields_value?.data?.errors) {
-          return res.status(200).send({
-            errorCode: response_fields_value?.data?.errors[0]?.extensions?.code,
-            errorMessage: response_fields_value?.data?.errors[0]?.message,
-          });
-        } else {
-          //get filter result
-          let result_FieldValues = response_fields_value?.data?.data?.FieldValues;
-          //fetch cohot id list
-          let cohort_id_list = [];
-          for (let i = 0; i < result_FieldValues.length; i++) {
-            cohort_id_list.push(result_FieldValues[i].itemId);
-          }
-          //remove duplicate entries
-          cohort_id_list = cohort_id_list.filter(
-            (item, index) => cohort_id_list.indexOf(item) === index
-          );
-          let cohort_filter = new Object(entityFilter.filters);
-          cohort_filter["cohortId"] = {
-            _in: cohort_id_list,
-          };
-          newCohortSearchDto = new CohortSearchDto({
-            limit: entityFilter.limit,
-            page: entityFilter.page,
-            filters: cohort_filter,
-          });
-        }
-      } else {
-        newCohortSearchDto = new CohortSearchDto({
-          limit: entityFilter.limit,
-          page: entityFilter.page,
-          filters: entityFilter.filters,
-        });
-      }
-      if (newCohortSearchDto) {
-        const response = await this.searchCohortQuery(
-          request,
-          tenantId,
-          newCohortSearchDto
-        );
-        if (response?.data?.errors) {
-          return res.status(200).send({
-            errorCode: response?.data?.errors[0]?.extensions?.code,
-            errorMessage: response?.data?.errors[0]?.message,
-          });
-        } else {
-          let result = response?.data?.data?.Cohort;
-          let cohortResponse = await this.mappedResponse(result);
-          //const count = cohortResponse.length;
-          const count = result.length;
-          //get cohort fields value
-          let result_data = await this.searchCohortFields(
-            request,
-            tenantId,
-            cohortResponse
-          );
-          return res.status(200).send({
-            statusCode: 200,
-            message: "Ok.",
-            totalCount: count,
-            data: result_data,
-          });
-        }
-      } else {
-        return res.status(200).send({
-          errorCode: "filter invalid",
-          errorMessage: "filter invalid",
-        });
-      }
-    }catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
-        errorMessage: e,
-      });
-    }
-  }
+  // public async searchCohort(
+  //   tenantId: string,
+  //   request: any,
+  //   cohortSearchDto: CohortSearchDto,
+  //   res: any
+  // ) {
+  //   try{
+  //     let entityFilter = cohortSearchDto;
+  //     let filedsFilter = entityFilter?.filters["fields"];
+  //     //remove fields from filter
+  //     delete entityFilter.filters["fields"];
+  //     let newCohortSearchDto = null;
+  //     //check fields value present or not
+  //     if (filedsFilter) {
+  //       //apply filter on fields value
+  //       let response_fields_value =
+  //         await this.fieldsService.searchFieldValuesFilter(request,filedsFilter);
+  //       if (response_fields_value?.data?.errors) {
+  //         return res.status(200).send({
+  //           errorCode: response_fields_value?.data?.errors[0]?.extensions?.code,
+  //           errorMessage: response_fields_value?.data?.errors[0]?.message,
+  //         });
+  //       } else {
+  //         //get filter result
+  //         let result_FieldValues = response_fields_value?.data?.data?.FieldValues;
+  //         //fetch cohot id list
+  //         let cohort_id_list = [];
+  //         for (let i = 0; i < result_FieldValues.length; i++) {
+  //           cohort_id_list.push(result_FieldValues[i].itemId);
+  //         }
+  //         //remove duplicate entries
+  //         cohort_id_list = cohort_id_list.filter(
+  //           (item, index) => cohort_id_list.indexOf(item) === index
+  //         );
+  //         let cohort_filter = new Object(entityFilter.filters);
+  //         cohort_filter["cohortId"] = {
+  //           _in: cohort_id_list,
+  //         };
+  //         newCohortSearchDto = new CohortSearchDto({
+  //           limit: entityFilter.limit,
+  //           page: entityFilter.page,
+  //           filters: cohort_filter,
+  //         });
+  //       }
+  //     } else {
+  //       newCohortSearchDto = new CohortSearchDto({
+  //         limit: entityFilter.limit,
+  //         page: entityFilter.page,
+  //         filters: entityFilter.filters,
+  //       });
+  //     }
+  //     if (newCohortSearchDto) {
+  //       const response = await this.searchCohortQuery(
+  //         request,
+  //         tenantId,
+  //         newCohortSearchDto
+  //       );
+  //       if (response?.data?.errors) {
+  //         return res.status(200).send({
+  //           errorCode: response?.data?.errors[0]?.extensions?.code,
+  //           errorMessage: response?.data?.errors[0]?.message,
+  //         });
+  //       } else {
+  //         let result = response?.data?.data?.Cohort;
+  //         let cohortResponse = await this.mappedResponse(result);
+  //         //const count = cohortResponse.length;
+  //         const count = result.length;
+  //         //get cohort fields value
+  //         let result_data = await this.searchCohortFields(
+  //           request,
+  //           tenantId,
+  //           cohortResponse
+  //         );
+  //         return res.status(200).send({
+  //           statusCode: 200,
+  //           message: "Ok.",
+  //           totalCount: count,
+  //           data: result_data,
+  //         });
+  //       }
+  //     } else {
+  //       return res.status(200).send({
+  //         errorCode: "filter invalid",
+  //         errorMessage: "filter invalid",
+  //       });
+  //     }
+  //   }catch (e) {
+  //     console.error(e);
+  //     return new ErrorResponse({
+  //       errorCode: "401",
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
   
   public async mappedResponse(result: any) {
     const cohortMapping = {

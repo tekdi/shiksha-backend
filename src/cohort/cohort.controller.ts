@@ -37,16 +37,13 @@ import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
 // import { FieldsService } from "../fields/fields.service";
-
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
   constructor(
     private cohortAdapter: CohortAdapter,
-    private readonly cohortService: CohortService,
-    // private readonly fieldsService: FieldsService,
+    private readonly cohortService: CohortService
   ) {}
-
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -106,27 +103,27 @@ export class CohortController {
   }
   
   // search
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort list." })
-  @ApiBody({ type: CohortSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async searchCohort(
-    @Headers() headers,
-    @Req() request: Request,
-    @Body() cohortSearchDto: CohortSearchDto,
-    @Res() res: Response
-  ) {
-    let tenantid = headers["tenantid"];
-    return this.cohortService.searchCohort(tenantid, request, cohortSearchDto, res);
-  }
+  // @Post("/search")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Cohort list." })
+  // @ApiBody({ type: CohortSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async searchCohort(
+  //   @Headers() headers,
+  //   @Req() request: Request,
+  //   @Body() cohortSearchDto: CohortSearchDto,
+  //   @Res() res: Response
+  // ) {
+  //   let tenantid = headers["tenantid"];
+  //   return this.cohortService.searchCohort(tenantid, request, cohortSearchDto, res);
+  // }
 
   //update
   @Put("/:id")

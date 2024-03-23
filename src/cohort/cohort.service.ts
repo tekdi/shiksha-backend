@@ -15,7 +15,6 @@ import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { FieldsService } from "src/adapters/hasura/services/fields.service";
-import { FieldValues } from "src/fields/entities/field-values.entity";
 import { response } from "express";
 import APIResponse from "src/utils/response";
 
@@ -25,9 +24,7 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-    @InjectRepository(FieldValues)
     private cohortRepository: Repository<Cohort>,
-    private readonly fieldsService: FieldsService
   ) {}
 
   public async getCohort(
@@ -44,7 +41,7 @@ export class CohortService {
       });
       if (!cohort) {
         return response
-          .status(HttpStatus.NOT_FOUND) // Change status to 404 Not Found
+          .status(HttpStatus.NOT_FOUND)
           .send(
             APIResponse.error(
               apiId,
@@ -58,7 +55,7 @@ export class CohortService {
       return response.status(HttpStatus.OK).send(
         APIResponse.success(
           apiId,
-          cohort, // Send cohort data
+          cohort,
           "Cohort Retrieved Successfully"
         )
       );

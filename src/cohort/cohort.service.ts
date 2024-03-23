@@ -94,55 +94,51 @@ export class CohortService {
       });
 
       const response = await this.cohortRepository.save(cohortData);
+
+        // const result = response.data.data.insert_Cohort_one;
+        // let fieldCreate = true;
+        // let fieldError = null;
+        // //create fields values
+        let cohortId = response?.cohortId;
+        
+        let field_value_array = cohortCreateDto.fieldValues.split("|");
+        
+        if (field_value_array.length > 0) {
+          let field_values = [];
+          for (let i = 0; i < field_value_array.length; i++) {
+            let fieldValues = field_value_array[i].split(":");
+            field_values.push({
+              value: fieldValues[1] ? fieldValues[1] : "",
+              itemId: cohortId,
+              fieldId: fieldValues[0] ? fieldValues[0] : "",
+              createdBy: cohortCreateDto?.createdBy,
+              updatedBy: cohortCreateDto?.updatedBy,
+            });
+          }
+
+          console.log(field_values);
+          
+          // const response_field_values =
+          //   await this.fieldsService.createFieldValuesBulk(field_values);
+          // if (response_field_values?.data?.errors) {
+          //   fieldCreate = false;
+          //   fieldError = response_field_values?.data;
+          // }
+        }
+
+        // if (fieldCreate) {
+        //   return new SuccessResponse({
+        //     statusCode: 200,
+        //     message: "Ok.",
+        //     data: result,
+        //   });
+        // } else {
+        //   return new ErrorResponse({
+        //     errorCode: fieldError?.errors[0]?.extensions?.code,
+        //     errorMessage: fieldError?.errors[0]?.message,
+        //   });
+        // }
       
-      if (response?.data?.errors) {
-        return new ErrorResponse({
-          errorCode: response?.data?.errors[0]?.extensions?.code,
-          errorMessage: response?.data?.errors[0]?.message,
-        });
-      } 
-      // else {
-      //   const result = response.data.data.insert_Cohort_one;
-      //   let fieldCreate = true;
-      //   let fieldError = null;
-      //   //create fields values
-      //   let cohortId = result?.cohortId;
-      //   let field_value_array = cohortCreateDto.fieldValues.split("|");
-
-      //   if (field_value_array.length > 0) {
-      //     let field_values = [];
-      //     for (let i = 0; i < field_value_array.length; i++) {
-      //       let fieldValues = field_value_array[i].split(":");
-      //       field_values.push({
-      //         value: fieldValues[1] ? fieldValues[1] : "",
-      //         itemId: cohortId,
-      //         fieldId: fieldValues[0] ? fieldValues[0] : "",
-      //         createdBy: cohortCreateDto?.createdBy,
-      //         updatedBy: cohortCreateDto?.updatedBy,
-      //       });
-      //     }
-
-      //     const response_field_values =
-      //       await this.fieldsService.createFieldValuesBulk(field_values);
-      //     if (response_field_values?.data?.errors) {
-      //       fieldCreate = false;
-      //       fieldError = response_field_values?.data;
-      //     }
-      //   }
-
-      //   if (fieldCreate) {
-      //     return new SuccessResponse({
-      //       statusCode: 200,
-      //       message: "Ok.",
-      //       data: result,
-      //     });
-      //   } else {
-      //     return new ErrorResponse({
-      //       errorCode: fieldError?.errors[0]?.extensions?.code,
-      //       errorMessage: fieldError?.errors[0]?.message,
-      //     });
-      //   }
-      // }
     }catch (e) {
       console.error(e);
       return new ErrorResponse({

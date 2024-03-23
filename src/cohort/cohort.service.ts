@@ -24,6 +24,7 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
+   
     private cohortRepository: Repository<Cohort>,
   ) {}
 

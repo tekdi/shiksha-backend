@@ -5,15 +5,17 @@ import { UserAdapter } from "./useradapter";
 import { SunbirdModule } from "src/adapters/sunbirdrc/subnbird.module";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { User } from "./entities/user-create-entity";
+import { User } from "./entities/user-entity";
 import { UserService } from "./user.service";
-import { FieldValue } from "./entities/field-entities";
+import { FieldValue } from "./entities/field-value-entities";
+import { Field } from "./entities/field-entity";
 const ttl = process.env.TTL as never;
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       User,
-      FieldValue
+      FieldValue,
+      Field
     ]),
     HttpModule,
     SunbirdModule,

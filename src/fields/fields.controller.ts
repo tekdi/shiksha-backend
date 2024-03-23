@@ -40,7 +40,7 @@ import { FieldsService } from "./fields.service";
 export class FieldsController {
   constructor(private fieldsAdapter: FieldsAdapter,
     private readonly fieldsService: FieldsService
-    ) {}
+  ) { }
 
   //fields
   //create fields
@@ -65,10 +65,10 @@ export class FieldsController {
     Object.assign(fieldsDto, payload);
 
     return this.fieldsService.createFields(request, fieldsDto);
-      
+
   }
 
- 
+
   //search
   @Post("/search")
   @ApiBasicAuth("access-token")
@@ -91,5 +91,40 @@ export class FieldsController {
     return this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
   }
 
- 
+
+  //field values
+  //create fields values
+  @Post("/values")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({
+    description: "Fields Values has been created successfully.",
+  })
+  @ApiBody({ type: FieldValuesDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  public async createFieldValues(
+    @Req() request: Request,
+    @Body() fieldValuesDto: FieldValuesDto
+  ) {
+    return this.fieldsService.createFieldValues(request, fieldValuesDto);
+  }
+
+  //search fields values
+  @Post("/values/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Fields Values list." })
+  @ApiBody({ type: FieldValuesSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  public async searchFieldValues(
+    @Req() request: Request,
+    @Body() fieldValuesSearchDto: FieldValuesSearchDto
+  ) {
+    return this.fieldsService.searchFieldValues(request, fieldValuesSearchDto);
+  }
+
+
 }

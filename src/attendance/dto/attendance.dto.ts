@@ -3,7 +3,7 @@ import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, ValidationArg
 import { Exclude, Expose, Transform } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
-import { User } from 'src/user/entities/user-create-entity';
+import { User } from 'src/user/entities/user-entity';
 import { format, isAfter } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
 

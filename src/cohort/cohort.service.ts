@@ -14,10 +14,11 @@ import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { FieldsService } from "src/adapters/hasura/services/fields.service";
+import { FieldsService } from "../fields/fields.service";
 // import { FieldValues } from "src/fields/entities/field-values.entity";
 import { response } from "express";
 import APIResponse from "src/utils/response";
+import { FieldValues } from "../fields/entities/fields-values.entity";
 
 @Injectable()
 export class CohortService {
@@ -25,9 +26,10 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-    // @InjectRepository(FieldValues)
     private cohortRepository: Repository<Cohort>,
-    // private readonly fieldsService: FieldsService
+    @InjectRepository(FieldValues)
+    private fieldsValuesRepository: Repository<FieldValues>,
+    private readonly fieldsService: FieldsService,
   ) {}
 
   public async getCohort(
@@ -78,92 +80,67 @@ export class CohortService {
 
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{
-      var axios = require("axios");
 
-      let query = "";
+      const cohortData: any = {};
       Object.keys(cohortCreateDto).forEach((e) => {
-        if (
-          cohortCreateDto[e] &&
-          cohortCreateDto[e] != "" &&
-          e != "fieldValues"
-        ) {
-          if (Array.isArray(cohortCreateDto[e])) {
-            query += `${e}: "${JSON.stringify(cohortCreateDto[e])}", `;
-          } else {
-            query += `${e}: "${cohortCreateDto[e]}", `;
+          if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
+              if (Array.isArray(cohortCreateDto[e])) {
+                  cohortData[e] = JSON.stringify(cohortCreateDto[e]);
+              } else {
+                  cohortData[e] = cohortCreateDto[e];
+              }
           }
-        }
       });
 
-      var data = {
-        query: `mutation CreateCohort {
-          insert_Cohort_one(object: {${query}}) {
-          cohortId
-          }
-        }
-        `,
-        variables: {},
-      };
-
-      var config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
-
-      const response = await axios(config);
+      const response = await this.cohortRepository.save(cohortData);
       if (response?.data?.errors) {
         return new ErrorResponse({
           errorCode: response?.data?.errors[0]?.extensions?.code,
           errorMessage: response?.data?.errors[0]?.message,
         });
-      } else {
-        const result = response.data.data.insert_Cohort_one;
-        let fieldCreate = true;
-        let fieldError = null;
-        //create fields values
-        let cohortId = result?.cohortId;
-        let field_value_array = cohortCreateDto.fieldValues.split("|");
+      } 
+      // else {
+      //   const result = response.data.data.insert_Cohort_one;
+      //   let fieldCreate = true;
+      //   let fieldError = null;
+      //   //create fields values
+      //   let cohortId = result?.cohortId;
+      //   let field_value_array = cohortCreateDto.fieldValues.split("|");
 
-        if (field_value_array.length > 0) {
-          let field_values = [];
-          for (let i = 0; i < field_value_array.length; i++) {
-            let fieldValues = field_value_array[i].split(":");
-            field_values.push({
-              value: fieldValues[1] ? fieldValues[1] : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0] : "",
-              createdBy: cohortCreateDto?.createdBy,
-              updatedBy: cohortCreateDto?.updatedBy,
-            });
-          }
+      //   if (field_value_array.length > 0) {
+      //     let field_values = [];
+      //     for (let i = 0; i < field_value_array.length; i++) {
+      //       let fieldValues = field_value_array[i].split(":");
+      //       field_values.push({
+      //         value: fieldValues[1] ? fieldValues[1] : "",
+      //         itemId: cohortId,
+      //         fieldId: fieldValues[0] ? fieldValues[0] : "",
+      //         createdBy: cohortCreateDto?.createdBy,
+      //         updatedBy: cohortCreateDto?.updatedBy,
+      //       });
+      //     }
 
-          const response_field_values =
-            await this.fieldsService.createFieldValuesBulk(field_values);
-          if (response_field_values?.data?.errors) {
-            fieldCreate = false;
-            fieldError = response_field_values?.data;
-          }
-        }
+      //     const response_field_values =
+      //       await this.fieldsService.createFieldValuesBulk(field_values);
+      //     if (response_field_values?.data?.errors) {
+      //       fieldCreate = false;
+      //       fieldError = response_field_values?.data;
+      //     }
+      //   }
 
-        if (fieldCreate) {
-          return new SuccessResponse({
-            statusCode: 200,
-            message: "Ok.",
-            data: result,
-          });
-        } else {
-          return new ErrorResponse({
-            errorCode: fieldError?.errors[0]?.extensions?.code,
-            errorMessage: fieldError?.errors[0]?.message,
-          });
-        }
-      }
+      //   if (fieldCreate) {
+      //     return new SuccessResponse({
+      //       statusCode: 200,
+      //       message: "Ok.",
+      //       data: result,
+      //     });
+      //   } else {
+      //     return new ErrorResponse({
+      //       errorCode: fieldError?.errors[0]?.extensions?.code,
+      //       errorMessage: fieldError?.errors[0]?.message,
+      //     });
+      //   }
+      // }
     }catch (e) {
       console.error(e);
       return new ErrorResponse({

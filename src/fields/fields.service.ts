@@ -112,8 +112,6 @@ export class FieldsService {
                 }
             });
 
-            console.log(fieldsData);
-            
             let result = await this.fieldsValuesRepository.save(fieldsData);
             return new SuccessResponse({
                 statusCode: 200,
@@ -139,7 +137,7 @@ export class FieldsService {
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-        
+
             if (limit.trim() === '') {
                 limit = '0';
             }
@@ -152,13 +150,13 @@ export class FieldsService {
             }
 
             console.log(whereClause);
-            
+
             const [results, totalCount] = await this.fieldsValuesRepository.findAndCount({
                 where: whereClause,
                 take: parseInt(limit),
                 skip: offset,
             });
-        
+
             const mappedResponse = await this.mappedResponse(results);
 
             return new SuccessResponse({
@@ -177,6 +175,38 @@ export class FieldsService {
         }
     }
 
+    async createFieldValuesBulk(field_values: any) {
+        var axios = require("axios");
+
+        var data_field_values = {
+            query: `mutation insert_multiple_fieldValues($objects: [FieldValues_insert_input!]!) {
+            insert_FieldValues(objects: $objects) {
+              returning {
+                fieldValuesId
+              }
+            }
+          }
+          `,
+            variables: {
+                objects: field_values,
+            },
+        };
+
+        var config_field_value = {
+            method: "post",
+            url: process.env.REGISTRYHASURA,
+            headers: {
+                "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+                "Content-Type": "application/json",
+            },
+            data: data_field_values,
+        };
+
+        const response = await axios(config_field_value);
+        return response;
+    }
+
+    
     public async mappedResponse(result: any) {
         const fieldValueResponse = result.map((item: any) => {
             const fieldValueMapping = {

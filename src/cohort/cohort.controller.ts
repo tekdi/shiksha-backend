@@ -31,15 +31,19 @@ import { CohortDto } from "./dto/cohort.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
-import { Response } from "express";
+import { Response, response } from "express";
 
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
+import { CohortService } from "./cohort.service";
 
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
-  constructor(private cohortAdapter: CohortAdapter) {}
+  constructor(
+    private cohortAdapter: CohortAdapter,
+    private readonly cohortService: CohortService
+  ) {}
 
   //create cohort
   @Post()
@@ -95,15 +99,12 @@ export class CohortController {
     @Headers() headers,
     @Param("id") cohortId: string,
     @Req() request: Request,
-    @Res() res: Response
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .getCohort(tenantid, cohortId, request, res);
+    return this.cohortService.getCohort(tenantid, cohortId, request, response);
   }
-
-  //search
+  search;
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort list." })

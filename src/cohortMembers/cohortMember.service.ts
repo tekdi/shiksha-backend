@@ -48,23 +48,21 @@ export class CohortMembersService {
                 whereClause['tenantId'] = tenantId;
             }
             
-            // const [results, totalCount] = await this.cohortMemberRepository.findAndCount({
-            //     where: whereClause,
-            //     skip: offset,
-            //     // relations: ['cohorts'],
-            // });
-            // console.log(whereClause);
-            let userId;
+            let searchData;
+            let searchField;
             if (whereClause['userId']) {
-                userId = whereClause['userId'];
-
+                searchData = whereClause['userId'];
+                searchField = `CM."userId" =$1`
+            }else if(whereClause['cohortId']){
+                searchData = whereClause['cohortId'];
+                searchField = `CM."cohortId" =$1`
             }
             
             let query = `SELECT C."cohortId",C."attendanceCaptureImage", C."parentId", C."type", C."programId", C."name",CM."userId" FROM public."CohortMembers" CM 
             LEFT JOIN public."Cohort" C
-            ON C."cohortId" = CM."cohortId" where CM."userId" =$1`;
+            ON C."cohortId" = CM."cohortId" where ${searchField}`;
 
-            const results = await this.cohortMemberRepository.query(query, [userId]);
+            const results = await this.cohortMemberRepository.query(query, [searchData]);
             res.status(200).json(results);
 
         } catch (e) {

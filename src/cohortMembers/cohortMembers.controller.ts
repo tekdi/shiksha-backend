@@ -20,16 +20,21 @@ import {
   Req,
   CacheInterceptor,
   Headers,
+  Res,
 } from "@nestjs/common";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
 import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
+import { CohortMembersService } from "./cohortMember.service";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
 export class CohortMembersController {
-  constructor(private cohortMembersAdapter: CohortMembersAdapter) {}
+  constructor(
+    private cohortMembersAdapter: CohortMembersAdapter,
+    private readonly cohortMembersService: CohortMembersService
+    ) {}
 
   //create cohort members
   @Post()
@@ -98,12 +103,11 @@ export class CohortMembersController {
   public async searchCohortMembers(
     @Headers() headers,
     @Req() request: Request,
+    @Res() res: Response,
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersAdapter
-      .buildCohortMembersAdapter()
-      .searchCohortMembers(tenantid, request, cohortMembersSearchDto);
+    return this.cohortMembersService.searchCohortMembers(tenantid, request, cohortMembersSearchDto,res);
   }
 
   //update

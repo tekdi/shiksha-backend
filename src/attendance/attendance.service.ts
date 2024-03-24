@@ -74,6 +74,7 @@ export class AttendanceService {
     }
 
     async attendanceReport(contextId:string) {
+        try{
     const query = `
     SELECT 
     u."name",
@@ -92,7 +93,23 @@ GROUP BY
   `;
   
      const result = await this.attendanceRepository.query(query,[contextId]);
-            return await this.mapResponseforReport(result);
+          const report= await this.mapResponseforReport(result);
+
+          return new SuccessResponse({
+            statusCode: 200,
+            message: "Ok.",
+            data: report,
+        });
+        }
+        catch(error){
+
+            return new ErrorResponse({
+                errorCode: "500",
+                errorMessage: error,
+            });
+            
+
+        }
 
     }
 

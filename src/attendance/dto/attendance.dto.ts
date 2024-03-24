@@ -119,6 +119,7 @@ export class AttendanceDto {
     default: "",
   })
   @IsNotEmpty()
+  @IsUUID()
   @Expose()
   contextId: string;
 

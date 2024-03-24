@@ -38,6 +38,7 @@ import { AttendanceHasuraService } from "src/adapters/hasura/attendance.adapter"
 import { AttendaceAdapter } from "./attendanceadapter";
 import { AttendanceDateDto } from "./dto/attendance-date.dto";
 import { AttendanceService } from './attendance.service';
+import { AttendanceStatsDto } from "./dto/attendance-stats.dto";
 
 @ApiTags("Attendance")
 @Controller("attendance")
@@ -196,6 +197,28 @@ export class AttendanceController {
     let tenantid = headers["tenantid"];
     return this.attendaceService
       .multipleAttendance(tenantid, request, attendanceDtos);
+  }
+
+  @Post("/report")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiBody({ type: AttendanceSearchDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @UsePipes(ValidationPipe)
+
+  
+  public async report(
+    @Headers() headers,
+    @Req() request: Request,
+    @Body() attendanceStatsDto: AttendanceStatsDto
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.attendaceService
+      .attendanceReport(attendanceStatsDto.contextId);
   }
 
   /** No longer required in Shiksha 2.0 */

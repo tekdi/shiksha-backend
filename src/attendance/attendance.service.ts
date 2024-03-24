@@ -12,6 +12,8 @@ import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto } from './dto/attendance.dto';
 import { AttendanceDateDto } from './dto/attendance-date.dto';
 import { Between } from 'typeorm';
+import { AttendanceStatsDto } from './dto/attendance-stats.dto';
+import { User } from 'src/user/entities/user-entity';
 
 
 
@@ -71,6 +73,29 @@ export class AttendanceService {
         }
     }
 
+    async attendanceReport(contextId:string) {
+    const query = `
+    SELECT 
+    u."name",
+    COUNT(CASE WHEN aa."attendance" = 'Present' THEN 1 END) * 100.0 / COUNT(aa."attendance") AS attendance_percentage
+FROM 
+    public."Attendance" AS aa 
+INNER JOIN 
+    public."Users" AS u ON aa."userId" = u."userId"
+WHERE 
+    aa."attendance" IN ('Present', 'Absent')
+    AND u."role" = 'student'
+    AND aa."contextId" = $1  
+GROUP BY 
+    u."name",
+    u."role";
+  `;
+  
+     const result = await this.attendanceRepository.query(query,[contextId]);
+            return await this.mapResponseforReport(result);
+
+    }
+
     public async mappedResponse(result: any) {
         const attendanceResponse = result.map((item: any) => {
             const attendanceMapping = {
@@ -100,6 +125,18 @@ export class AttendanceService {
         return attendanceResponse;
     }
 
+    public async mapResponseforReport(result: any) {
+        const attendanceReport = result.map((item: any) => {
+            const attendanceReportMapping = {
+                name: item?.name ? `${item.name}` : "",
+                attendance_percentage: item?.attendance_percentage ? `${item.attendance_percentage}` : "",
+            };
+
+            return new AttendanceStatsDto(attendanceReportMapping);
+        });
+
+        return attendanceReport;
+    }
     /* 
     Method to create,update or add attendance for valid user in attendance table
     @body an object of details consisting of attendance details of user (attendance dto)  

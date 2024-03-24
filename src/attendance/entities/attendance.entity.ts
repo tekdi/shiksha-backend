@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Cohort } from 'src/cohort/entities/cohort.entity';
+import { User } from 'src/user/entities/user-entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity({name:"Attendance"})
 export class AttendanceEntity {
@@ -10,6 +12,10 @@ export class AttendanceEntity {
 
   @Column()
   userId: string;
+
+  @ManyToOne(() => User, {nullable:true})
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Column({ type: 'date' })
   attendanceDate: Date;

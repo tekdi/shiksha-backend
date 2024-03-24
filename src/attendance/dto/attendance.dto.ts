@@ -11,7 +11,6 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 enum Attendance{
   present="present",
   absent="absent",
-  halfDay="halfday"
 }
 
 export class AttendanceDto {

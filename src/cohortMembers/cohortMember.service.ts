@@ -8,6 +8,7 @@ import { CohortMembersSearchDto } from "src/cohortMembers/dto/cohortMembers-sear
 import { CohortMembers } from "./entities/cohort-member.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
+import { CohortDto } from "../cohort/dto/cohort.dto";
 
 @Injectable()
 export class CohortMembersService {
@@ -21,7 +22,8 @@ export class CohortMembersService {
     public async searchCohortMembers(
         tenantId: string,
         request: any,
-        cohortMembersSearchDto: CohortMembersSearchDto
+        cohortMembersSearchDto: CohortMembersSearchDto,
+        res: any,
     ) {
         try {
 
@@ -46,20 +48,24 @@ export class CohortMembersService {
                 whereClause['tenantId'] = tenantId;
             }
             
-            const [results, totalCount] = await this.cohortMemberRepository.findAndCount({
-                where: whereClause,
-                skip: offset,
-                // relations: ['cohorts'],
-            });
+            // const [results, totalCount] = await this.cohortMemberRepository.findAndCount({
+            //     where: whereClause,
+            //     skip: offset,
+            //     // relations: ['cohorts'],
+            // });
+            // console.log(whereClause);
+            let userId;
+            if (whereClause['userId']) {
+                userId = whereClause['userId'];
 
-            const mappedResponse = await this.mappedResponse(results);
+            }
+            
+            let query = `SELECT C."cohortId",C."attendanceCaptureImage", C."parentId", C."type", C."programId", C."name",CM."userId" FROM public."CohortMembers" CM 
+            LEFT JOIN public."Cohort" C
+            ON C."cohortId" = CM."cohortId" where CM."userId" =$1`;
 
-            return new SuccessResponse({
-                statusCode: 200,
-                message: 'Ok.',
-                totalCount,
-                data: mappedResponse,
-            });
+            const results = await this.cohortMemberRepository.query(query, [userId]);
+            res.status(200).json(results);
 
         } catch (e) {
             console.error(e);
@@ -68,26 +74,5 @@ export class CohortMembersService {
                 errorMessage: e,
             });
         }
-    }
-
-
-
-    public async mappedResponse(result: any) {
-        const cohortMembersResponse = result.map((obj: any) => {
-            const cohortMembersMapping = {
-                tenantId: obj?.tenantId ? `${obj.tenantId}` : "",
-                cohortMembershipId: obj?.cohortMembershipId? `${obj.cohortMembershipId}`: "",
-                cohortId: obj?.cohortId ? `${obj.cohortId}` : "",
-                userId: obj?.userId ? `${obj.userId}` : "",
-                role: obj?.role ? `${obj.role}` : "",
-                createdAt: obj?.createdAt ? `${obj.createdAt}` : "",
-                updatedAt: obj?.updatedAt ? `${obj.updatedAt}` : "",
-                createdBy: obj?.createdBy ? `${obj.createdBy}` : "",
-                updatedBy: obj?.updatedBy ? `${obj.updatedBy}` : "",
-            };
-            return new CohortMembersDto(cohortMembersMapping);
-        });
-
-        return cohortMembersResponse;
     }
 }

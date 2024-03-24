@@ -20,6 +20,7 @@ import {
   Req,
   CacheInterceptor,
   Headers,
+  Res,
 } from "@nestjs/common";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
@@ -102,10 +103,11 @@ export class CohortMembersController {
   public async searchCohortMembers(
     @Headers() headers,
     @Req() request: Request,
+    @Res() res: Response,
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersService.searchCohortMembers(tenantid, request, cohortMembersSearchDto);
+    return this.cohortMembersService.searchCohortMembers(tenantid, request, cohortMembersSearchDto,res);
   }
 
   //update

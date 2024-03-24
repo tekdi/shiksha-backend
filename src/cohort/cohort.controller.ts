@@ -36,7 +36,7 @@ import { Response, response } from "express";
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
-
+// import { FieldsService } from "../fields/fields.service";
 @ApiTags("Cohort")
 @Controller("cohort")
 export class CohortController {
@@ -44,7 +44,6 @@ export class CohortController {
     private cohortAdapter: CohortAdapter,
     private readonly cohortService: CohortService
   ) {}
-
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -78,9 +77,7 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, payload);
 
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .createCohort(request, cohortCreateDto);
+    return this.cohortService.createCohort(request, cohortCreateDto);
   }
 
   //get cohort
@@ -122,12 +119,9 @@ export class CohortController {
     @Headers() headers,
     @Req() request: Request,
     @Body() cohortSearchDto: CohortSearchDto,
-    @Res() res: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .searchCohort(tenantid, request, cohortSearchDto, res);
+    return this.cohortService.searchCohort(tenantid, request, cohortSearchDto);
   }
 
   //update
@@ -158,8 +152,7 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, response);
 
-    return this.cohortAdapter
-      .buildCohortAdapter()
-      .updateCohort(cohortId, request, cohortCreateDto);
+    return this.cohortService.updateCohort(cohortId, request, cohortCreateDto);
+
   }
 }

@@ -83,12 +83,18 @@ export class FieldsService {
                 skip: offset,
             });
 
+            // console.log(results);
+            
+            
+            const mappedResponse = await this.mappedResponseField(results);
+
             return new SuccessResponse({
                 statusCode: 200,
                 message: 'Ok.',
                 totalCount,
-                data: results,
+                data: mappedResponse,
             });
+
         } catch (e) {
             console.error(e);
             return new ErrorResponse({
@@ -112,8 +118,6 @@ export class FieldsService {
                 }
             });
 
-            console.log(fieldsData);
-            
             let result = await this.fieldsValuesRepository.save(fieldsData);
             return new SuccessResponse({
                 statusCode: 200,
@@ -139,7 +143,7 @@ export class FieldsService {
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-        
+
             if (limit.trim() === '') {
                 limit = '0';
             }
@@ -152,13 +156,13 @@ export class FieldsService {
             }
 
             console.log(whereClause);
-            
+
             const [results, totalCount] = await this.fieldsValuesRepository.findAndCount({
                 where: whereClause,
                 take: parseInt(limit),
                 skip: offset,
             });
-        
+
             const mappedResponse = await this.mappedResponse(results);
 
             return new SuccessResponse({
@@ -177,6 +181,39 @@ export class FieldsService {
         }
     }
 
+    async searchFieldValueId(cohortId: string, fieldId: string){            
+        const response = await this.fieldsValuesRepository.findOne({
+            where: { itemId: cohortId, fieldId: fieldId },
+        });
+        return response;
+    }
+    
+    async updateFieldValues(id: string, fieldValuesDto: FieldValuesDto) {
+
+        try {
+            const fieldsData: any = {};
+            Object.keys(fieldValuesDto).forEach((e) => {
+                if (fieldValuesDto[e] && fieldValuesDto[e] != "") {
+                    if (Array.isArray(fieldValuesDto[e])) {
+                        fieldsData[e] = JSON.stringify(fieldValuesDto[e]);
+                    } else {
+                        fieldsData[e] = fieldValuesDto[e];
+                    }
+                }
+            });
+            const response = await this.fieldsValuesRepository.update(id, fieldValuesDto);
+
+            return response;
+        } catch (e) {
+            console.error(e);
+            return new ErrorResponse({
+                errorCode: "400",
+                errorMessage: e,
+            });
+        }
+    }
+
+
     public async mappedResponse(result: any) {
         const fieldValueResponse = result.map((item: any) => {
             const fieldValueMapping = {
@@ -194,5 +231,42 @@ export class FieldsService {
         });
 
         return fieldValueResponse;
+    }
+
+    public async mappedResponseField(result: any) {
+        const fieldResponse = result.map((item: any) => {
+            
+            const fieldMapping = {
+                fieldId: item?.fieldId ? `${item.fieldId}` : "",
+                assetId: item?.assetId ? `${item.assetId}` : "",
+                context: item?.context ? `${item.context}` : "",
+                groupId: item?.groupId ? `${item.groupId}` : "",
+                name: item?.name ? `${item.name}` : "",
+                label: item?.label ? `${item.label}` : "",
+                defaultValue: item?.defaultValue ? `${item.defaultValue}` : "",
+                type: item?.type ? `${item.type}` : "",
+                note: item?.note ? `${item.note}` : "",
+                description: item?.description ? `${item.description}` : "",
+                state: item?.state ? `${item.state}` : "",
+                required: item?.required ? `${item.required}` : "",
+                ordering: item?.ordering ? `${item.ordering}` : "",
+                metadata: item?.metadata ? `${item.metadata}` : "",
+                access: item?.access ? `${item.access}` : "",
+                onlyUseInSubform: item?.onlyUseInSubform ? `${item.onlyUseInSubform}` : "",
+                tenantId: item?.tenantId ? `${item.tenantId}` : "",
+                createdAt: item?.createdAt ? `${item.createdAt}` : "",
+                updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
+                createdBy: item?.createdBy ? `${item.createdBy}` : "",
+                updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+                contextId: item?.contextId ? `${item.contextId}` : "",
+                render: item?.render ? `${item.render}` : "",
+                contextType: item?.contextType ? `${item.contextType}` : "",
+                fieldParams: item?.fieldParams ? JSON.stringify(item.fieldParams) : ""
+            };
+
+            return new FieldsDto(fieldMapping);
+        });
+
+        return fieldResponse;
     }
 }

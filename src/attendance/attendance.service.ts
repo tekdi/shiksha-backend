@@ -375,7 +375,7 @@ GROUP BY
             let count = 1;
 
             for (const attendance of attendanceData) {
-                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance &&(attendance.attendance === "present" || attendance.attendance === "absent") && attendance.contextId) {
+                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance  && attendance.contextId) {
 
                     attendance.tenantId = tenantId;
                     const attendanceRes: any = await this.updateAttendanceRecord(

@@ -27,6 +27,7 @@ import { Request } from "@nestjs/common";
 import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersService } from "./cohortMember.service";
+import { Response } from "@nestjs/common";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
@@ -34,7 +35,7 @@ export class CohortMembersController {
   constructor(
     private cohortMembersAdapter: CohortMembersAdapter,
     private readonly cohortMembersService: CohortMembersService
-    ) {}
+  ) {}
 
   //create cohort members
   @Post()
@@ -51,7 +52,8 @@ export class CohortMembersController {
   public async createCohortMembers(
     @Headers() headers,
     @Req() request: Request,
-    @Body() cohortMembersDto: CohortMembersDto
+    @Body() cohortMembersDto: CohortMembersDto,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
@@ -59,9 +61,11 @@ export class CohortMembersController {
     };
     Object.assign(cohortMembersDto, payload);
 
-    return this.cohortMembersAdapter
-      .buildCohortMembersAdapter()
-      .createCohortMembers(request, cohortMembersDto);
+    return this.cohortMembersService.createCohortMembers(
+      request,
+      cohortMembersDto,
+      response
+    );
   }
 
   //get cohort members
@@ -79,12 +83,16 @@ export class CohortMembersController {
   public async getCohortMembers(
     @Headers() headers,
     @Param("id") cohortMembersId: string,
-    @Req() request: Request
+    @Req() request: Request,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersAdapter
-      .buildCohortMembersAdapter()
-      .getCohortMembers(tenantid, cohortMembersId, request);
+    return this.cohortMembersService.getCohortMembers(
+      tenantid,
+      cohortMembersId,
+      response,
+      request
+    );
   }
 
   //search
@@ -103,11 +111,16 @@ export class CohortMembersController {
   public async searchCohortMembers(
     @Headers() headers,
     @Req() request: Request,
-    @Res() res: Response,
+    @Res() response: Response,
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersService.searchCohortMembers(tenantid, request, cohortMembersSearchDto,res);
+    return this.cohortMembersService.searchCohortMembers(
+      tenantid,
+      request,
+      cohortMembersSearchDto,
+      response
+    );
   }
 
   //update
@@ -124,10 +137,8 @@ export class CohortMembersController {
     @Req() request: Request,
     @Body() cohortMembersipDto: CohortMembersDto
   ) {
-    return this.cohortMembersAdapter.buildCohortMembersAdapter().updateCohortMembers(
-      cohortMembersId,
-      request,
-      cohortMembersipDto
-    );
+    return this.cohortMembersAdapter
+      .buildCohortMembersAdapter()
+      .updateCohortMembers(cohortMembersId, request, cohortMembersipDto);
   }
 }

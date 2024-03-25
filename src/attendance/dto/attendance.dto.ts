@@ -7,10 +7,13 @@ import { User } from 'src/user/entities/user-entity';
 import { format, isAfter } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-
+//for student valid enum are[present,absent]
+//for teacher valid enum are[present,on-leave,half-day]
 enum Attendance{
   present="present",
   absent="absent",
+  onLeave="on-leave",
+  halfDay="half-day"
 }
 
 export class AttendanceDto {
@@ -52,7 +55,7 @@ export class AttendanceDto {
   })
   @Expose()
   @IsNotEmpty()
-  @IsEnum(Attendance,{message:"Please enter valid enum [present or absent]"})
+  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
   attendance: string;
 
   @ApiProperty({

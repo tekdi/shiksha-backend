@@ -14,6 +14,7 @@ import {
   Query,
   Headers,
   Res,
+  Patch,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -36,6 +37,7 @@ import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { UserService } from "./user.service";
+import { UserUpdateDTO } from "./dto/user-update.dto";
 @ApiTags("User")
 @Controller("user")
 export class UserController {
@@ -117,7 +119,8 @@ export class UserController {
     return this.userService.createUser(request, userCreateDto,response);
   }
   
-  @Put("/:userid")
+
+  @Patch("/:userid")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been updated successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -129,12 +132,12 @@ export class UserController {
     @Headers() headers,
     @Param("userid") userId: string,
     @Req() request: Request,
-    @Body() userDto: UserCreateDto
+    @Body() userUpdateDto:UserUpdateDTO,
+    @Res() response: Response
   ) {
-    userDto.tenantId = headers["tenantid"];
-    return await this.userAdapter
-      .buildUserAdapter()
-      .updateUser(userId, request, userDto);
+    // userDto.tenantId = headers["tenantid"];
+    userUpdateDto.userId=userId;
+    return await this.userService.updateUser(userUpdateDto,response)
   }
 
   @Post("/search")

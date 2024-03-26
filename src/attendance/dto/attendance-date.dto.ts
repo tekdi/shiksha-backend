@@ -2,13 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class AttendanceDateDto {
   @ApiProperty({
-    type: String,
+    type: Date,
     description: "From Date",
   })
   fromDate: string;
 
   @ApiProperty({
-    type: String,
+    type: Date,
     description: "To Date",
   })
   toDate: string;

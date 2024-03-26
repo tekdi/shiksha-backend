@@ -9,7 +9,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nes
 import { ErrorResponse } from "src/error-response";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
-import { AttendanceDto } from './dto/attendance.dto';
+import { AttendanceDto, BulkAttendanceDTO } from './dto/attendance.dto';
 import { AttendanceDateDto } from './dto/attendance-date.dto';
 import { Between } from 'typeorm';
 import { AttendanceStatsDto } from './dto/attendance-stats.dto';
@@ -167,7 +167,6 @@ GROUP BY
 
 
         try {
-            if (!isAfter(new Date(attendanceDto.attendanceDate), new Date()) && attendanceDto.attendanceDate) {
                 const decoded: any = jwt_decode(request?.headers?.authorization);
 
                 const userId =
@@ -210,13 +209,6 @@ GROUP BY
 
                     return await this.createAttendance(request, attendanceDto);
                 }
-            }
-            else {
-                return new ErrorResponse({
-                    errorCode: '500',
-                    errorMessage: "Date cannot be from future",
-                });
-            }
         } catch (e) {
             return e;
         }
@@ -367,20 +359,23 @@ GROUP BY
     public async multipleAttendance(
         tenantId: string,
         request: any,
-        attendanceData: [AttendanceDto]
+        attendanceData: BulkAttendanceDTO
     ) {
         const responses = [];
         const errors = [];
         try {
             let count = 1;
 
-            for (const attendance of attendanceData) {
-                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance &&(attendance.attendance === "present" || attendance.attendance === "absent" ) && attendance.contextId) {
-
-                    attendance.tenantId = tenantId;
+            for (let attendance of attendanceData.userAttendance) {
+                const userNewAttendance = new AttendanceDto({
+                    attendanceDate: attendanceData.attendanceDate,
+                    contextId: attendanceData.contextId,
+                    attendance: attendance.attendance,
+                    userId: attendance.userId
+                })
                     const attendanceRes: any = await this.updateAttendanceRecord(
                         request,
-                        attendance
+                        userNewAttendance
                     );
                     if (attendanceRes?.statusCode === 200) {
                         responses.push(attendanceRes.data);
@@ -391,15 +386,6 @@ GROUP BY
                         });
                     }
                     count++;
-                }
-
-                else {
-                    errors.push({
-                        message: `userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday] or contextId should be present`
-
-                    });
-                    count++;
-                }
 
             }
         } catch (e) {
@@ -410,7 +396,7 @@ GROUP BY
 
         return {
             statusCode: 200,
-            totalCount: attendanceData.length,
+            totalCount: attendanceData.userAttendance.length,
             successCount: responses.length,
             errorCount: errors.length,
             responses,

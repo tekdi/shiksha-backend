@@ -29,7 +29,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from "@nestjs/common";
-import { AttendanceDto } from "./dto/attendance.dto";
+import { AttendanceDto, BulkAttendanceDTO } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
@@ -74,7 +74,6 @@ export class AttendanceController {
 
   @Post()
 
-  @UsePipes(new ValidationPipe())
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
@@ -95,6 +94,7 @@ export class AttendanceController {
   @ApiHeader({
     name: "tenantid",
   })
+  @UsePipes(ValidationPipe)
   public async createAttendace(
     @Headers() headers,
     @Req() request: Request,
@@ -182,7 +182,7 @@ export class AttendanceController {
   @ApiCreatedResponse({
     description: "Attendance has been created successfully.",
   })
-  @ApiBody({ type: [AttendanceDto] })
+  @ApiBody({ type: BulkAttendanceDTO })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
@@ -192,7 +192,7 @@ export class AttendanceController {
   public async multipleAttendance(
     @Headers() headers,
     @Req() request: Request,
-    @Body() attendanceDtos: [AttendanceDto]
+    @Body() attendanceDtos: BulkAttendanceDTO
   ) {
     let tenantid = headers["tenantid"];
     return this.attendaceService

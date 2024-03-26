@@ -18,6 +18,7 @@ import { Field } from './entities/field-entity';
 import APIResponse from '../utils/response';
 import { v5 as uuidv5 } from 'uuid';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
+import { AnyARecord } from 'dns';
 
 
 @Injectable()
@@ -74,11 +75,14 @@ export class UserService {
     }
 }
 
-  async findUserDetails(userId){
+  async findUserDetails(userId,username?:any){
+    let whereClause:any = { userId: userId };
+    if(username && userId === null){
+      delete whereClause.userId;
+      whereClause.username = username;
+    }
     let userDetails = await this.usersRepository.findOne({
-      where:{
-        userId:userId
-      }
+      where:whereClause
     })
     return userDetails;
   }

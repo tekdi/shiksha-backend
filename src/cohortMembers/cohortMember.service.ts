@@ -13,6 +13,7 @@ import APIResponse from "src/utils/response";
 import { HttpStatus } from "@nestjs/common";
 import response from "src/utils/response";
 import { User } from "src/user/entities/user-entity";
+import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 
 @Injectable()
 export class CohortMembersService {
@@ -143,7 +144,7 @@ export class CohortMembersService {
     cohortMembers: CohortMembersDto,
     response: any
   ) {
-    const apiId = "api.cohortMember.getCohortMembers";
+    const apiId = "api.cohortMember.createCohortMembers";
 
     try {
       // Create a new CohortMembers entity and populate it with cohortMembers data
@@ -168,6 +169,51 @@ export class CohortMembersService {
             apiId,
             "Something went wrong",
             `Failure creating Cohort Member. Error is: ${error}`,
+            "INTERNAL_SERVER_ERROR"
+          )
+        );
+    }
+  }
+
+  public async updateCohortMembers(
+    cohortMembershipId: string,
+    request: any,
+    cohortMembersUpdateDto: CohortMembersUpdateDto,
+    response: any
+  ) {
+    const apiId = "api.cohortMember.updateCohortMembers";
+
+    try {
+      const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
+        where: { cohortMembershipId: cohortMembershipId },
+      });
+
+      if (!cohortMemberToUpdate) {
+        throw new Error("Cohort member not found");
+      }
+      Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
+
+      const updatedCohortMember = await this.cohortMembersRepository.save(
+        cohortMemberToUpdate
+      );
+
+      return response
+        .status(HttpStatus.OK)
+        .send(
+          APIResponse.success(
+            apiId,
+            updatedCohortMember,
+            "Cohort Member updated Successfully"
+          )
+        );
+    } catch (error) {
+      return response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            "Something went wrong",
+            `Failure updating Cohort Member. Error is: ${error}`,
             "INTERNAL_SERVER_ERROR"
           )
         );

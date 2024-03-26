@@ -28,6 +28,7 @@ import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersService } from "./cohortMember.service";
 import { Response } from "@nestjs/common";
+import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
@@ -129,16 +130,20 @@ export class CohortMembersController {
   @ApiCreatedResponse({
     description: "Cohort Members has been updated successfully.",
   })
-  @ApiBody({ type: CohortMembersDto })
+  @ApiBody({ type: CohortMembersUpdateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohortMembers(
     @Param("id") cohortMembersId: string,
     @Req() request: Request,
-    @Body() cohortMembersipDto: CohortMembersDto
+    @Body() cohortMemberUpdateDto: CohortMembersUpdateDto,
+    @Res() response: Response
   ) {
-    return this.cohortMembersAdapter
-      .buildCohortMembersAdapter()
-      .updateCohortMembers(cohortMembersId, request, cohortMembersipDto);
+    return this.cohortMembersService.updateCohortMembers(
+      cohortMembersId,
+      request,
+      cohortMemberUpdateDto,
+      response
+    );
   }
 }

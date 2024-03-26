@@ -367,7 +367,7 @@ GROUP BY
             let count = 1;
 
             for (let attendance of attendanceData.userAttendance) {
-                const userNewAttendance = new AttendanceDto({
+                const userAttendance = new AttendanceDto({
                     attendanceDate: attendanceData.attendanceDate,
                     contextId: attendanceData.contextId,
                     attendance: attendance.attendance,
@@ -375,7 +375,7 @@ GROUP BY
                 })
                     const attendanceRes: any = await this.updateAttendanceRecord(
                         request,
-                        userNewAttendance
+                        userAttendance
                     );
                     if (attendanceRes?.statusCode === 200) {
                         responses.push(attendanceRes.data);

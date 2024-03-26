@@ -37,14 +37,16 @@ export class UserService {
     let apiId='api.users.getUsersDetails'
     try {
       const result = {
-        customFields: []
-    };
-
+        userData:{
+        }
+      };
+      let customFieldsArray =[];
     const [customFields, filledValues,userDetails] = await Promise.all([
       this.findCustomFields(userData),
       this.findFilledValues(userData.userId),
       this.findUserDetails(userData.userId)
   ]);
+    result.userData=userDetails;
     const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
     for (let data of customFields) {
         const fieldValue = filledValuesMap.get(data.fieldId);
@@ -55,9 +57,9 @@ export class UserService {
             options: data?.fieldParams?.['options'] || {},
             type: data.type || ''
         };
-        result.customFields.push(customField);
+        customFieldsArray.push(customField);
     }
-    result['userData']=userDetails;
+    result.userData['customFields'] = customFieldsArray;
     return response
         .status(HttpStatus.OK)
         .send(APIResponse.success(apiId, result, 'OK'));

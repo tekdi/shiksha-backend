@@ -57,6 +57,28 @@ export default class APIResponse {
     }
   }
 
+  public static search(dtoFileName){
+    let { limit, page, filters } = dtoFileName;
+
+    let offset = 0;
+    if (page > 1) {
+        offset = parseInt(limit) * (page - 1);
+    }
+    console.log(offset);
+    
+    if (limit.trim() === '') {
+        limit = '0';
+    }
+
+    const whereClause = {};
+    if (filters && Object.keys(filters).length > 0) {
+        Object.entries(filters).forEach(([key, value]) => {
+            whereClause[key] = value;
+        });
+    }
+    return {offset,limit,whereClause};
+  }
+
 //   public static handleBadRequests(
 //     response: Response,
 //     apiId: string,

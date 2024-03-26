@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { UserService } from '../user/user.service';
 import axios from 'axios';
 import qs from 'qs'
+import jwt_decode from "jwt-decode";
+import APIResponse from 'src/utils/response';
 
 
 
@@ -8,9 +11,8 @@ import qs from 'qs'
 @Injectable()
 export class AuthService {
   private axiosInstance; 
-  constructor(){
-    this.axiosInstance = axios.create();
-  }
+  constructor(private readonly userService: UserService){
+    this.axiosInstance = axios.create();}
   
   async login(authDto,response){
     try{
@@ -39,4 +41,27 @@ export class AuthService {
     return response.status(500).send({ message: 'An error occurred during login.' });
   }
   }
+
+  public async getUserByAuth(request: any,response) {
+    let apiId = 'api.auth.getUserDetails';
+    try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      const username = decoded.preferred_username;
+      let data = await this.userService.findUserDetails(null,username)
+      return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, data, 'OK'));
+    }catch(e){
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
+    }
+}
 }

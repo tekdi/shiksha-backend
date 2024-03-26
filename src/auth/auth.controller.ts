@@ -3,6 +3,8 @@ import {
   ApiBody,
   ApiForbiddenResponse,
   ApiHeader,
+  ApiBasicAuth,
+  ApiOkResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -45,4 +47,20 @@ export class AuthController {
     console.log(request)
     return this.authService.login(authDto,response);
   }
+
+  @Get('/getUserDetails')
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "User detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getUserByAuth(@Req() request: Request,@Res() response:Response){
+    // const tenantId = headers["tenantid"];
+    return this.authService.getUserByAuth(request,response);
+  }
+
 }

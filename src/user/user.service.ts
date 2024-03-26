@@ -45,13 +45,13 @@ export class UserService {
       this.findUserDetails(userData.userId)
   ]);
     const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-    for (const data of customFields) {
+    for (let data of customFields) {
         const fieldValue = filledValuesMap.get(data.fieldId);
         const customField = {
             fieldId: data.fieldId,
             label: data.label,
             value: fieldValue || '',
-            options: data.fieldParams || {},
+            options: data?.fieldParams?.['options'] || {},
             type: data.type || ''
         };
         result.customFields.push(customField);

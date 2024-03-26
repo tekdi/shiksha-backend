@@ -64,7 +64,6 @@ export default class APIResponse {
     if (page > 1) {
         offset = parseInt(limit) * (page - 1);
     }
-    console.log(offset);
     
     if (limit.trim() === '') {
         limit = '0';

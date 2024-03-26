@@ -15,7 +15,7 @@ import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { FieldsService } from "src/adapters/hasura/services/fields.service";
-import { FieldValues } from "src/fields/entities/field-values.entity";
+// import { FieldValues } from "src/fields/entities/field-values.entity";
 import { response } from "express";
 import APIResponse from "src/utils/response";
 
@@ -25,9 +25,9 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-    @InjectRepository(FieldValues)
+    // @InjectRepository(FieldValues)
     private cohortRepository: Repository<Cohort>,
-    private readonly fieldsService: FieldsService
+    // private readonly fieldsService: FieldsService
   ) {}
 
   public async getCohort(

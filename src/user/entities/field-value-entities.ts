@@ -2,14 +2,14 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 // import { Field } from './Field'; // Assuming you have a Field entity defined
 
 @Entity({ name: 'FieldValues' })
-export class FieldValue {
+export class FieldValues {
     @PrimaryGeneratedColumn('uuid', { name: 'fieldValuesId' })
     fieldValuesId: string;
 
     @Column({ type: 'text', nullable: false })
     value: string;
 
-    @Column({ type: 'uuid', nullable: false, default: () => 'gen_random_uuid()' })
+    @Column({ type: 'uuid', nullable: false})
     itemId: string;
 
     @Column({ type: 'uuid', nullable: false, name: 'fieldId' })

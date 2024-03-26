@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './entities/user-entity'
-import { FieldValue } from './entities/field-value-entities';
+import { FieldValues } from './entities/field-value-entities';
 import ApiResponse from '../utils/response'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,6 +16,8 @@ import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
 import { Field } from './entities/field-entity';
 import APIResponse from '../utils/response';
+import { v5 as uuidv5 } from 'uuid';
+import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 
 
 @Injectable()
@@ -24,8 +26,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    @InjectRepository(FieldValue)
-    private fieldsValueRepository: Repository<User>,
+    @InjectRepository(FieldValues)
+    private fieldsValueRepository: Repository<FieldValues>,
     @InjectRepository(Field)
     private fieldsRepository : Repository<Field>
   ) {}
@@ -37,8 +39,6 @@ export class UserService {
         customFields: []
     };
 
-    // const customFields = await this.findCustomFields(userData);
-    // const filledValues = await this.findFilledValues(userData?.userId);
     const [customFields, filledValues,userDetails] = await Promise.all([
       this.findCustomFields(userData),
       this.findFilledValues(userData.userId),
@@ -99,7 +99,61 @@ export class UserService {
     return result;
   }
 
-  public async createUser(request: any, userCreateDto: UserCreateDto,response) {
+  async updateUser(userDto,response){
+    const apiId = 'api.users.UpdateUserDetails'
+    try {
+      let updatedData = {};
+      if(userDto.userData || Object.keys(userDto.userData).length > 0){
+        await this.updateBasicUserDetails(userDto.userId,userDto.userData);
+        updatedData['basicDetails'] = userDto.userData;
+      }
+      if(userDto.customFields.length > 0){
+        for (let data of userDto.customFields) {
+          const result = await this.updateCustomFields(userDto.userId, data);
+          if (result) {
+              if (!updatedData['customFields']) 
+              updatedData['customFields']= [];
+              updatedData['customFields'].push(result);
+          }
+      }
+      }
+      return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, updatedData, 'OK'));
+    } catch (e) {
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
+    }
+  }
+
+  async updateBasicUserDetails(userId,userData: Partial<User>): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { userId: userId } });
+    if (!user) {
+      return null;
+    }
+    Object.assign(user, userData);
+
+    return this.usersRepository.save(user);
+  }
+
+  async updateCustomFields(itemId,data){
+    const result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+
+    if (result.affected === 0) {
+        return null;
+    }
+    return result;
+  }
+
+  async createUser(request: any, userCreateDto: UserCreateDto,response) {
     // It is considered that if user is not present in keycloak it is not present in database as well
     let apiId='api.user.creatUser'
     try {
@@ -144,7 +198,7 @@ export class UserService {
   }
 
 // Can be Implemeneted after we know what are the unique entties
-async checkUserinKeyCloakandDb(userDto){
+  async checkUserinKeyCloakandDb(userDto){
   const keycloakResponse = await getKeycloakAdminToken();
   const token = keycloakResponse.data.access_token;
   const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
@@ -154,9 +208,9 @@ async checkUserinKeyCloakandDb(userDto){
   if(usernameExistsInKeycloak){
     return usernameExistsInKeycloak;
   }
-}
+  }
 
-async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
       let userData = {
         username:userCreateDto?.username,
         name:userCreateDto?.name,
@@ -174,7 +228,7 @@ async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
           message: "Ok.",
           data: result,
         });}
-}
+  }
     
     
 

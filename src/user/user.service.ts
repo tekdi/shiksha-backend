@@ -11,7 +11,7 @@ import {
     getKeycloakAdminToken,
     createUserInKeyCloak,
     checkIfUsernameExistsInKeycloak,
-  } from "../common/keycloak";
+} from "../common/utils/keycloak.adapter.util"
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
 import { Field } from './entities/field-entity';

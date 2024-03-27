@@ -133,8 +133,8 @@ export class AttendanceDto {
     description: "The contextId of the attendance",
     default: "",
   })
-  @IsNotEmpty()
-  @IsUUID()
+ 
+ 
   @Expose()
   contextId: string;
 
@@ -183,6 +183,7 @@ export class BulkAttendanceDTO {
 
   @IsUUID()
     @Expose()
+    @IsNotEmpty()
 
   contextId: string;
 

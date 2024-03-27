@@ -209,8 +209,6 @@ export class AttendanceController {
     strategy: "excludeAll",
   })
   @UsePipes(ValidationPipe)
-
-  
   public async report(
     @Headers() headers,
     @Req() request: Request,
@@ -218,7 +216,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
     return this.attendaceService
-      .attendanceReport(attendanceStatsDto.contextId);
+      .attendanceReport(attendanceStatsDto);
   }
 
   /** No longer required in Shiksha 2.0 */

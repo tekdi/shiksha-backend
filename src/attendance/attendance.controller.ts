@@ -168,6 +168,7 @@ export class AttendanceController {
   @ApiHeader({
     name: "tenantid",
   })
+  @UsePipes(ValidationPipe)
   public async attendanceFilter(
     @Headers() headers,
     @Req() request: Request,

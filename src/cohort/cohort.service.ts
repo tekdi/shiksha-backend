@@ -43,7 +43,7 @@ export class CohortService {
 
     try {
       const cohort = await this.cohortRepository.findOne({
-        where: { cohortId: cohortId },
+        where: { cohortId: cohortId, status: "true" },
         select: ["cohortId","parentId","name","type","status","image","programId","attendanceCaptureImage"],
       });
 
@@ -164,7 +164,6 @@ export class CohortService {
       });
 
       const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
-      console.log(response);
 
 
       let field_value_array = cohortUpdateDto.fieldValues.split("|");
@@ -282,5 +281,27 @@ export class CohortService {
     })
     return cohortValueResponse;
 
+  }
+
+  public async updateCohortStatus(
+    cohortId: string
+  ) {
+    try {
+      let query =`UPDATE public."Cohort"
+      SET "status" = false
+      WHERE "cohortId" = $1`;
+      const results = await this.cohortRepository.query(query, [cohortId]);
+      
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Cohort Deleted Successfully.",
+      });
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
   }
 }

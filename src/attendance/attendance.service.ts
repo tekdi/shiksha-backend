@@ -22,7 +22,7 @@ export class AttendanceService {
     constructor(private configService: ConfigService,
         @InjectRepository(AttendanceEntity)
         private readonly attendanceRepository: Repository<AttendanceEntity>,
-        ) { }
+    ) { }
 
 
 
@@ -76,10 +76,16 @@ export class AttendanceService {
 
     async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
 
-        const { contextId, attendanceDate, report, limit, offset } = attendanceStatsDto
+        let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
         try {
+            
+
             if (report === true) {
-                const query = `
+                let nameFilter = '';
+            if (filters && filters.search) {
+                nameFilter = `AND u."name" LIKE '%${filters.search.trim()}%'`;
+            }
+                let query = `
                 SELECT u."userId",u."name",
                 CASE 
                 WHEN COUNT(*) = 0 THEN NULL
@@ -89,12 +95,25 @@ export class AttendanceService {
                 INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
                 LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
                 WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+                ${nameFilter}
                 GROUP BY u."userId"
+
+                `;
+
+
+                if (filters) {
+                    if (filters.nameOrder && filters.nameOrder==="asc" || filters.nameOrder==="desc") {
+                        query += ` ORDER BY "name" ${filters.nameOrder}`
+                        
+                    }
+                    else if (filters.percentageOrder && filters.percentageOrder==="asc" || filters.percentageOrder==="desc") {
+                        query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`
+                    }
+
+                }
+                query += `
                 LIMIT $2
-                OFFSET $3; 
-                ;`;
-
-
+                OFFSET $3`
                 const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
                 const report = await this.mapResponseforReport(result);
 
@@ -206,7 +225,6 @@ export class AttendanceService {
                 attendanceDate: item.attendanceDate ? formattedDate : null
 
             };
-            console.log(attendance)
             return new AttendanceStatsDto(attendance);
         });
 
@@ -308,7 +326,6 @@ export class AttendanceService {
             });
         } catch (error) {
             if (error instanceof BadRequestException) {
-                console.error("Error updating attendance:", error);
                 return new ErrorResponse({
                     errorCode: "500",
                     errorMessage: "Internal Server Error",
@@ -341,7 +358,6 @@ export class AttendanceService {
                     errorMessage: "Please provide valid userID",
                 });
             } else {
-                console.error('Error creating attendance:', error);
                 return new ErrorResponse({
                     errorCode: "500",
                     errorMessage: 'Internal Server Error',
@@ -402,7 +418,6 @@ export class AttendanceService {
                 data: mappedResponse,
             });
         } catch (e) {
-            console.error(e);
             return new ErrorResponse({
                 errorCode: "500",
                 errorMessage: e,
@@ -447,7 +462,6 @@ export class AttendanceService {
 
             }
         } catch (e) {
-            console.error(e);
             return e;
         }
 

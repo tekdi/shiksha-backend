@@ -96,7 +96,7 @@ export class CohortMembersController {
     );
   }
 
-  //search
+  search
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members list." })

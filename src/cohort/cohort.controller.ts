@@ -24,6 +24,7 @@ import {
   UploadedFile,
   Res,
   Headers,
+  Delete,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -43,7 +44,7 @@ export class CohortController {
   constructor(
     private cohortAdapter: CohortAdapter,
     private readonly cohortService: CohortService
-  ) {}
+  ) { }
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -101,7 +102,7 @@ export class CohortController {
     let tenantid = headers["tenantid"];
     return this.cohortService.getCohort(tenantid, cohortId, request, response);
   }
-  
+
   // search
   @Post("/search")
   @ApiBasicAuth("access-token")
@@ -155,4 +156,37 @@ export class CohortController {
     return this.cohortService.updateCohort(cohortId, request, cohortCreateDto);
 
   }
+
+  //delete cohort
+  @Delete("/:id")
+  @ApiConsumes("multipart/form-data")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort has been deleted successfully." })
+  @UseInterceptors(
+    FileInterceptor("image", {
+      storage: diskStorage({
+        destination: process.env.IMAGEPATH,
+        filename: editFileName,
+      }),
+      fileFilter: imageFileFilter,
+    })
+  )
+  @ApiBody({ type: CohortCreateDto })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  public async updateCohortStatus(
+    @Param("id") cohortId: string,
+    @Req() request: Request,
+    @Body() cohortCreateDto: CohortCreateDto,
+    @UploadedFile() image
+  ) {
+    const response = {
+      image: image?.filename,
+    };
+    Object.assign(cohortCreateDto, response);
+
+    return this.cohortService.updateCohortStatus(cohortId, request, cohortCreateDto);
+
+  }
+
 }

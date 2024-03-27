@@ -212,7 +212,7 @@ export class FieldsService {
     }
 
     public async getFieldsAndFieldsValues(cohortId:string){
-        let query = `SELECT FV."value",FV."itemId", FV."fieldId", F."name", F."label", F."context",F."type", F."state", F."contextType", F."fieldParams" FROM public."FieldValues" FV 
+        let query = `SELECT FV."value",FV."itemId", FV."fieldId", F."name" AS fieldname, F."label", F."context",F."type", F."state", F."contextType", F."fieldParams" FROM public."FieldValues" FV 
         LEFT JOIN public."Fields" F
         ON FV."fieldId" = F."fieldId" where FV."itemId" =$1`;
         const results = await this.fieldsValuesRepository.query(query, [cohortId]);

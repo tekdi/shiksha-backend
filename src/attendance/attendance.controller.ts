@@ -203,7 +203,7 @@ export class AttendanceController {
   @Post("/report")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
-  @ApiBody({ type: AttendanceSearchDto })
+  @ApiBody({ type: AttendanceStatsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({

@@ -38,8 +38,8 @@ export class User {
   @UpdateDateColumn({ type: "timestamp with time zone", default: () => "CURRENT_TIMESTAMP" })
   updatedAt: Date;
 
-//   @Column({ type: "numberic", nullable: true })
-//   mobile: number;
+  @Column()
+  mobile: number;
 
   @Column({ nullable: true })
   createdBy: string;

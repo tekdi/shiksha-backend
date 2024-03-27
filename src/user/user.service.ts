@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './entities/user-entity'
 import { FieldValues } from './entities/field-value-entities';
 import ApiResponse from '../utils/response'
@@ -12,13 +12,16 @@ import {
     createUserInKeyCloak,
     checkIfUsernameExistsInKeycloak,
   } from "../common/keycloak";
+import { FieldValuesCreateDto } from 'src/fields/dto/field-values-create.dto';
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
 import { Field } from './entities/field-entity';
 import APIResponse from '../utils/response';
+import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 import { v5 as uuidv5 } from 'uuid';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 import { AnyARecord } from 'dns';
+import { CohortSearchDto } from 'src/cohort/dto/cohort-search.dto';
 
 
 @Injectable()
@@ -30,7 +33,9 @@ export class UserService {
     @InjectRepository(FieldValues)
     private fieldsValueRepository: Repository<FieldValues>,
     @InjectRepository(Field)
-    private fieldsRepository : Repository<Field>
+    private fieldsRepository : Repository<Field>,
+    @InjectRepository (CohortMembers)
+    private cohortMemberRepository: Repository<CohortMembers>
   ) {}
   
   async getUsersDetailsById(userData:Record<string,string>,response){
@@ -115,6 +120,7 @@ export class UserService {
       }
       if(userDto.customFields.length > 0){
         for (let data of userDto.customFields) {
+          console.log(data);
           const result = await this.updateCustomFields(userDto.userId, data);
           if (result) {
               if (!updatedData['customFields']) 
@@ -151,11 +157,16 @@ export class UserService {
   }
 
   async updateCustomFields(itemId,data){
-    const result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
-
+    let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+    let newResult;
     if (result.affected === 0) {
-        return null;
-    }
+        newResult = await this.fieldsValueRepository.save({
+          itemId,
+          fieldId: data.fieldId,
+          value: data.value
+      });
+  } 
+    Object.assign(result, newResult);
     return result;
   }
 
@@ -165,6 +176,8 @@ export class UserService {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      let cohortId = userCreateDto.cohortId;
+      delete userCreateDto.cohortId;
       userCreateDto.createdBy = userId
       userCreateDto.updatedBy = userId;
 
@@ -177,18 +190,53 @@ export class UserService {
       
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
-
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-
-          return new ErrorResponse({
-            errorCode: "500",
-            errorMessage: "Someting went wrong",
-          });
+      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      if(checkUserinKeyCloakandDb){
+        return response
+          .status(HttpStatus.BAD_REQUEST)
+          .json(
+            APIResponse.error(
+              apiId,
+              'User Already Exist',
+              'User already exists',
+              'BAD_REQUEST',
+            ),
+          );
+      }
+      resKeycloak = await createUserInKeyCloak(userSchema, token);
+      userCreateDto.userId = resKeycloak;
+      let result = await this.createUserInDatabase(request, userCreateDto,cohortId);
+      console.log(result);
+      let field_value_array = userCreateDto.fieldValues?.split("|");
+      let fieldData = {};
+      if(result && field_value_array?.length > 0) {
+      let userId = result.userId;
+      for (let i = 0; i < field_value_array?.length; i++) {
+        let fieldValues = field_value_array[i].split(":");
+        fieldData={
+          fieldId:fieldValues[0],
+          value:fieldValues[1]
         }
-      ); userCreateDto.userId = resKeycloak;
-      return await this.createUserInDatabase(request, userCreateDto);
+        console.log(fieldData);
+        let result = await this.updateCustomFields(userId,fieldData);
+        console.log(result);
+        if(!result) {
+          response
+          .status(HttpStatus.BAD_REQUEST)
+          .send(
+          ApiResponse.error(
+          apiId,
+          `Something went wrong ${result}`,
+          `Failure in UpdateCustomField`,
+          'INTERNAL_SERVER_ERROR',
+        ),
+      );
+        }
+      }
+     }
+     return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, result, 'OK'));
     } catch (e) {
       response
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -211,30 +259,49 @@ export class UserService {
         userDto.username,
         token
       );
-  if(usernameExistsInKeycloak){
+  if(usernameExistsInKeycloak.data.length > 0) {
     return usernameExistsInKeycloak;
   }
+  return false;
   }
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-      let userData = {
-        username:userCreateDto?.username,
-        name:userCreateDto?.name,
-        role:userCreateDto.role,
-        password:userCreateDto.password,
-        mobile:userCreateDto.mobile,
-        tenantId:userCreateDto.tenantId,
-        createdBy:userCreateDto.createdBy,
-        updatedby:userCreateDto.updatedBy,
-        userId:userCreateDto.userId,
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto,cohortId) {
+      const user = new User()
+      user.username=userCreateDto?.username
+      user.name=userCreateDto?.name
+      user.role=userCreateDto?.role
+      // user.mobile= Number(userCreateDto?.mobile),
+      user.tenantId=userCreateDto?.tenantId
+      user.createdBy=userCreateDto?.createdBy
+      user.updatedBy=userCreateDto?.updatedBy
+      user.userId=userCreateDto?.userId
+      let result = await this.usersRepository.save(user);
+      console.log(result.userId);
+      if(result) {
+      let cohortData = {
+        userId:result?.userId,
+        role:result?.role,
+        // createdBy:result?.userId,
+        // updatedBy:result?.userId,
+        tenantId:result?.tenantId,
+        cohortId:cohortId
       }
-      let result = await this.usersRepository.create(userData);
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });}
+      await this.addCohortMember(cohortData);
+      }
+      return result;
   }
+
+  async addCohortMember(cohortData){
+    try {
+    console.log(cohortData);
+    let result = await this.cohortMemberRepository.insert(cohortData);
+    return result;;
+    } catch (error) {
+      console.log(error);
+      throw new Error(error)
+    }
+  }
+}
     
     
 

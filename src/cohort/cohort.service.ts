@@ -284,28 +284,14 @@ export class CohortService {
   }
 
   public async updateCohortStatus(
-    cohortId: string,
-    request: any,
-    cohortUpdateDto: CohortCreateDto
+    cohortId: string
   ) {
     try {
-      const cohortUpdateData: any = {};
-
-      Object.keys(cohortUpdateDto).forEach((e) => {
-        if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
-        ) {
-          if (Array.isArray(cohortUpdateDto[e])) {
-            cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
-          } else {
-            cohortUpdateData[e] = cohortUpdateDto[e];
-          }
-        }
-      });
       let query =`UPDATE public."Cohort"
       SET "status" = false
       WHERE "cohortId" = $1`;
       const results = await this.cohortRepository.query(query, [cohortId]);
-
+      
       return new SuccessResponse({
         statusCode: 200,
         message: "Cohort Deleted Successfully.",

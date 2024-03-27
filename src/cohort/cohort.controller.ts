@@ -162,15 +162,6 @@ export class CohortController {
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort has been deleted successfully." })
-  @UseInterceptors(
-    FileInterceptor("image", {
-      storage: diskStorage({
-        destination: process.env.IMAGEPATH,
-        filename: editFileName,
-      }),
-      fileFilter: imageFileFilter,
-    })
-  )
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
@@ -185,7 +176,7 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, response);
 
-    return this.cohortService.updateCohortStatus(cohortId, request, cohortCreateDto);
+    return this.cohortService.updateCohortStatus(cohortId);
 
   }
 

@@ -2,6 +2,7 @@ import { CacheModule, Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth-service";
+import { KeycloakStrategy } from "src/common/guards/keycloak.strategy"; 
 
 const ttl = process.env.TTL as never;
 @Module({
@@ -12,6 +13,6 @@ const ttl = process.env.TTL as never;
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, KeycloakStrategy],
 })
 export class AuthModule {}

@@ -3,7 +3,7 @@ require("dotenv").config();
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return process.env.ADAPTERSOURCE;
+  getHello(): object {
+    return { msg: "Welcome to Shiksha Backend" };
   }
 }

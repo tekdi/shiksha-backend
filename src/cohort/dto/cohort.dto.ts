@@ -64,14 +64,15 @@ export class CohortDto {
   @Expose()
   type: string;
 
+  
   //status
   @ApiPropertyOptional({
-    type: String,
+    type: Boolean,
     description: "The status of the cohort",
-    default: "publish",
+    default: true,
   })
   @Expose()
-  status: string;
+  status: boolean;
 
   //image
   @Expose()

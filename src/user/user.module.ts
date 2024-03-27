@@ -7,15 +7,17 @@ import { HasuraModule } from "src/adapters/hasura/hasura.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./entities/user-entity";
 import { UserService } from "./user.service";
-import { FieldValue } from "./entities/field-value-entities";
+import { FieldValues } from "./entities/field-value-entities";
 import { Field } from "./entities/field-entity";
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 const ttl = process.env.TTL as never;
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       User,
-      FieldValue,
-      Field
+      FieldValues,
+      Field,
+      CohortMembers
     ]),
     HttpModule,
     SunbirdModule,

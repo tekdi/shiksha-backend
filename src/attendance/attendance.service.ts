@@ -1,3 +1,4 @@
+import { User } from './../user/entities/user-entity';
 import { isAfter } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'pg';
@@ -9,19 +10,19 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nes
 import { ErrorResponse } from "src/error-response";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
-import { AttendanceDto } from './dto/attendance.dto';
+import { AttendanceDto, BulkAttendanceDTO } from './dto/attendance.dto';
 import { AttendanceDateDto } from './dto/attendance-date.dto';
 import { Between } from 'typeorm';
 import { AttendanceStatsDto } from './dto/attendance-stats.dto';
-import { User } from 'src/user/entities/user-entity';
-
-
+import { format } from 'date-fns'
+const moment = require('moment');
 
 @Injectable()
 export class AttendanceService {
     constructor(private configService: ConfigService,
         @InjectRepository(AttendanceEntity)
-        private readonly attendanceRepository: Repository<AttendanceEntity>,) { }
+        private readonly attendanceRepository: Repository<AttendanceEntity>,
+    ) { }
 
 
 
@@ -73,44 +74,100 @@ export class AttendanceService {
         }
     }
 
-    async attendanceReport(contextId:string) {
-        try{
-    const query = `
-    SELECT 
-    u."name",
-    COUNT(CASE WHEN aa."attendance" = 'Present' THEN 1 END) * 100.0 / COUNT(aa."attendance") AS attendance_percentage
-FROM 
-    public."Attendance" AS aa 
-INNER JOIN 
-    public."Users" AS u ON aa."userId" = u."userId"
-WHERE 
-    aa."attendance" IN ('Present', 'Absent')
-    AND u."role" = 'student'
-    AND aa."contextId" = $1  
-GROUP BY 
-    u."name",
-    u."role";
-  `;
-  
-     const result = await this.attendanceRepository.query(query,[contextId]);
-          const report= await this.mapResponseforReport(result);
+    async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
 
-          return new SuccessResponse({
-            statusCode: 200,
-            message: "Ok.",
-            data: report,
-        });
+        let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
+        try {
+            
+
+            if (report === true) {
+                let nameFilter = '';
+            if (filters && filters.search) {
+                nameFilter = `AND u."name" LIKE '%${filters.search.trim()}%'`;
+            }
+                let query = `
+                SELECT u."userId",u."name",
+                CASE 
+                WHEN COUNT(*) = 0 THEN NULL
+                ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),2)
+                END AS attendance_percentage
+                FROM public."CohortMembers" AS cm 
+                INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
+                LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
+                WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+                ${nameFilter}
+                GROUP BY u."userId"
+
+                `;
+
+
+                if (filters) {
+                    if (filters.nameOrder && filters.nameOrder==="asc" || filters.nameOrder==="desc") {
+                        query += ` ORDER BY "name" ${filters.nameOrder}`
+                        
+                    }
+                    else if (filters.percentageOrder && filters.percentageOrder==="asc" || filters.percentageOrder==="desc") {
+                        query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`
+                    }
+
+                }
+                query += `
+                LIMIT $2
+                OFFSET $3`
+                const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
+                const report = await this.mapResponseforReport(result);
+
+
+                return new SuccessResponse({
+                    statusCode: 200,
+                    message: "Ok.",
+                    data: report,
+                });
+            }
+            else if (report === false) {
+                if (attendanceDate) {
+                    const query = `
+                SELECT *
+                FROM public."Users" AS u
+                INNER JOIN public."CohortMembers" AS cm ON cm."userId" = u."userId" AND cm."role"='student'
+                LEFT JOIN public."Attendance" AS aa ON aa."userId" = cm."userId" AND (aa."attendanceDate" =$1 OR aa."attendanceDate" IS NULL)
+                where cm."cohortId" = $2
+                LIMIT $3
+                OFFSET $4
+                `;
+
+
+
+                    const result = await this.attendanceRepository.query(query, [attendanceDate, contextId, limit, offset]);
+                    const report = await this.mapAttendanceRecord(result);
+
+
+                    return new SuccessResponse({
+                        statusCode: 200,
+                        message: "Ok.",
+                        data: report,
+                    });
+                }
+
+                else {
+
+                    return new ErrorResponse({
+                        errorCode: "400",
+                        errorMessage: "Please provide valid attendance date",
+                    });
+
+                }
+            }
         }
-        catch(error){
+        catch (error) {
 
             return new ErrorResponse({
                 errorCode: "500",
-                errorMessage: error,
+                errorMessage: "Internal server error",
             });
-            
+
 
         }
-
     }
 
     public async mappedResponse(result: any) {
@@ -146,6 +203,7 @@ GROUP BY
         const attendanceReport = result.map((item: any) => {
             const attendanceReportMapping = {
                 name: item?.name ? `${item.name}` : "",
+                userId: item?.userId ? `${item.userId}` : "",
                 attendance_percentage: item?.attendance_percentage ? `${item.attendance_percentage}` : "",
             };
 
@@ -153,6 +211,24 @@ GROUP BY
         });
 
         return attendanceReport;
+    }
+
+    public async mapAttendanceRecord(result: any) {
+        const attendanceRecords = result.map((item: any) => {
+            const dateObject = new Date(item.attendanceDate);
+            const formattedDate = moment(dateObject).format('YYYY-MM-DD');
+
+            let attendance = {
+                name: item?.name ? `${item.name}` : "",
+                userId: item?.userId ? `${item.userId}` : "",
+                attendance: item?.attendance ? `${item.attendance}` : "",
+                attendanceDate: item.attendanceDate ? formattedDate : null
+
+            };
+            return new AttendanceStatsDto(attendance);
+        });
+
+        return attendanceRecords;
     }
     /* 
     Method to create,update or add attendance for valid user in attendance table
@@ -167,55 +243,47 @@ GROUP BY
 
 
         try {
-            if (!isAfter(new Date(attendanceDto.attendanceDate), new Date()) && attendanceDto.attendanceDate) {
-                const decoded: any = jwt_decode(request?.headers?.authorization);
+            const decoded: any = jwt_decode(request?.headers?.authorization);
 
-                const userId =
-                    decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-                const attendanceToSearch = new AttendanceSearchDto({});
-
+            const userId =
+                decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+            const attendanceToSearch = new AttendanceSearchDto({});
 
 
-                attendanceToSearch.filters = {
-                    attendanceDate: attendanceDto.attendanceDate,
-                    userId: attendanceDto.userId,
-                };
+
+            attendanceToSearch.filters = {
+                attendanceDate: attendanceDto.attendanceDate,
+                userId: attendanceDto.userId,
+            };
 
 
-                const attendanceFound: any = await this.searchAttendance(
-                    attendanceDto.tenantId,
-                    request,
-                    attendanceToSearch
-                );
+            const attendanceFound: any = await this.searchAttendance(
+                attendanceDto.tenantId,
+                request,
+                attendanceToSearch
+            );
 
 
-                if (attendanceFound?.errorCode) {
-                    return new ErrorResponse({
-                        errorCode: "500",
-                        errorMessage: attendanceFound?.errorMessage,
-                    });
-                }
-
-                if (
-                    attendanceFound.data.length > 0 &&
-                    attendanceFound.statusCode === 200
-                ) {
-
-                    return await this.updateAttendance(
-                        attendanceFound.data[0].attendanceId,
-                        request,
-                        attendanceDto
-                    );
-                } else {
-
-                    return await this.createAttendance(request, attendanceDto);
-                }
-            }
-            else {
+            if (attendanceFound?.errorCode) {
                 return new ErrorResponse({
-                    errorCode: '500',
-                    errorMessage: "Date cannot be from future",
+                    errorCode: "500",
+                    errorMessage: attendanceFound?.errorMessage,
                 });
+            }
+
+            if (
+                attendanceFound.data.length > 0 &&
+                attendanceFound.statusCode === 200
+            ) {
+
+                return await this.updateAttendance(
+                    attendanceFound.data[0].attendanceId,
+                    request,
+                    attendanceDto
+                );
+            } else {
+
+                return await this.createAttendance(request, attendanceDto);
             }
         } catch (e) {
             return e;
@@ -258,7 +326,6 @@ GROUP BY
             });
         } catch (error) {
             if (error instanceof BadRequestException) {
-                console.error("Error updating attendance:", error);
                 return new ErrorResponse({
                     errorCode: "500",
                     errorMessage: "Internal Server Error",
@@ -275,7 +342,7 @@ GROUP BY
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
 
         try {
-    const attendance = this.attendanceRepository.create(attendanceDto);
+            const attendance = this.attendanceRepository.create(attendanceDto);
             const result = await this.attendanceRepository.save(attendance);
 
             return new SuccessResponse({
@@ -291,7 +358,6 @@ GROUP BY
                     errorMessage: "Please provide valid userID",
                 });
             } else {
-                console.error('Error creating attendance:', error);
                 return new ErrorResponse({
                     errorCode: "500",
                     errorMessage: 'Internal Server Error',
@@ -311,7 +377,7 @@ GROUP BY
     ) {
         try {
 
-            
+
             let { limit, page } = attendanceSearchDto;
             if (!limit) {
                 limit = '0';
@@ -352,7 +418,6 @@ GROUP BY
                 data: mappedResponse,
             });
         } catch (e) {
-            console.error(e);
             return new ErrorResponse({
                 errorCode: "500",
                 errorMessage: e,
@@ -367,50 +432,43 @@ GROUP BY
     public async multipleAttendance(
         tenantId: string,
         request: any,
-        attendanceData: [AttendanceDto]
+        attendanceData: BulkAttendanceDTO
     ) {
         const responses = [];
         const errors = [];
         try {
             let count = 1;
 
-            for (const attendance of attendanceData) {
-                if (attendance.userId && !isAfter(new Date(attendance.attendanceDate), new Date()) && attendance.attendanceDate && attendance.attendance &&(attendance.attendance === "present" || attendance.attendance === "absent" ) && attendance.contextId) {
-
-                    attendance.tenantId = tenantId;
-                    const attendanceRes: any = await this.updateAttendanceRecord(
-                        request,
-                        attendance
-                    );
-                    if (attendanceRes?.statusCode === 200) {
-                        responses.push(attendanceRes.data);
-                    } else {
-                        errors.push({
-                            userId: attendance.userId,
-                            attendanceRes,
-                        });
-                    }
-                    count++;
-                }
-
-                else {
+            for (let attendance of attendanceData.userAttendance) {
+                const userAttendance = new AttendanceDto({
+                    attendanceDate: attendanceData.attendanceDate,
+                    contextId: attendanceData.contextId,
+                    attendance: attendance.attendance,
+                    userId: attendance.userId
+                })
+                const attendanceRes: any = await this.updateAttendanceRecord(
+                    request,
+                    userAttendance
+                );
+                if (attendanceRes?.statusCode === 200) {
+                    responses.push(attendanceRes.data);
+                } else {
                     errors.push({
-                        message: `userId should not be empty null or undefined for record or attendance date should not be of future for ${count} or  attendance should be valid enum value[present,absent,halfday] or contextId should be present`
-
+                        userId: attendance.userId,
+                        attendanceRes,
                     });
-                    count++;
                 }
+                count++;
 
             }
         } catch (e) {
-            console.error(e);
             return e;
         }
 
 
         return {
             statusCode: 200,
-            totalCount: attendanceData.length,
+            totalCount: attendanceData.userAttendance.length,
             successCount: responses.length,
             errorCount: errors.length,
             responses,

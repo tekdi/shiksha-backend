@@ -11,6 +11,7 @@ import { UserDto } from "src/user/dto/user.dto";
 import { StudentDto } from "src/student/dto/student.dto";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -27,12 +28,9 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-   
+
     private cohortRepository: Repository<Cohort>,
-    private fieldsService: FieldsService
-    // @InjectRepository(FieldValues)
-    // private fieldsValuesRepository: Repository<FieldValues>,
-    // private readonly fieldsService: FieldsService,
+    private fieldsService: FieldsService,
   ) { }
 
   public async getCohort(
@@ -45,8 +43,14 @@ export class CohortService {
 
     try {
       const cohort = await this.cohortRepository.findOne({
-        where: { tenantId: tenantId, cohortId: cohortId },
+        where: { cohortId: cohortId, status: "true" },
+        select: ["cohortId","parentId","name","type","status","image","programId","attendanceCaptureImage"],
       });
+
+      // let searchField = { itemId: cohortId }
+
+      const fieldValue = await this.fieldsService.getFieldsAndFieldsValues(cohortId)
+
       if (!cohort) {
         return response
           .status(HttpStatus.NOT_FOUND)
@@ -59,11 +63,16 @@ export class CohortService {
             )
           );
       }
+      
+      cohort["customFields"] = fieldValue;
+      const result = {
+        cohort: cohort,
+      };
 
       return response.status(HttpStatus.OK).send(
         APIResponse.success(
           apiId,
-          cohort,
+          result,
           "Cohort Retrieved Successfully"
         )
       );
@@ -155,7 +164,6 @@ export class CohortService {
       });
 
       const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
-      console.log(response);
 
 
       let field_value_array = cohortUpdateDto.fieldValues.split("|");
@@ -230,15 +238,16 @@ export class CohortService {
       const [results, totalCount] = await this.cohortRepository.findAndCount({
         where: whereClause,
         skip: offset,
+        take: parseInt(limit),
       });
 
       const mappedResponse = await this.mappedResponse(results);
 
       return new SuccessResponse({
-          statusCode: 200,
-          message: 'Ok.',
-          totalCount,
-          data: mappedResponse,
+        statusCode: 200,
+        message: 'Ok.',
+        totalCount,
+        data: mappedResponse,
       });
 
     } catch (e) {
@@ -271,6 +280,28 @@ export class CohortService {
       return new CohortDto(cohortMapping);
     })
     return cohortValueResponse;
-    
+
+  }
+
+  public async updateCohortStatus(
+    cohortId: string
+  ) {
+    try {
+      let query =`UPDATE public."Cohort"
+      SET "status" = false
+      WHERE "cohortId" = $1`;
+      const results = await this.cohortRepository.query(query, [cohortId]);
+      
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "Cohort Deleted Successfully.",
+      });
+    } catch (e) {
+      console.error(e);
+      return new ErrorResponse({
+        errorCode: "401",
+        errorMessage: e,
+      });
+    }
   }
 }

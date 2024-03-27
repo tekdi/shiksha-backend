@@ -1,10 +1,10 @@
 import { ManyToOne, JoinColumn } from 'typeorm';
-import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 import { Exclude, Expose, Transform } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-entity';
-import { format, isAfter } from 'date-fns'; // Import isAfter function from date-fns
+import { format, isAfter, isBefore, isValid } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 //for student valid enum are[present,absent]
@@ -16,6 +16,16 @@ enum Attendance{
   halfDay="half-day"
 }
 
+@ValidatorConstraint({ name: 'isNotAfterToday', async: false })
+export class IsNotAfterToday implements ValidatorConstraintInterface {
+  validate(date: Date, args: ValidationArguments) {
+    return isBefore(date, new Date());
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return 'Attendance date must not be after today';
+  }
+}
 export class AttendanceDto {
   @Expose()
   attendanceId: string;
@@ -44,7 +54,10 @@ export class AttendanceDto {
     default: new Date()
   })
   @IsNotEmpty()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })  
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+  @Validate(IsNotAfterToday, {
+    message: 'Attendance date must not be after today',
+  })  
   @Expose()
   attendanceDate: Date;
 
@@ -120,8 +133,8 @@ export class AttendanceDto {
     description: "The contextId of the attendance",
     default: "",
   })
-  @IsNotEmpty()
-  @IsUUID()
+ 
+ 
   @Expose()
   contextId: string;
 
@@ -136,6 +149,46 @@ export class AttendanceDto {
 
   @Expose()
   updatedBy: string;
+
+  constructor(obj: any) {
+    Object.assign(this, obj);
+  }
+}
+
+
+export class UserAttendanceDTO {
+  @IsUUID()
+  @IsNotEmpty()
+  userId: string;
+
+  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
+  @IsNotEmpty()
+   // Assuming these are the possible values for attendance
+  attendance: string;
+}
+
+export class BulkAttendanceDTO {
+  @ApiProperty({
+    type: String,
+    description: "The date of the attendance in format yyyy-mm-dd",
+    default: new Date()
+  })
+  @IsNotEmpty()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+  @Validate(IsNotAfterToday, {
+    message: 'Attendance date must not be after today',
+  })  
+  @Expose()
+  attendanceDate: Date;
+
+  @IsUUID()
+    @Expose()
+    @IsNotEmpty()
+
+  contextId: string;
+
+ // Adjust the max size according to your requirements
+  userAttendance: UserAttendanceDTO[];
 
   constructor(obj: any) {
     Object.assign(this, obj);

@@ -1,6 +1,6 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './entities/user-entity'
-import { FieldValue } from './entities/field-value-entities';
+import { FieldValues } from './entities/field-value-entities';
 import ApiResponse from '../utils/response'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,10 +12,16 @@ import {
     createUserInKeyCloak,
     checkIfUsernameExistsInKeycloak,
 } from "../common/utils/keycloak.adapter.util"
+import { FieldValuesCreateDto } from 'src/fields/dto/field-values-create.dto';
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
 import { Field } from './entities/field-entity';
 import APIResponse from '../utils/response';
+import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
+import { v5 as uuidv5 } from 'uuid';
+import { UUID } from 'typeorm/driver/mongodb/bson.typings';
+import { AnyARecord } from 'dns';
+import { CohortSearchDto } from 'src/cohort/dto/cohort-search.dto';
 
 
 @Injectable()
@@ -24,39 +30,41 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    @InjectRepository(FieldValue)
-    private fieldsValueRepository: Repository<User>,
+    @InjectRepository(FieldValues)
+    private fieldsValueRepository: Repository<FieldValues>,
     @InjectRepository(Field)
-    private fieldsRepository : Repository<Field>
+    private fieldsRepository : Repository<Field>,
+    @InjectRepository (CohortMembers)
+    private cohortMemberRepository: Repository<CohortMembers>
   ) {}
   
   async getUsersDetailsById(userData:Record<string,string>,response){
     let apiId='api.users.getUsersDetails'
     try {
       const result = {
-        customFields: []
-    };
-
-    // const customFields = await this.findCustomFields(userData);
-    // const filledValues = await this.findFilledValues(userData?.userId);
+        userData:{
+        }
+      };
+      let customFieldsArray =[];
     const [customFields, filledValues,userDetails] = await Promise.all([
       this.findCustomFields(userData),
       this.findFilledValues(userData.userId),
       this.findUserDetails(userData.userId)
   ]);
+    result.userData=userDetails;
     const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-    for (const data of customFields) {
+    for (let data of customFields) {
         const fieldValue = filledValuesMap.get(data.fieldId);
         const customField = {
             fieldId: data.fieldId,
             label: data.label,
             value: fieldValue || '',
-            options: data.fieldParams || {},
+            options: data?.fieldParams?.['options'] || {},
             type: data.type || ''
         };
-        result.customFields.push(customField);
+        customFieldsArray.push(customField);
     }
-    result['userData']=userDetails;
+    result.userData['customFields'] = customFieldsArray;
     return response
         .status(HttpStatus.OK)
         .send(APIResponse.success(apiId, result, 'OK'));
@@ -74,11 +82,14 @@ export class UserService {
     }
 }
 
-  async findUserDetails(userId){
+  async findUserDetails(userId,username?:any){
+    let whereClause:any = { userId: userId };
+    if(username && userId === null){
+      delete whereClause.userId;
+      whereClause.username = username;
+    }
     let userDetails = await this.usersRepository.findOne({
-      where:{
-        userId:userId
-      }
+      where:whereClause
     })
     return userDetails;
   }
@@ -99,12 +110,74 @@ export class UserService {
     return result;
   }
 
-  public async createUser(request: any, userCreateDto: UserCreateDto,response) {
+  async updateUser(userDto,response){
+    const apiId = 'api.users.UpdateUserDetails'
+    try {
+      let updatedData = {};
+      if(userDto.userData || Object.keys(userDto.userData).length > 0){
+        await this.updateBasicUserDetails(userDto.userId,userDto.userData);
+        updatedData['basicDetails'] = userDto.userData;
+      }
+      if(userDto.customFields.length > 0){
+        for (let data of userDto.customFields) {
+          console.log(data);
+          const result = await this.updateCustomFields(userDto.userId, data);
+          if (result) {
+              if (!updatedData['customFields']) 
+              updatedData['customFields']= [];
+              updatedData['customFields'].push(result);
+          }
+      }
+      }
+      return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, updatedData, 'OK'));
+    } catch (e) {
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
+    }
+  }
+
+  async updateBasicUserDetails(userId,userData: Partial<User>): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { userId: userId } });
+    if (!user) {
+      return null;
+    }
+    Object.assign(user, userData);
+
+    return this.usersRepository.save(user);
+  }
+
+  async updateCustomFields(itemId,data){
+    let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+    let newResult;
+    if (result.affected === 0) {
+        newResult = await this.fieldsValueRepository.save({
+          itemId,
+          fieldId: data.fieldId,
+          value: data.value
+      });
+  } 
+    Object.assign(result, newResult);
+    return result;
+  }
+
+  async createUser(request: any, userCreateDto: UserCreateDto,response) {
     // It is considered that if user is not present in keycloak it is not present in database as well
     let apiId='api.user.creatUser'
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      let cohortId = userCreateDto.cohortId;
+      delete userCreateDto.cohortId;
       userCreateDto.createdBy = userId
       userCreateDto.updatedBy = userId;
 
@@ -117,18 +190,53 @@ export class UserService {
       
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
-
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-
-          return new ErrorResponse({
-            errorCode: "500",
-            errorMessage: "Someting went wrong",
-          });
+      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      if(checkUserinKeyCloakandDb){
+        return response
+          .status(HttpStatus.BAD_REQUEST)
+          .json(
+            APIResponse.error(
+              apiId,
+              'User Already Exist',
+              'User already exists',
+              'BAD_REQUEST',
+            ),
+          );
+      }
+      resKeycloak = await createUserInKeyCloak(userSchema, token);
+      userCreateDto.userId = resKeycloak;
+      let result = await this.createUserInDatabase(request, userCreateDto,cohortId);
+      console.log(result);
+      let field_value_array = userCreateDto.fieldValues?.split("|");
+      let fieldData = {};
+      if(result && field_value_array?.length > 0) {
+      let userId = result.userId;
+      for (let i = 0; i < field_value_array?.length; i++) {
+        let fieldValues = field_value_array[i].split(":");
+        fieldData={
+          fieldId:fieldValues[0],
+          value:fieldValues[1]
         }
-      ); userCreateDto.userId = resKeycloak;
-      return await this.createUserInDatabase(request, userCreateDto);
+        console.log(fieldData);
+        let result = await this.updateCustomFields(userId,fieldData);
+        console.log(result);
+        if(!result) {
+          response
+          .status(HttpStatus.BAD_REQUEST)
+          .send(
+          ApiResponse.error(
+          apiId,
+          `Something went wrong ${result}`,
+          `Failure in UpdateCustomField`,
+          'INTERNAL_SERVER_ERROR',
+        ),
+      );
+        }
+      }
+     }
+     return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, result, 'OK'));
     } catch (e) {
       response
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -144,36 +252,55 @@ export class UserService {
   }
 
 // Can be Implemeneted after we know what are the unique entties
-async checkUserinKeyCloakandDb(userDto){
+  async checkUserinKeyCloakandDb(userDto){
   const keycloakResponse = await getKeycloakAdminToken();
   const token = keycloakResponse.data.access_token;
   const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
         userDto.username,
         token
       );
-  if(usernameExistsInKeycloak){
+  if(usernameExistsInKeycloak.data.length > 0) {
     return usernameExistsInKeycloak;
   }
-}
+  return false;
+  }
 
-async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-      let userData = {
-        username:userCreateDto?.username,
-        name:userCreateDto?.name,
-        role:userCreateDto.role,
-        password:userCreateDto.password,
-        mobile:userCreateDto.mobile,
-        tenantId:userCreateDto.tenantId,
-        createdBy:userCreateDto.createdBy,
-        updatedby:userCreateDto.updatedBy,
-        userId:userCreateDto.userId,
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto,cohortId) {
+      const user = new User()
+      user.username=userCreateDto?.username
+      user.name=userCreateDto?.name
+      user.role=userCreateDto?.role
+      // user.mobile= Number(userCreateDto?.mobile),
+      user.tenantId=userCreateDto?.tenantId
+      user.createdBy=userCreateDto?.createdBy
+      user.updatedBy=userCreateDto?.updatedBy
+      user.userId=userCreateDto?.userId
+      let result = await this.usersRepository.save(user);
+      console.log(result.userId);
+      if(result) {
+      let cohortData = {
+        userId:result?.userId,
+        role:result?.role,
+        // createdBy:result?.userId,
+        // updatedBy:result?.userId,
+        tenantId:result?.tenantId,
+        cohortId:cohortId
       }
-      let result = await this.usersRepository.create(userData);
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });}
+      await this.addCohortMember(cohortData);
+      }
+      return result;
+  }
+
+  async addCohortMember(cohortData){
+    try {
+    console.log(cohortData);
+    let result = await this.cohortMemberRepository.insert(cohortData);
+    return result;;
+    } catch (error) {
+      console.log(error);
+      throw new Error(error)
+    }
+  }
 }
     
     

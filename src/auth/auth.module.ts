@@ -7,6 +7,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import {User} from '../user/entities/user-entity';
 import { FieldValues } from '../user/entities/field-value-entities'
 import { Field } from "src/user/entities/field-entity";
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 
 const ttl = process.env.TTL as never;
 @Module({
@@ -14,7 +15,8 @@ const ttl = process.env.TTL as never;
     TypeOrmModule.forFeature([
       User,
       FieldValues,
-      Field
+      Field,
+      CohortMembers
     ]),
     HttpModule,
     CacheModule.register({

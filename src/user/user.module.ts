@@ -9,13 +9,15 @@ import { User } from "./entities/user-entity";
 import { UserService } from "./user.service";
 import { FieldValues } from "./entities/field-value-entities";
 import { Field } from "./entities/field-entity";
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 const ttl = process.env.TTL as never;
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       User,
       FieldValues,
-      Field
+      Field,
+      CohortMembers
     ]),
     HttpModule,
     SunbirdModule,

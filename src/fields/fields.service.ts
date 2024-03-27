@@ -10,6 +10,9 @@ import { FieldValues } from "./entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
 import { SuccessResponse } from "src/success-response";
+import { off } from "process";
+import APIResponse from "src/utils/response";
+import { log } from "util";
 
 @Injectable()
 export class FieldsService {
@@ -57,42 +60,19 @@ export class FieldsService {
     async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto) {
         try {
 
-            let { limit, page, filters } = fieldsSearchDto;
-
-            let offset = 0;
-            if (page > 1) {
-                offset = parseInt(limit) * (page - 1);
-            }
-
-            if (limit.trim() === '') {
-                limit = '0';
-            }
-
-            const whereClause = {};
-            if (filters && Object.keys(filters).length > 0) {
-                Object.entries(filters).forEach(([key, value]) => {
-                    whereClause[key] = value;
-                });
-            }
-            else {
-                whereClause['tenantId'] = tenantId;
-            }
-
-            const [results, totalCount] = await this.fieldsRepository.findAndCount({
-                where: whereClause,
-                skip: offset,
-            });
-
-            // console.log(results);
+            const getConditionalData = APIResponse.search(fieldsSearchDto)
+            const offset = getConditionalData.offset ;
+            const limit = getConditionalData.limit ;
+            const whereClause = getConditionalData.whereClause ;
             
-            
-            const mappedResponse = await this.mappedResponseField(results);
+            const getFieldValue = await this.searchFieldData(offset, limit, whereClause)
+
 
             return new SuccessResponse({
                 statusCode: 200,
                 message: 'Ok.',
-                totalCount,
-                data: mappedResponse,
+                totalCount : getFieldValue.totalCount,
+                data: getFieldValue.mappedResponse,
             });
 
         } catch (e) {
@@ -102,6 +82,26 @@ export class FieldsService {
                 errorMessage: e,
             });
         }
+    }
+
+    async searchFieldData(offset: number, limit: string, searchData:any){
+        let queryOptions: any = {
+            where: searchData,
+        };
+
+        if (offset !== undefined) {
+            queryOptions.skip = offset;
+        }
+    
+        if (limit !== undefined) {
+            queryOptions.take = parseInt(limit);
+        }
+
+        
+        const [results, totalCount] = await this.fieldsRepository.findAndCount(queryOptions);
+
+        const mappedResponse = await this.mappedResponseField(results);
+        return {mappedResponse, totalCount};
     }
 
     async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
@@ -136,40 +136,18 @@ export class FieldsService {
 
     async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto) {
         try {
+            const getConditionalData = APIResponse.search(fieldValuesSearchDto)
+            const offset = getConditionalData.offset ;
+            const limit = getConditionalData.limit ;
+            const whereClause = getConditionalData.whereClause ;
 
-            let { limit, page, filters } = fieldValuesSearchDto;
-
-            let offset = 0;
-            if (page > 1) {
-                offset = parseInt(limit) * (page - 1);
-            }
-
-            if (limit.trim() === '') {
-                limit = '0';
-            }
-
-            const whereClause = {};
-            if (filters && Object.keys(filters).length > 0) {
-                Object.entries(filters).forEach(([key, value]) => {
-                    whereClause[key] = value;
-                });
-            }
-
-            console.log(whereClause);
-
-            const [results, totalCount] = await this.fieldsValuesRepository.findAndCount({
-                where: whereClause,
-                take: parseInt(limit),
-                skip: offset,
-            });
-
-            const mappedResponse = await this.mappedResponse(results);
+            const getFieldValue = await this.getSearchFieldValueData(offset, limit, whereClause)
 
             return new SuccessResponse({
                 statusCode: 200,
                 message: 'Ok.',
-                totalCount,
-                data: mappedResponse,
+                totalCount: getFieldValue.totalCount,
+                data: getFieldValue.mappedResponse,
             });
 
         } catch (e) {
@@ -179,6 +157,26 @@ export class FieldsService {
                 errorMessage: e,
             });
         }
+    }
+
+    async getSearchFieldValueData(offset: number, limit: string, searchData:any){
+        let queryOptions: any = {
+            where: searchData,
+        };
+    
+        if (offset !== undefined) {
+            queryOptions.skip = offset;
+        }
+    
+        if (limit !== undefined) {
+            queryOptions.take = parseInt(limit);
+        }
+        
+        const [results, totalCount] = await this.fieldsValuesRepository.findAndCount(queryOptions);
+        const mappedResponse = await this.mappedResponse(results);
+
+        return {mappedResponse, totalCount};
+
     }
 
     async searchFieldValueId(cohortId: string, fieldId: string){            
@@ -211,6 +209,14 @@ export class FieldsService {
                 errorMessage: e,
             });
         }
+    }
+
+    public async getFieldsAndFieldsValues(cohortId:string){
+        let query = `SELECT FV."value",FV."itemId", FV."fieldId", F."name" AS fieldname, F."label", F."context",F."type", F."state", F."contextType", F."fieldParams" FROM public."FieldValues" FV 
+        LEFT JOIN public."Fields" F
+        ON FV."fieldId" = F."fieldId" where FV."itemId" =$1`;
+        const results = await this.fieldsValuesRepository.query(query, [cohortId]);
+        return results;
     }
 
 
@@ -269,4 +275,5 @@ export class FieldsService {
 
         return fieldResponse;
     }
+
 }

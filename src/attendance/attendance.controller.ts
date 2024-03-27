@@ -168,6 +168,7 @@ export class AttendanceController {
   @ApiHeader({
     name: "tenantid",
   })
+  @UsePipes(ValidationPipe)
   public async attendanceFilter(
     @Headers() headers,
     @Req() request: Request,
@@ -202,15 +203,13 @@ export class AttendanceController {
   @Post("/report")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
-  @ApiBody({ type: AttendanceSearchDto })
+  @ApiBody({ type: AttendanceStatsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
   @UsePipes(ValidationPipe)
-
-  
   public async report(
     @Headers() headers,
     @Req() request: Request,
@@ -218,7 +217,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
     return this.attendaceService
-      .attendanceReport(attendanceStatsDto.contextId);
+      .attendanceReport(attendanceStatsDto);
   }
 
   /** No longer required in Shiksha 2.0 */

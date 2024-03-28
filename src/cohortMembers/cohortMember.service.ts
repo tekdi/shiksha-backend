@@ -81,36 +81,32 @@ export class CohortMembersService {
     const apiId = "api.cohortMember.searchCohortMembers";
 
     try {
-      let offset = 0;
-      if (cohortMembersSearchDto.page > 1) {
-        offset =
-          parseInt(cohortMembersSearchDto.limit) *
-          (cohortMembersSearchDto.page - 1);
+      let { limit, page, filters } = cohortMembersSearchDto;
+      if (!limit) {
+        limit = "0";
       }
 
-      let filters: any = { tenantId: tenantId || "" };
-      const tempFilters = { ...cohortMembersSearchDto.filters };
+      let offset = 0;
+      if (page > 1) {
+        offset = parseInt(limit) * (page - 1);
+      }
 
-      // Convert filter keys to match TypeORM column names
-      Object.keys(tempFilters).forEach((item) => {
-        Object.keys(tempFilters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            tempFilters[item][`_${e}`] = tempFilters[item][e];
-            delete tempFilters[item][e];
-          }
+      const whereClause = {};
+      if (filters && Object.keys(filters).length > 0) {
+        Object.entries(filters).forEach(([key, value]) => {
+          whereClause[key] = value;
         });
-      });
-
-      filters = { ...filters, ...tempFilters };
-
-      const takeLimit = parseInt(cohortMembersSearchDto.limit); // Parse limit value here
+      } else {
+        whereClause["tenantId"] = tenantId;
+      }
 
       const [cohortMembers, count] =
         await this.cohortMembersRepository.findAndCount({
-          where: filters,
-          take: takeLimit, // Use parsed limit value here
+          where: whereClause,
+          take: parseInt(limit),
           skip: offset,
         });
+
       const responseData = {
         totalCount: count,
         cohortMembers: cohortMembers,
@@ -214,6 +210,54 @@ export class CohortMembersService {
             apiId,
             "Something went wrong",
             `Failure updating Cohort Member. Error is: ${error}`,
+            "INTERNAL_SERVER_ERROR"
+          )
+        );
+    }
+  }
+
+  public async deleteCohortMemberById(
+    tenantId: string,
+    cohortMembershipId: any,
+    response: any,
+    request: any
+  ) {
+    const apiId = "api.cohortMember.deleteCohortMemberById";
+
+    try {
+      const cohortMember = await this.cohortMembersRepository.find({
+        where: {
+          tenantId: tenantId,
+          cohortMembershipId: cohortMembershipId,
+        },
+      });
+
+      if (!cohortMember || cohortMember.length === 0) {
+        return response.status(HttpStatus.NOT_FOUND).send({
+          error: "Cohort member not found",
+        });
+      }
+
+      const result = await this.cohortMembersRepository.delete(
+        cohortMembershipId
+      );
+      return response
+        .status(HttpStatus.OK)
+        .send(
+          APIResponse.success(
+            apiId,
+            result,
+            "Cohort Member deleted Successfully"
+          )
+        );
+    } catch (error) {
+      return response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            "Something went wrong",
+            `Failure Retrieving Cohort Member. Error is: ${error}`,
             "INTERNAL_SERVER_ERROR"
           )
         );

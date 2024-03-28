@@ -112,11 +112,10 @@ export class UserController {
   async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Res() response:Response,
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userService.createUser(request, userCreateDto,response);
+    return this.userService.createUser(request, userCreateDto);
   }
   
 

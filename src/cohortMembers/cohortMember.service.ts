@@ -19,8 +19,8 @@ import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 export class CohortMembersService {
   constructor(
     @InjectRepository(CohortMembers)
-    private cohortMembersRepository: Repository<CohortMembers>,
-  ) { }
+    private cohortMembersRepository: Repository<CohortMembers>
+  ) {}
 
   public async getCohortMembers(
     tenantId: string,
@@ -97,47 +97,32 @@ export class CohortMembersService {
           whereClause[key] = value;
         });
       }
-      let findCohortId = await this.findCohortName(whereClause['userId']);
-      console.log(findCohortId);
+
+      let findCohortId = await this.findCohortName(whereClause["userId"]);
+
       let result = {
-        cohortData: []
+        cohortData: [],
       };
+
       for (let data of findCohortId) {
-        result.cohortData.push(data)
+        let cohortData = {
+          cohortId: data.cohortId,
+          name:data.name,
+          customField: [],
+        };
+
         let filterDetails = {
           where: data.cohortId,
           take: parseInt(limit),
           skip: offset,
-        }
+        };
+
         const getDetails = await this.getUserDetails(filterDetails);
-        result.cohortData.push(getDetails);
-        // console.log(getDetails);
-        // result.push(getDetails);
+        console.log(getDetails);
+        cohortData.customField.push(getDetails); 
 
+        result.cohortData.push(cohortData);
       }
-
-      console.log(result);
-
-
-
-
-
-
-
-
-      // console.log(getDetails);
-
-      // const [cohortMembers, count] =
-      // await this.cohortMembersRepository.findAndCount({
-      //   where: whereClause,
-      //   take: parseInt(limit),
-      //   skip: offset,
-      // });
-
-      // const responseData = {
-      //   totalCount: count,
-      //   cohortMembers: cohortMembers,
-      // };
 
       return response
         .status(HttpStatus.OK)
@@ -161,28 +146,36 @@ export class CohortMembersService {
         );
     }
   }
-
+  async getDetailsForCohort(cohort) {
+    const filterDetails = {
+      where: cohort.cohortId,
+      take: parseInt(cohort.limit),
+      skip: cohort.offset,
+    };
+    const getDetails = await this.getUserDetails(filterDetails);
+    return { ...cohort, customField: getDetails };
+  }
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId"
     FROM public."CohortMembers" AS cm
     LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
-    WHERE cm."userId"=$1`
-    let result = await this.cohortMembersRepository.query(query, [userId])
+    WHERE cm."userId"=$1`;
+    let result = await this.cohortMembersRepository.query(query, [userId]);
     return result;
   }
 
-
   public async getUserDetails(filter) {
-    let query = `SELECT f."label", fv."value",f."type",f."fieldParams"
+    let query = `SELECT DISTINCT f."label", fv."value", f."type", f."fieldParams"
     FROM public."CohortMembers" cm
-    LEFT JOIN public."FieldValues"  fv ON fv."itemId" = cm."cohortId"
-    LEFT JOIN public."Fields"  f ON fv."fieldId" = f."fieldId"
-    WHERE cm."cohortId"= $1`
-    // console.log(filter.where);
-
-    // console.log(query);
-
-    let result = await this.cohortMembersRepository.query(query, [filter.where])
+    LEFT JOIN (
+        SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
+        FROM public."FieldValues" fv
+    ) fv ON fv."itemId" = cm."cohortId"
+    INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
+    WHERE cm."cohortId" = $1;`;
+    let result = await this.cohortMembersRepository.query(query, [
+      filter.where,
+    ]);
     return result;
   }
   public async createCohortMembers(

@@ -177,7 +177,7 @@ export class UserService {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
       let cohortId = userCreateDto.cohortId;
-      delete userCreateDto.cohortId;
+      delete userCreateDto?.cohortId;
       userCreateDto.createdBy = userId
       userCreateDto.updatedBy = userId;
 
@@ -206,7 +206,6 @@ export class UserService {
       resKeycloak = await createUserInKeyCloak(userSchema, token);
       userCreateDto.userId = resKeycloak;
       let result = await this.createUserInDatabase(request, userCreateDto,cohortId);
-      console.log(result);
       let field_value_array = userCreateDto.fieldValues?.split("|");
       let fieldData = {};
       if(result && field_value_array?.length > 0) {
@@ -217,9 +216,7 @@ export class UserService {
           fieldId:fieldValues[0],
           value:fieldValues[1]
         }
-        console.log(fieldData);
         let result = await this.updateCustomFields(userId,fieldData);
-        console.log(result);
         if(!result) {
           response
           .status(HttpStatus.BAD_REQUEST)
@@ -270,13 +267,21 @@ export class UserService {
       user.username=userCreateDto?.username
       user.name=userCreateDto?.name
       user.role=userCreateDto?.role
-      // user.mobile= Number(userCreateDto?.mobile),
+      user.mobile= Number(userCreateDto?.mobile),
       user.tenantId=userCreateDto?.tenantId
       user.createdBy=userCreateDto?.createdBy
       user.updatedBy=userCreateDto?.updatedBy
-      user.userId=userCreateDto?.userId
+      user.userId=userCreateDto?.userId,
+      user.state=userCreateDto?.state,
+      user.district=userCreateDto?.district,
+      user.address=userCreateDto?.address,
+      user.pincode=userCreateDto?.pincode
+
+      if (userCreateDto?.dob) {
+        user.dob = new Date(userCreateDto.dob);
+    }
+
       let result = await this.usersRepository.save(user);
-      console.log(result.userId);
       if(result) {
       let cohortData = {
         userId:result?.userId,
@@ -293,7 +298,6 @@ export class UserService {
 
   async addCohortMember(cohortData){
     try {
-    console.log(cohortData);
     let result = await this.cohortMemberRepository.insert(cohortData);
     return result;;
     } catch (error) {

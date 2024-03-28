@@ -28,6 +28,7 @@ import {
   Headers,
   UsePipes,
   ValidationPipe,
+  Res,
 } from "@nestjs/common";
 import { AttendanceDto, BulkAttendanceDTO } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -39,6 +40,7 @@ import { AttendaceAdapter } from "./attendanceadapter";
 import { AttendanceDateDto } from "./dto/attendance-date.dto";
 import { AttendanceService } from './attendance.service';
 import { AttendanceStatsDto } from "./dto/attendance-stats.dto";
+import { Response } from "express";
 
 @ApiTags("Attendance")
 @Controller("attendance")
@@ -90,7 +92,7 @@ export class AttendanceController {
   )
   @ApiBody({ type: AttendanceDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -99,11 +101,13 @@ export class AttendanceController {
     @Headers() headers,
     @Req() request: Request,
     @Body() attendanceDto: AttendanceDto,
+    @Res() response:Response,
     @UploadedFile() image
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    return this.attendaceService.updateAttendanceRecord(request, attendanceDto);
+    const result = await this.attendaceService.updateAttendanceRecord(request, attendanceDto);
+     return response.status(result.statusCode).json(result);  
   }
 
   @Put("/:id")
@@ -128,21 +132,24 @@ export class AttendanceController {
     @Param("id") attendanceId: string,
     @Req() request: Request,
     @Body() attendanceDto: AttendanceDto,
+    @Res() response:Response,
     @UploadedFile() image
   ) {
-    const response = {
+    const res = {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);
-    return this.attendaceService
-      .updateAttendance(attendanceId, request, attendanceDto);
+    const result = await this.attendaceService
+    .updateAttendance(attendanceId, request, attendanceDto);
+     return response.status(result.statusCode).json(result);  
+   
   }
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
   @ApiBody({ type: AttendanceSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -153,15 +160,17 @@ export class AttendanceController {
   public async searchAttendanceNew(
     @Headers() headers,
     @Req() request: Request,
-    @Body() studentSearchDto: AttendanceSearchDto
+    @Body() studentSearchDto: AttendanceSearchDto,
+    @Res() response:Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.attendaceService
+
+   const result = await this.attendaceService
       .searchAttendance(tenantid, request, studentSearchDto);
+     return response.status(result.statusCode).json(result);  
   }
 
   @Post("/bydate")
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -172,10 +181,12 @@ export class AttendanceController {
   public async attendanceFilter(
     @Headers() headers,
     @Req() request: Request,
+    @Res() response:Response,
     @Body() attendanceDateDto: AttendanceDateDto
   ) {
     const tenantId = headers["tenantid"];
-    return this.attendaceService.attendanceByDate(tenantId, request, attendanceDateDto);
+    const result = await this.attendaceService.attendanceByDate(tenantId, request, attendanceDateDto);
+     return response.status(result.statusCode).json(result); 
   }
 
   @Post("bulkAttendance")
@@ -185,7 +196,6 @@ export class AttendanceController {
   })
   @ApiBody({ type: BulkAttendanceDTO })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -193,11 +203,13 @@ export class AttendanceController {
   public async multipleAttendance(
     @Headers() headers,
     @Req() request: Request,
+    @Res() response:Response,
     @Body() attendanceDtos: BulkAttendanceDTO
   ) {
-    let tenantid = headers["tenantid"];
-    return this.attendaceService
-      .multipleAttendance(tenantid, request, attendanceDtos);
+    let tenantId = headers["tenantid"];
+    const result = await this.attendaceService
+    .multipleAttendance(tenantId, request, attendanceDtos);
+     return response.status(result.statusCode).json(result); 
   }
 
   @Post("/report")
@@ -205,7 +217,6 @@ export class AttendanceController {
   @ApiCreatedResponse({ description: "Attendance list." })
   @ApiBody({ type: AttendanceStatsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -213,11 +224,14 @@ export class AttendanceController {
   public async report(
     @Headers() headers,
     @Req() request: Request,
+    @Res() response:Response,
     @Body() attendanceStatsDto: AttendanceStatsDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.attendaceService
-      .attendanceReport(attendanceStatsDto);
+
+    const result = await this.attendaceService
+    .attendanceReport(attendanceStatsDto);
+     return response.status(result.statusCode).json(result); 
   }
 
   /** No longer required in Shiksha 2.0 */

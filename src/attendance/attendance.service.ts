@@ -7,7 +7,6 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "./entities/attendance.entity";
 import { Repository } from "typeorm";
 import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { ErrorResponse } from "src/error-response";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto, BulkAttendanceDTO } from './dto/attendance.dto';
@@ -15,6 +14,7 @@ import { AttendanceDateDto } from './dto/attendance-date.dto';
 import { Between } from 'typeorm';
 import { AttendanceStatsDto } from './dto/attendance-stats.dto';
 import { format } from 'date-fns'
+import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 const moment = require('moment');
 
 @Injectable()
@@ -35,6 +35,7 @@ export class AttendanceService {
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
 
         try {
+
             let { limit, page, filters } = attendanceSearchDto;
             if (!limit) {
                 limit = '0';
@@ -61,14 +62,14 @@ export class AttendanceService {
             const mappedResponse = await this.mappedResponse(results);
 
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Ok.',
                 totalCount,
                 data: mappedResponse,
             });
         } catch (error) {
-            return new ErrorResponse({
-                errorCode: '500',
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: error,
             });
         }
@@ -78,12 +79,10 @@ export class AttendanceService {
 
         let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
         try {
-            
-
             if (report === true) {
                 let nameFilter = '';
             if (filters && filters.search) {
-                nameFilter = `AND u."name" LIKE '%${filters.search.trim()}%'`;
+                nameFilter = `AND u."name" ILIKE '%${filters.search.trim()}%'`;
             }
                 let query = `
                 SELECT u."userId",u."name",
@@ -119,7 +118,7 @@ export class AttendanceService {
 
 
                 return new SuccessResponse({
-                    statusCode: 200,
+                    statusCode: HttpStatus.OK,
                     message: "Ok.",
                     data: report,
                 });
@@ -151,8 +150,8 @@ export class AttendanceService {
 
                 else {
 
-                    return new ErrorResponse({
-                        errorCode: "400",
+                    return new ErrorResponseTypeOrm({
+                        statusCode: HttpStatus.BAD_REQUEST,
                         errorMessage: "Please provide valid attendance date",
                     });
 
@@ -161,9 +160,9 @@ export class AttendanceService {
         }
         catch (error) {
 
-            return new ErrorResponse({
-                errorCode: "500",
-                errorMessage: "Internal server error",
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: error,
             });
 
 
@@ -264,19 +263,19 @@ export class AttendanceService {
             );
 
 
-            if (attendanceFound?.errorCode) {
-                return new ErrorResponse({
-                    errorCode: "500",
+            if (attendanceFound instanceof ErrorResponseTypeOrm) {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     errorMessage: attendanceFound?.errorMessage,
                 });
             }
 
             if (
                 attendanceFound.data.length > 0 &&
-                attendanceFound.statusCode === 200
+                attendanceFound.statusCode === 200 && attendanceFound instanceof SuccessResponse
             ) {
 
-                return await this.updateAttendance(
+              return   await this.updateAttendance(
                     attendanceFound.data[0].attendanceId,
                     request,
                     attendanceDto
@@ -286,7 +285,10 @@ export class AttendanceService {
                 return await this.createAttendance(request, attendanceDto);
             }
         } catch (e) {
-            return e;
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: e,
+            });
         }
     }
 
@@ -300,13 +302,14 @@ export class AttendanceService {
         attendanceDto: AttendanceDto
     ) {
         try {
+
             const attendanceRecord = await this.attendanceRepository.findOne({
                 where: { attendanceId },
             });
 
             if (!attendanceRecord) {
-                return new ErrorResponse({
-                    errorCode: "404",
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
                     errorMessage: "Attendance record not found",
                 });
             }
@@ -320,18 +323,18 @@ export class AttendanceService {
             );
 
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: "Attendance record updated successfully",
                 data: updatedAttendanceRecord,
             });
         } catch (error) {
-            if (error instanceof BadRequestException) {
-                return new ErrorResponse({
-                    errorCode: "500",
-                    errorMessage: "Internal Server Error",
+            
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    errorMessage: error,
 
                 });
-            }
+            
         }
     }
 
@@ -341,25 +344,27 @@ export class AttendanceService {
     */
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
 
+
+        
         try {
             const attendance = this.attendanceRepository.create(attendanceDto);
             const result = await this.attendanceRepository.save(attendance);
 
             return new SuccessResponse({
-                statusCode: 200,
-                message: "Ok.",
+                statusCode: HttpStatus.CREATED,
+                message: "Attendance created successfully.",
                 data: result,
             });
         } catch (error) {
-            if (error.code === '23503' && error.constraint === 'Attendance_userId_fkey') {
-                // Handle foreign key constraint violation
-                return new ErrorResponse({
-                    errorCode: "23503",
+
+            if (error.code == '23503') {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
                     errorMessage: "Please provide valid userID",
                 });
             } else {
-                return new ErrorResponse({
-                    errorCode: "500",
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     errorMessage: 'Internal Server Error',
                 });
             }
@@ -412,14 +417,14 @@ export class AttendanceService {
             const mappedResponse = await this.mappedResponse(results);
 
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: "Ok",
                 totalCount: totalCount,
                 data: mappedResponse,
             });
         } catch (e) {
-            return new ErrorResponse({
-                errorCode: "500",
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
             });
         }
@@ -434,40 +439,50 @@ export class AttendanceService {
         request: any,
         attendanceData: BulkAttendanceDTO
     ) {
+
         const responses = [];
         const errors = [];
         try {
             let count = 1;
 
             for (let attendance of attendanceData.userAttendance) {
+
+
                 const userAttendance = new AttendanceDto({
                     attendanceDate: attendanceData.attendanceDate,
                     contextId: attendanceData.contextId,
                     attendance: attendance.attendance,
-                    userId: attendance.userId
+                    userId: attendance.userId,
+                    tenantId:tenantId
                 })
                 const attendanceRes: any = await this.updateAttendanceRecord(
                     request,
                     userAttendance
                 );
-                if (attendanceRes?.statusCode === 200) {
+
+                if (attendanceRes?.statusCode === 200||attendanceRes?.statusCode === 201) {
                     responses.push(attendanceRes.data);
-                } else {
+                }
+                 else {
                     errors.push({
                         userId: attendance.userId,
                         attendanceRes,
                     });
                 }
                 count++;
-
+            
+           
             }
         } catch (e) {
-            return e;
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: e,
+            });
         }
 
 
         return {
-            statusCode: 200,
+            statusCode: HttpStatus.OK,
             totalCount: attendanceData.userAttendance.length,
             successCount: responses.length,
             errorCount: errors.length,

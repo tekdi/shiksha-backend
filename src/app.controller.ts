@@ -1,13 +1,13 @@
 import { Controller, Get, Param, Res, UseGuards } from "@nestjs/common";
 import { AppService } from "./app.service";
-import { KeycloakAuthGuard } from "./common/guards/keycloak.guard";
+import { JwtAuthGuard } from "./common/guards/keycloak.guard";
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @UseGuards(KeycloakAuthGuard)
+  @UseGuards(JwtAuthGuard)
   getHello(): object {
     return this.appService.getHello();
   }

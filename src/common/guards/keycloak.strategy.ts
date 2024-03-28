@@ -1,23 +1,23 @@
-import { Injectable } from "@nestjs/common";
+import { ExtractJwt, Strategy } from "passport-jwt";
 import { PassportStrategy } from "@nestjs/passport";
-import { Strategy } from "passport-keycloak-oauth2-oidc";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 @Injectable()
-export class KeycloakStrategy extends PassportStrategy(Strategy, "keycloak") {
-  constructor(private readonly configService: ConfigService) {
+export class JwtStrategy extends PassportStrategy(Strategy, "jwt-keycloak") {
+  constructor(configService: ConfigService) {
     super({
-      host: configService.get("KEYCLOAK"),
-      realm: configService.get("KEYCLOAK_REALM"),
-      clientID: configService.get("KEYCLOAK_CLIENT_ID"),
-      clientSecret: configService.get("KEYCLOAK_HASURA_CLIENT_SECRET"),
-      authServerURL: configService.get("KEYCLOAK_AUTH_SERVER"),
-      callbackURL: configService.get("KEYCLOAK_AUTH_SERVER"),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get("KEYCLOAK_REALM_RSA_PUBLIC_KEY"),
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
-    // You can perform additional validation or data manipulation here
-    return { accessToken, refreshToken, profile };
+  async validate(payload: any) {
+    /**
+     * This can be obtained via req.user in the Controllers
+     * This is where we validate that the user is valid and delimit the payload returned to req.user
+     */
+    return { userId: payload.sub };
   }
 }

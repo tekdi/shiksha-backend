@@ -13,6 +13,7 @@ import {
   Post,
   Body,
   Put,
+  Delete,
   Param,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -144,6 +145,34 @@ export class CohortMembersController {
       request,
       cohortMemberUpdateDto,
       response
+    );
+  }
+
+  //delete
+  @Delete("/:id")
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort member deleted successfully" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async deleteCohortMember(
+    @Headers() headers,
+    @Param("id") cohortMembershipId: string,
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
+    let tenantid = headers["tenantid"];
+
+    return this.cohortMembersService.deleteCohortMemberById(
+      tenantid,
+      cohortMembershipId,
+      response,
+      request
     );
   }
 }

@@ -22,10 +22,11 @@ export class UserCreateDto {
   @Expose()
   username: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The name of the user",
-  })
+  // @ApiProperty({
+  //   type: String,
+  //   description: "The name of the user",
+  // })
+  @ApiProperty({ type: () => String })
   @Expose()
   name: string;
 

@@ -146,15 +146,6 @@ export class CohortMembersService {
         );
     }
   }
-  async getDetailsForCohort(cohort) {
-    const filterDetails = {
-      where: cohort.cohortId,
-      take: parseInt(cohort.limit),
-      skip: cohort.offset,
-    };
-    const getDetails = await this.getUserDetails(filterDetails);
-    return { ...cohort, customField: getDetails };
-  }
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId"
     FROM public."CohortMembers" AS cm

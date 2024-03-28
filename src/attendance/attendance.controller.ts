@@ -135,7 +135,7 @@ export class AttendanceController {
     @Res() response:Response,
     @UploadedFile() image
   ) {
-    const res = {
+    const Imageresponse = {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);

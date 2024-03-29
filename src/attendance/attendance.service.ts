@@ -76,7 +76,6 @@ export class AttendanceService {
     }
 
     async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
-
         let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
         try {
             if (report === true) {
@@ -105,7 +104,6 @@ export class AttendanceService {
                 GROUP BY u."userId"
                  `;
 
-
                 if (filters) {
                     if (filters.nameOrder && filters.nameOrder==="asc" || filters.nameOrder==="desc") {
                         query += ` ORDER BY "name" ${filters.nameOrder}`
@@ -121,34 +119,50 @@ export class AttendanceService {
                 OFFSET $3`
                 const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
 
-            //     let countquery = `SELECT AVG(attendance_percentage) AS average_attendance_percentage
-            //     FROM (
-            //         SELECT u."userId", u."name",
-            //             CASE 
-            //                 WHEN COUNT(*) = 0 THEN NULL
-            //                 ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'Present' THEN 1 END) * 100.0 / COUNT(*),2)
-            //             END AS attendance_percentage
-            //         FROM public."CohortMembers" AS cm 
-            //         INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
-            //         LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
-            //         WHERE cm."cohortId" = $1 AND cm."role" = 'student'
-            //         ${userFilter}
-            //         GROUP BY u."userId"
-            //     ) AS subquery;
-            //     `
-            //   const average=await this.attendanceRepository.query(countquery,[contextId]) 
-            //   console.log(average,)
-              
+                if((!filters) || (!filters?.userId))
+                { 
+                  // We dont need average for single user
+                let countquery = `SELECT AVG(attendance_percentage) AS average_attendance_percentage
+                FROM (
+                    SELECT u."userId", u."name",
+                        CASE 
+                            WHEN COUNT(*) = 0 THEN NULL
+                            ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),2)
+                        END AS attendance_percentage
+                    FROM public."CohortMembers" AS cm 
+                    INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
+                    LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
+                    WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+                    ${userFilter}
+                    GROUP BY u."userId"
+                ) AS subquery;
+                `
 
-                const report = await this.mapResponseforReport(result);
-
-
+              const average=await this.attendanceRepository.query(countquery,[contextId]) 
+               const report = await this.mapResponseforReport(result);
+                const response = {
+                    report,
+                    average:average[0]
+                }
                 return new SuccessResponse({
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
-                    data: report,
+                    data: response,
                     
                 });
+            }
+            else
+            {
+               const response = await this.mapResponseforReport(result);
+                return new SuccessResponse({
+                    statusCode: HttpStatus.OK,
+                    message: "Ok.",
+                    data: response,
+                    
+                });
+            }
+
+                
             }
             else if (report === false) {
                 if (attendanceDate) {
@@ -166,6 +180,8 @@ export class AttendanceService {
 
                     const result = await this.attendanceRepository.query(query, [attendanceDate, contextId, limit, offset]);
                     const report = await this.mapAttendanceRecord(result);
+                   
+                    
 
 
                     return new SuccessResponse({

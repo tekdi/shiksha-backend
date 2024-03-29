@@ -105,10 +105,7 @@ export class CohortService {
         }
       });
       const response = await this.cohortRepository.save(cohortData);
-      // const response = await this.cohortRepository.insert(cohortData);
-
       let cohortId = response?.cohortId;
-
 
       let field_value_array = cohortCreateDto.fieldValues.split("|");
 

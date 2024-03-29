@@ -81,9 +81,15 @@ export class AttendanceService {
         try {
             if (report === true) {
                 let nameFilter = '';
+                let userFilter = '';
+
             if (filters && filters.search) {
                 nameFilter = `AND u."name" ILIKE '%${filters.search.trim()}%'`;
             }
+            if (filters && filters.userId) {
+                userFilter = ` AND u."userId"='${filters.userId.trim()}'`;
+            }
+
                 let query = `
                 SELECT u."userId",u."name",
                 CASE 
@@ -94,10 +100,10 @@ export class AttendanceService {
                 INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
                 LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
                 WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+                ${userFilter}
                 ${nameFilter}
                 GROUP BY u."userId"
-
-                `;
+                 `;
 
 
                 if (filters) {
@@ -114,6 +120,26 @@ export class AttendanceService {
                 LIMIT $2
                 OFFSET $3`
                 const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
+
+            //     let countquery = `SELECT AVG(attendance_percentage) AS average_attendance_percentage
+            //     FROM (
+            //         SELECT u."userId", u."name",
+            //             CASE 
+            //                 WHEN COUNT(*) = 0 THEN NULL
+            //                 ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'Present' THEN 1 END) * 100.0 / COUNT(*),2)
+            //             END AS attendance_percentage
+            //         FROM public."CohortMembers" AS cm 
+            //         INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
+            //         LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
+            //         WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+            //         ${userFilter}
+            //         GROUP BY u."userId"
+            //     ) AS subquery;
+            //     `
+            //   const average=await this.attendanceRepository.query(countquery,[contextId]) 
+            //   console.log(average,)
+              
+
                 const report = await this.mapResponseforReport(result);
 
 
@@ -121,6 +147,7 @@ export class AttendanceService {
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
                     data: report,
+                    
                 });
             }
             else if (report === false) {
@@ -144,7 +171,7 @@ export class AttendanceService {
                     return new SuccessResponse({
                         statusCode: 200,
                         message: "Ok.",
-                        data: report,
+                        data: report
                     });
                 }
 
@@ -205,7 +232,7 @@ export class AttendanceService {
                 userId: item?.userId ? `${item.userId}` : "",
                 attendance_percentage: item?.attendance_percentage ? `${item.attendance_percentage}` : "",
             };
-
+                
             return new AttendanceStatsDto(attendanceReportMapping);
         });
 

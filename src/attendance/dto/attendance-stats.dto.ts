@@ -20,6 +20,10 @@ class FiltersDto {
     @IsString()
     @IsOptional()
     search: string;
+
+    @IsString()
+    @IsOptional()
+    userId: string;
     
 }
 

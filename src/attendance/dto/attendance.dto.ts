@@ -1,6 +1,6 @@
 import { ManyToOne, JoinColumn } from 'typeorm';
-import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
-import { Exclude, Expose, Transform } from "class-transformer";
+import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidateNested, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-entity';
@@ -187,6 +187,10 @@ export class BulkAttendanceDTO {
 
   contextId: string;
 
+
+  @ApiPropertyOptional()
+  @ValidateNested({ each: true })
+ @Type(() => UserAttendanceDTO)
  // Adjust the max size according to your requirements
   userAttendance: UserAttendanceDTO[];
 

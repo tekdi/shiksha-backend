@@ -133,7 +133,7 @@ async function checkIfUsernameExistsInKeycloak(username, token) {
     url:
       process.env.KEYCLOAK +
       process.env.KEYCLOAK_ADMIN +
-      `?username=${username}`,
+      `?username=${username}&exact=true`,
     headers: {
       "Content-Type": "application/json",
       Authorization: "Bearer " + token,

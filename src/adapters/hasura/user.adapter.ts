@@ -13,7 +13,7 @@ import {
   getKeycloakAdminToken,
   createUserInKeyCloak,
   checkIfUsernameExistsInKeycloak,
-} from "./keycloak.adapter.util";
+} from "../../common/utils/keycloak.adapter.util";
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 

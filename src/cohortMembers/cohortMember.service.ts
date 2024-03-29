@@ -96,28 +96,40 @@ export class CohortMembersService {
         Object.entries(filters).forEach(([key, value]) => {
           whereClause[key] = value;
         });
-      } else {
-        whereClause["tenantId"] = tenantId;
       }
 
-      const [cohortMembers, count] =
-        await this.cohortMembersRepository.findAndCount({
-          where: whereClause,
+      let findCohortId = await this.findCohortName(whereClause["userId"]);
+
+      let result = {
+        cohortData: [],
+      };
+
+      for (let data of findCohortId) {
+        let cohortData = {
+          cohortId: data.cohortId,
+          name:data.name,
+          customField: [],
+        };
+
+        let filterDetails = {
+          where: data.cohortId,
           take: parseInt(limit),
           skip: offset,
-        });
+        };
 
-      const responseData = {
-        totalCount: count,
-        cohortMembers: cohortMembers,
-      };
+        const getDetails = await this.getUserDetails(filterDetails);
+        console.log(getDetails);
+        cohortData.customField.push(getDetails); 
+
+        result.cohortData.push(cohortData);
+      }
 
       return response
         .status(HttpStatus.OK)
         .send(
           APIResponse.success(
             apiId,
-            responseData,
+            result,
             "Cohort Member Retrieved Successfully"
           )
         );
@@ -134,7 +146,29 @@ export class CohortMembersService {
         );
     }
   }
+  public async findCohortName(userId: any) {
+    let query = `SELECT c."name",c."cohortId"
+    FROM public."CohortMembers" AS cm
+    LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
+    WHERE cm."userId"=$1`;
+    let result = await this.cohortMembersRepository.query(query, [userId]);
+    return result;
+  }
 
+  public async getUserDetails(filter) {
+    let query = `SELECT DISTINCT f."label", fv."value", f."type", f."fieldParams"
+    FROM public."CohortMembers" cm
+    LEFT JOIN (
+        SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
+        FROM public."FieldValues" fv
+    ) fv ON fv."itemId" = cm."cohortId"
+    INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
+    WHERE cm."cohortId" = $1;`;
+    let result = await this.cohortMembersRepository.query(query, [
+      filter.where,
+    ]);
+    return result;
+  }
   public async createCohortMembers(
     request: any,
     cohortMembers: CohortMembersDto,

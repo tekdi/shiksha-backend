@@ -15,6 +15,7 @@ import {
   Headers,
   Res,
   Patch,
+  UseGuards,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -38,8 +39,10 @@ import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { UserService } from "./user.service";
 import { UserUpdateDTO } from "./dto/user-update.dto";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 @ApiTags("User")
 @Controller("user")
+@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(
     private readonly service: UserService,
@@ -58,7 +61,7 @@ export class UserController {
 	 * @since   1.6
 	 */
   @Get("/:userid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -85,7 +88,7 @@ export class UserController {
   }
 
   @Get()
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -112,11 +115,10 @@ export class UserController {
   async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Res() response:Response,
     @Body() userCreateDto: UserCreateDto
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userService.createUser(request, userCreateDto,response);
+    return this.userService.createUser(request, userCreateDto);
   }
   
 

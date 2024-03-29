@@ -11,7 +11,7 @@ import {
     getKeycloakAdminToken,
     createUserInKeyCloak,
     checkIfUsernameExistsInKeycloak,
-  } from "../common/keycloak";
+} from "../common/utils/keycloak.adapter.util"
 import { FieldValuesCreateDto } from 'src/fields/dto/field-values-create.dto';
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
@@ -170,12 +170,13 @@ export class UserService {
     return result;
   }
 
-  async createUser(request: any, userCreateDto: UserCreateDto,response) {
+  async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
     let apiId='api.user.creatUser'
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+      console.log(userId);
       let cohortId = userCreateDto.cohortId;
       delete userCreateDto?.cohortId;
       userCreateDto.createdBy = userId
@@ -192,18 +193,21 @@ export class UserService {
       const token = keycloakResponse.data.access_token;
       let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
       if(checkUserinKeyCloakandDb){
-        return response
-          .status(HttpStatus.BAD_REQUEST)
-          .json(
-            APIResponse.error(
-              apiId,
-              'User Already Exist',
-              'User already exists',
-              'BAD_REQUEST',
-            ),
-          );
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: "User Already Exists",
+        });
       }
-      resKeycloak = await createUserInKeyCloak(userSchema, token);
+      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+        (error) => {
+          errKeycloak = error.response?.data.errorMessage;
+
+          return new ErrorResponse({
+            errorCode: "500",
+            errorMessage: "Someting went wrong",
+          });
+        }
+      );
       userCreateDto.userId = resKeycloak;
       let result = await this.createUserInDatabase(request, userCreateDto,cohortId);
       let field_value_array = userCreateDto.fieldValues?.split("|");
@@ -218,33 +222,23 @@ export class UserService {
         }
         let result = await this.updateCustomFields(userId,fieldData);
         if(!result) {
-          response
-          .status(HttpStatus.BAD_REQUEST)
-          .send(
-          ApiResponse.error(
-          apiId,
-          `Something went wrong ${result}`,
-          `Failure in UpdateCustomField`,
-          'INTERNAL_SERVER_ERROR',
-        ),
-      );
+          return new ErrorResponse({
+            errorCode: "500",
+            errorMessage: `Error is ${result}`,
+          });
         }
       }
      }
-     return response
-        .status(HttpStatus.OK)
-        .send(APIResponse.success(apiId, result, 'OK'));
+     return new SuccessResponse({
+      statusCode: 200,
+      message: "ok",
+      data: result,
+    });
     } catch (e) {
-      response
-      .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .send(
-        ApiResponse.error(
-          apiId,
-          'Something went wrong',
-          `Failure Posting Data. Error is: ${e}`,
-          'INTERNAL_SERVER_ERROR',
-        ),
-      );
+      return new ErrorResponse({
+        errorCode: "500",
+        errorMessage: `Error is ${e}`,
+      });
     }
   }
 

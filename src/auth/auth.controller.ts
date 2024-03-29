@@ -23,14 +23,12 @@ import {
   Headers,
 } from "@nestjs/common";
 import { AuthDto } from "./dto/auth-dto";
-import { AuthService } from "./auth-service";
+import { AuthService } from "./auth.service";
 
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
-  constructor(
-    private authService:AuthService
-  ) {}
+  constructor(private authService: AuthService) {}
 
   @Post("/login")
   @ApiBody({ type: AuthDto })
@@ -44,11 +42,10 @@ export class AuthController {
     @Res() response: Response,
     @Body() authDto: AuthDto
   ) {
-    console.log(request)
-    return this.authService.login(authDto,response);
+    return this.authService.login(authDto, response);
   }
 
-  @Get('/getUserDetails')
+  @Get("/getUserDetails")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -58,9 +55,11 @@ export class AuthController {
   @ApiHeader({
     name: "tenantid",
   })
-  public async getUserByAuth(@Req() request: Request,@Res() response:Response){
+  public async getUserByAuth(
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
     // const tenantId = headers["tenantid"];
-    return this.authService.getUserByAuth(request,response);
+    return this.authService.getUserByAuth(request, response);
   }
-
 }

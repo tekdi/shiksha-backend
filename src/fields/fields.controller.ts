@@ -23,6 +23,7 @@ import {
   CacheInterceptor,
   UploadedFile,
   Headers,
+  UseGuards,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -34,9 +35,12 @@ import { FieldsAdapter } from "./fieldsadapter";
 import { FieldValuesDto } from "./dto/field-values.dto";
 import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 import { FieldsService } from "./fields.service";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+
 
 @ApiTags("Fields")
 @Controller("fields")
+@UseGuards(JwtAuthGuard)
 export class FieldsController {
   constructor(private fieldsAdapter: FieldsAdapter,
     private readonly fieldsService: FieldsService

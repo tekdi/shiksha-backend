@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   ManyToMany,
 } from "typeorm";
-import { CohortMembers } from "../../cohortMembers/entities/cohort-member.entity";
 
 @Entity({ name: "Cohort" })
 export class Cohort {
@@ -66,8 +65,5 @@ export class Cohort {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedBy: Date;
-
-  @ManyToMany(() => CohortMembers, cohortMember => cohortMember.cohorts)
-  cohortMembers: CohortMembers[];
 
 }

@@ -117,7 +117,7 @@ export class FieldsService {
                     }
                 }
             });
-
+            
             let result = await this.fieldsValuesRepository.save(fieldsData);
             return new SuccessResponse({
                 statusCode: 200,

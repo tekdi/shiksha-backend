@@ -8,8 +8,6 @@ import {
   JoinTable,
 } from "typeorm";
 
-import { Cohort } from "../../cohort/entities/cohort.entity";
-
 @Entity({ name: "CohortMembers" })
 export class CohortMembers {
   @PrimaryGeneratedColumn("uuid")
@@ -45,7 +43,4 @@ export class CohortMembers {
   @Column({})
   updatedBy: string;
 
-  @ManyToMany(() => Cohort, (cohort) => cohort.cohortMembers)
-  @JoinTable({ name: "cohort_members_cohort" }) // Specify the join table name here
-  cohorts: Cohort[];
 }

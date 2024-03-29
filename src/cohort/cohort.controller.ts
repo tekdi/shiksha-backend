@@ -25,6 +25,7 @@ import {
   Res,
   Headers,
   Delete,
+  UseGuards,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -33,13 +34,14 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
 import { Response, response } from "express";
-
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 // import { FieldsService } from "../fields/fields.service";
 @ApiTags("Cohort")
 @Controller("cohort")
+@UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(
     private cohortAdapter: CohortAdapter,

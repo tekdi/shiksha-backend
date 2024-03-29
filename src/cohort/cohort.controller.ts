@@ -83,9 +83,8 @@ export class CohortController {
     return this.cohortService.createCohort(request, cohortCreateDto);
   }
 
-  //get cohort
-  @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @Get("cohortList/:id")
+  @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -95,14 +94,14 @@ export class CohortController {
   @ApiHeader({
     name: "tenantid",
   })
-  public async getCohort(
+  public async getCohortList(
     @Headers() headers,
-    @Param("id") cohortId: string,
+    @Param("id") userId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.getCohort(tenantid, cohortId, request, response);
+    return this.cohortService.getCohortList(tenantid, userId, request, response);
   }
 
   // search

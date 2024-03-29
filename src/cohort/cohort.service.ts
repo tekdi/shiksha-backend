@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConsoleLogger, HttpStatus, Injectable } from "@nestjs/common";
 import { CohortInterface } from "./interfaces/cohort.interface";
 import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
@@ -20,6 +20,7 @@ import { FieldsService } from "../fields/fields.service";
 import { response } from "express";
 import APIResponse from "src/utils/response";
 import { FieldValues } from "../fields/entities/fields-values.entity";
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 
 @Injectable()
 export class CohortService {
@@ -28,54 +29,47 @@ export class CohortService {
 
   constructor(
     @InjectRepository(Cohort)
-
     private cohortRepository: Repository<Cohort>,
+    @InjectRepository(CohortMembers)
+    private cohortMembersRepository: Repository<CohortMembers>,
     private fieldsService: FieldsService,
   ) { }
 
-  public async getCohort(
+  public async getCohortList(
     tenantId: string,
-    cohortId: string,
+    userId: string,
     request: any,
     response: any
   ) {
     const apiId = "api.concept.editminiScreeningAnswer";
-
     try {
-      const cohort = await this.cohortRepository.findOne({
-        where: { cohortId: cohortId, status: "true" },
-        select: ["cohortId","parentId","name","type","status","image","programId","attendanceCaptureImage"],
-      });
-
-      // let searchField = { itemId: cohortId }
-
-      const fieldValue = await this.fieldsService.getFieldsAndFieldsValues(cohortId)
-
-      if (!cohort) {
-        return response
-          .status(HttpStatus.NOT_FOUND)
-          .send(
-            APIResponse.error(
-              apiId,
-              `Cohort Id is wrong`,
-              `Cohort not found`,
-              "COHORT_NOT_FOUND"
-            )
-          );
-      }
-      
-      cohort["customFields"] = fieldValue;
-      const result = {
-        cohort: cohort,
+      console.log(userId);
+      let findCohortId = await this.findCohortName(userId);
+      console.log(findCohortId);
+      let result = {
+        cohortData: [],
       };
 
-      return response.status(HttpStatus.OK).send(
-        APIResponse.success(
-          apiId,
-          result,
-          "Cohort Retrieved Successfully"
-        )
-      );
+      for (let data of findCohortId) {
+        let cohortData = {
+          cohortId: data.cohortId,
+          name:data.name,
+          customField:{}
+        };
+        const getDetails = await this.getCohortListDetails(data.cohortId);
+        cohortData.customField=getDetails
+        result.cohortData.push(cohortData);
+      }
+
+      return response
+        .status(HttpStatus.OK)
+        .send(
+          APIResponse.success(
+            apiId,
+            result,
+            "OK"
+          )
+        );
     } catch (error) {
       return response
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -83,13 +77,36 @@ export class CohortService {
           APIResponse.error(
             apiId,
             "Something went wrong",
-            `Failure Retrieving Cohort. Error is: ${error}`,
+            `Failure Retrieving Cohort Member. Error is: ${error}`,
             "INTERNAL_SERVER_ERROR"
           )
         );
     }
+    
+  }
+  public async findCohortName(userId: any) {
+    let query = `SELECT c."name",c."cohortId"
+    FROM public."CohortMembers" AS cm
+    LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
+    WHERE cm."userId"=$1`;
+    let result = await this.cohortMembersRepository.query(query, [userId]);
+    return result;
   }
 
+  public async getCohortListDetails(userId) {
+    let query = `SELECT DISTINCT f."label", fv."value", f."type", f."fieldParams"
+    FROM public."CohortMembers" cm
+    LEFT JOIN (
+        SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
+        FROM public."FieldValues" fv
+    ) fv ON fv."itemId" = cm."cohortId"
+    INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
+    WHERE cm."cohortId" = $1;`;
+    let result = await this.cohortMembersRepository.query(query, [
+      userId
+    ]);
+    return result;
+  }
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try {
       const cohortData: any = {};
@@ -231,10 +248,8 @@ export class CohortService {
           whereClause[key] = value;
         });
       }
-      else {
-        whereClause['tenantId'] = tenantId;
-      }
-
+      console.log(whereClause);
+      return true;
       const [results, totalCount] = await this.cohortRepository.findAndCount({
         where: whereClause,
         skip: offset,

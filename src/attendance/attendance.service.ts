@@ -93,7 +93,7 @@ export class AttendanceService {
                 SELECT u."userId",u."name",
                 CASE 
                 WHEN COUNT(*) = 0 THEN NULL
-                ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),2)
+                ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),0)
                 END AS attendance_percentage
                 FROM public."CohortMembers" AS cm 
                 INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
@@ -122,12 +122,12 @@ export class AttendanceService {
                 if((!filters) || (!filters?.userId))
                 { 
                   // We dont need average for single user
-                let countquery = `SELECT AVG(attendance_percentage) AS average_attendance_percentage
+                let countquery = `SELECT ROUND(AVG(attendance_percentage)) AS average_attendance_percentage
                 FROM (
                     SELECT u."userId", u."name",
                         CASE 
                             WHEN COUNT(*) = 0 THEN NULL
-                            ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),2)
+                            ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*))
                         END AS attendance_percentage
                     FROM public."CohortMembers" AS cm 
                     INNER JOIN public."Users" AS u ON cm."userId" = u."userId"

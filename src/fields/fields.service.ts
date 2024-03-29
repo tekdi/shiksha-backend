@@ -179,16 +179,11 @@ export class FieldsService {
 
     }
 
-    async searchFieldValueId(cohortId: string, fieldId: string){ 
-        try{
-            const response = await this.fieldsValuesRepository.findOne({
-                where: { itemId: cohortId, fieldId: fieldId },
-            });
-            return response;
-        }  catch{
-            return "error";
-        }         
-
+    async searchFieldValueId(cohortId: string, fieldId: string){            
+        const response = await this.fieldsValuesRepository.findOne({
+            where: { itemId: cohortId, fieldId: fieldId },
+        });
+        return response;
     }
     
     async updateFieldValues(id: string, fieldValuesDto: FieldValuesDto) {

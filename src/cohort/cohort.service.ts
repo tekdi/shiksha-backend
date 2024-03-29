@@ -176,7 +176,7 @@ export class CohortService {
           let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
           try {
             const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
-            const rowid = fieldVauesRowId['fieldValuesId'];
+            const rowid = fieldVauesRowId.fieldValuesId;
 
             let fieldValueDto: FieldValuesDto = {
               fieldValuesId: rowid,

@@ -34,14 +34,16 @@ export class AuthService {
       };
 
       const res = await this.axiosInstance(axiosConfig);
+      // if(dataerror();
+      // )
       return response.status(200).send(res.data);
     } catch (error) {
       console.error(error);
       return response
-        .status(500)
-        .send({ message: "An error occurred during login." });
-    }
+    .status(error.response ? error.response.status : 500)
+    .send({ message: error.message });
   }
+}
 
   public async getUserByAuth(request: any, response) {
     let apiId = "api.auth.getUserDetails";

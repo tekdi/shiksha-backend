@@ -53,6 +53,7 @@ export class CohortService {
         let cohortData = {
           cohortId: data.cohortId,
           name:data.name,
+          parentId:data.parentId,
           customField:{}
         };
         const getDetails = await this.getCohortListDetails(data.cohortId);
@@ -84,10 +85,10 @@ export class CohortService {
     
   }
   public async findCohortName(userId: any) {
-    let query = `SELECT c."name",c."cohortId"
+    let query = `SELECT c."name",c."cohortId",c."parentId"
     FROM public."CohortMembers" AS cm
     LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
-    WHERE cm."userId"=$1`;
+    WHERE cm."userId"=$1 AND c.status=true`;
     let result = await this.cohortMembersRepository.query(query, [userId]);
     return result;
   }

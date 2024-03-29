@@ -29,6 +29,7 @@ import {
   UsePipes,
   ValidationPipe,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import { AttendanceDto, BulkAttendanceDTO } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -41,9 +42,12 @@ import { AttendanceDateDto } from "./dto/attendance-date.dto";
 import { AttendanceService } from './attendance.service';
 import { AttendanceStatsDto } from "./dto/attendance-stats.dto";
 import { Response } from "express";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+
 
 @ApiTags("Attendance")
 @Controller("attendance")
+@UseGuards(JwtAuthGuard)
 export class AttendanceController {
   constructor(
     private service: AttendanceHasuraService,
@@ -75,7 +79,6 @@ export class AttendanceController {
 
 
   @Post()
-
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({

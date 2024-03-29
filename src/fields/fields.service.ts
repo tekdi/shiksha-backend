@@ -117,7 +117,7 @@ export class FieldsService {
                     }
                 }
             });
-
+            
             let result = await this.fieldsValuesRepository.save(fieldsData);
             return new SuccessResponse({
                 statusCode: 200,
@@ -179,11 +179,16 @@ export class FieldsService {
 
     }
 
-    async searchFieldValueId(cohortId: string, fieldId: string){            
-        const response = await this.fieldsValuesRepository.findOne({
-            where: { itemId: cohortId, fieldId: fieldId },
-        });
-        return response;
+    async searchFieldValueId(cohortId: string, fieldId: string){ 
+        try{
+            const response = await this.fieldsValuesRepository.findOne({
+                where: { itemId: cohortId, fieldId: fieldId },
+            });
+            return response;
+        }  catch{
+            return "error";
+        }         
+
     }
     
     async updateFieldValues(id: string, fieldValuesDto: FieldValuesDto) {

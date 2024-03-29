@@ -20,6 +20,7 @@ import { FieldsService } from "../fields/fields.service";
 import { response } from "express";
 import APIResponse from "src/utils/response";
 import { FieldValues } from "../fields/entities/fields-values.entity";
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class CohortService {
@@ -44,7 +45,7 @@ export class CohortService {
     try {
       const cohort = await this.cohortRepository.findOne({
         where: { cohortId: cohortId, status: "true" },
-        select: ["cohortId","parentId","name","type","status","image","programId","attendanceCaptureImage"],
+        select: ["cohortId", "parentId", "name", "type", "status", "image", "programId", "attendanceCaptureImage"],
       });
 
       // let searchField = { itemId: cohortId }
@@ -63,7 +64,7 @@ export class CohortService {
             )
           );
       }
-      
+
       cohort["customFields"] = fieldValue;
       const result = {
         cohort: cohort,
@@ -93,6 +94,7 @@ export class CohortService {
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try {
       const cohortData: any = {};
+      cohortCreateDto.cohortId = uuidv4();
       Object.keys(cohortCreateDto).forEach((e) => {
         if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
           if (Array.isArray(cohortCreateDto[e])) {
@@ -102,10 +104,11 @@ export class CohortService {
           }
         }
       });
-
       const response = await this.cohortRepository.save(cohortData);
+      // const response = await this.cohortRepository.insert(cohortData);
 
       let cohortId = response?.cohortId;
+
 
       let field_value_array = cohortCreateDto.fieldValues.split("|");
 
@@ -174,20 +177,34 @@ export class CohortService {
 
           let fieldValues = field_value_array[i].split(":");
           let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
-          const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
-          const rowid = fieldVauesRowId.fieldValuesId;
+          try {
+            const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+            const rowid = fieldVauesRowId['fieldValuesId'];
 
-          let fieldValueDto: FieldValuesDto = {
-            fieldValuesId: rowid,
-            value: fieldValues[1] ? fieldValues[1].trim() : "",
-            itemId: cohortId,
-            fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-            createdBy: cohortUpdateDto?.createdBy,
-            updatedBy: cohortUpdateDto?.updatedBy,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
+            let fieldValueDto: FieldValuesDto = {
+              fieldValuesId: rowid,
+              value: fieldValues[1] ? fieldValues[1].trim() : "",
+              itemId: cohortId,
+              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+              createdBy: cohortUpdateDto?.createdBy,
+              updatedBy: cohortUpdateDto?.updatedBy,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
+          }catch{
+            let fieldValueDto: FieldValuesDto = {
+              fieldValuesId: null,
+              value: fieldValues[1] ? fieldValues[1].trim() : "",
+              itemId: cohortId,
+              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+              createdBy: cohortUpdateDto?.createdBy,
+              updatedBy: cohortUpdateDto?.updatedBy,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            await this.fieldsService.createFieldValues(request, fieldValueDto);
+          }
         }
       }
 
@@ -287,11 +304,11 @@ export class CohortService {
     cohortId: string
   ) {
     try {
-      let query =`UPDATE public."Cohort"
+      let query = `UPDATE public."Cohort"
       SET "status" = false
       WHERE "cohortId" = $1`;
       const results = await this.cohortRepository.query(query, [cohortId]);
-      
+
       return new SuccessResponse({
         statusCode: 200,
         message: "Cohort Deleted Successfully.",

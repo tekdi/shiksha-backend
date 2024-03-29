@@ -176,7 +176,6 @@ export class UserService {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId =decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      console.log(userId);
       let cohortId = userCreateDto.cohortId;
       delete userCreateDto?.cohortId;
       userCreateDto.createdBy = userId

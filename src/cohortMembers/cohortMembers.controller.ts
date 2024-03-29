@@ -22,6 +22,7 @@ import {
   CacheInterceptor,
   Headers,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
@@ -30,9 +31,11 @@ import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersService } from "./cohortMember.service";
 import { Response } from "@nestjs/common";
 import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
+@UseGuards(JwtAuthGuard)
 export class CohortMembersController {
   constructor(
     private cohortMembersAdapter: CohortMembersAdapter,

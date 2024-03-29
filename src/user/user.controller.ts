@@ -15,6 +15,7 @@ import {
   Headers,
   Res,
   Patch,
+  UseGuards,
 } from "@nestjs/common";
 import {
   SunbirdUserToken,
@@ -38,8 +39,10 @@ import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { UserService } from "./user.service";
 import { UserUpdateDTO } from "./dto/user-update.dto";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 @ApiTags("User")
 @Controller("user")
+@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(
     private readonly service: UserService,

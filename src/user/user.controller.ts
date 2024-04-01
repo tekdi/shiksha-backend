@@ -126,7 +126,6 @@ export class UserController {
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been updated successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })

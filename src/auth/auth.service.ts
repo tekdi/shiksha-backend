@@ -34,14 +34,11 @@ export class AuthService {
       };
 
       const res = await this.axiosInstance(axiosConfig);
-      // if(dataerror();
-      // )
       return response.status(200).send(res.data);
     } catch (error) {
-      console.error(error);
       return response
-    .status(error.response ? error.response.status : 500)
-    .send({ message: error.message });
+      .status(error.response ? error.response.status : 500)
+      .send({ message: error.message });
   }
 }
 

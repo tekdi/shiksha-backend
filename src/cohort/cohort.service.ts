@@ -36,6 +36,37 @@ export class CohortService {
     private fieldsService: FieldsService,
   ) { }
 
+  public async getCohortsDetails(tenantId: string,
+    cohortId: string,
+    request: any,
+    response: any){
+    const apiId = "api.concept.cohortDetails";
+    let cohortName = await this.cohortRepository.findOne({
+      where:{cohortId}
+    })
+    // let result = {
+    //   cohortData: [],
+    // };
+    let cohortData = {
+      cohortId: cohortId,
+      name:cohortName.name,
+      parentId:cohortName.parentId,
+      customField:{}
+    };
+    const getDetails = await this.getCohortListDetails(cohortId);
+    cohortData.customField=getDetails
+    // result.cohortData.push(cohortData);
+    return response
+        .status(HttpStatus.OK)
+        .send(
+          APIResponse.success(
+            apiId,
+            cohortData,
+            "OK"
+          )
+        );
+  }
+
   public async getCohortList(
     tenantId: string,
     userId: string,
@@ -82,8 +113,8 @@ export class CohortService {
           )
         );
     }
-    
   }
+
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId",c."parentId"
     FROM public."CohortMembers" AS cm

@@ -7,12 +7,10 @@ import {
   IsNumber,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { User } from "../entities/user-entity";
 
 export class UserSearchDto {
-  @ApiProperty({
-    type: String,
-    description: "Limit",
-  })
+  @ApiProperty({ type: () => User })
   limit: string;
 
   @ApiProperty({

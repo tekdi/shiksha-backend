@@ -73,18 +73,33 @@ export class UserController {
   })
   public async getUser(
     @Headers() headers,
-    @Param("userid") userId: string,
+    @Param("userid") getDataId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
     // Context and ContextType can be taked from .env later
+
+    // Check if getDataId contains '=' indicating it's cohortId
+    if (getDataId.includes('=')) {
+      const [key, value] = getDataId.split('=');
+      if (key === 'cohort') {
+      let cohortData = {
+          cohortId: value,
+          context: "USERS",
+          contextType: "TEACHER"
+        };
+        return this.userService.getUsersDetailsByCohortId(cohortData, response);
+      }
+    }
+
     let userData  = {
-      userId:userId,
+      userId:getDataId,
       context:"USERS",
       contextType:"TEACHER"
     }
     return this.userService.getUsersDetailsById(userData,response);
+
   }
 
   @Get()

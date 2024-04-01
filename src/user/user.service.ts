@@ -97,7 +97,7 @@ export class UserService {
     let customFields = await this.fieldsRepository.find({
       where:{
         context:userData.context,
-        contextType:userData.contextType
+        contextType:userData.contextType.toUpperCase()
       }
     })
     return customFields;

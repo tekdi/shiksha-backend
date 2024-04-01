@@ -96,12 +96,34 @@ export class CohortController {
   })
   public async getCohortList(
     @Headers() headers,
-    @Param("id") userId: string,
+    @Param("id") id: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.getCohortList(tenantid, userId, request, response);
+    console.log(request);
+    return this.cohortService.getCohortList(tenantid, id, request, response);
+  }
+
+  @Get("cohortDetails/:id")
+  @UseInterceptors(CacheInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort details" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getCohortDetails(
+    @Headers() headers,
+    @Param("id") cohortId: string,
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
+    let tenantid = headers["tenantid"];
+    return this.cohortService.getCohortsDetails(tenantid, cohortId, request, response);
   }
 
   // search

@@ -60,7 +60,7 @@ export class UserController {
 	 *
 	 * @since   1.6
 	 */
-  @Get("/:userid")
+  @Get("/:userid/:role")
   @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
@@ -74,6 +74,7 @@ export class UserController {
   public async getUser(
     @Headers() headers,
     @Param("userid") getDataId: string,
+    @Param("role") role:string,
     @Req() request: Request,
     @Res() response: Response
   ) {
@@ -96,7 +97,7 @@ export class UserController {
     let userData  = {
       userId:getDataId,
       context:"USERS",
-      contextType:"TEACHER"
+      contextType:role
     }
     return this.userService.getUsersDetailsById(userData,response);
 

@@ -31,6 +31,7 @@ import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
 import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./common/database.module";
+import { SwaggerModule } from "@nestjs/swagger";
 // Below modules no longer required in Shiksha 2.0
 // import { GroupModule } from "./group/group.module";
 // import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
@@ -42,8 +43,8 @@ import { DatabaseModule } from "./common/database.module";
     MulterModule.register({
       dest: "./uploads",
     }),
-    UserModule,
     SchoolModule,
+    UserModule,
     RoleModule,
     AttendanceModule,
     HolidayModule,

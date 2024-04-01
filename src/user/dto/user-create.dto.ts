@@ -6,6 +6,7 @@ import {
   IsString,
   IsNumber,
 } from "class-validator";
+import { User } from "../entities/user-entity";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UserCreateDto {
@@ -15,10 +16,7 @@ export class UserCreateDto {
   @Expose()
   userId: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The username of the user",
-  })
+  @ApiProperty({ type: () => User })
   @Expose()
   username: string;
 

@@ -32,7 +32,7 @@ import {
   ApiConsumes,
   ApiHeader,
 } from "@nestjs/swagger";
-
+import { ApiParam } from '@nestjs/swagger';
 import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
@@ -47,20 +47,21 @@ export class UserController {
   constructor(
     private readonly service: UserService,
     private userAdapter: UserAdapter,
-    private userService:UserService
-  ) {}
+    private userService: UserService
+  ) { }
 
-  
+
   /**
-	 * Method to get The User Details and Custome Fields Data.
-	 *
-	 * @param   userId    $data     User Id of User
-	 *
-	 * @return  UserData Object containing all teh detals
-	 *
-	 * @since   1.6
-	 */
-  @Get("/:userid/:role")
+   * Method to get The User Details and Custome Fields Data.
+   *
+   * @param   userId    $data     User Id of User
+   *
+   * @return  UserData Object containing all teh detals
+   *
+   * @since   1.6
+   */
+
+  @Get("/:userid?")
   @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
@@ -71,22 +72,54 @@ export class UserController {
   @ApiHeader({
     name: "tenantid",
   })
+  @ApiParam({
+    name: 'userid',
+    description: 'The user ID (optional)',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'cohortid',
+    description: 'The cohort ID (optional)',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'role',
+    description: 'The role (optional)',
+    required: false,
+  })
   public async getUser(
     @Headers() headers,
-    @Param("userid") userId: string,
-    @Param("role") role:string,
     @Req() request: Request,
-    @Res() response: Response
+    @Res() response: Response,
+    @Param("userid") userId: string | null = null,
+    @Query("cohortid") cohortId: string | null = null,
+    @Query("role") role: string | null = null
   ) {
+    
     // const tenantId = headers["tenantid"];   Can be Used In future
-    // Context and ContextType can be taked from .env later
-    let userData  = {
-      userId:userId,
-      context:"USERS",
-      contextType:role
+    // Context and ContextType can be taken from .env later
+    let userData: any = {
+      context: "USERS",
+      userId: userId && typeof userId === 'string' && userId !== ',' && userId !== '{userid}' ? userId : null,
+      cohortId: cohortId && typeof cohortId === 'string' && cohortId !== ',' && cohortId !== '{cohortid}' ? cohortId : null,
+      contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null
+    };
+    
+
+    console.log(userData);
+    
+    if (userData.userId!==null) {
+      console.log("hi",userId);
+      return await this.userService.getUsersDetailsById(userData, response);
     }
-    return this.userService.getUsersDetailsById(userData,response);
+    if (userData.cohortId!==null) {
+      console.log("hiiii",cohortId);
+      
+      return await this.userService.getUsersDetailsByCohortId(userData, response);
+    }
   }
+
+
 
   @Get()
   @UseInterceptors(CacheInterceptor)
@@ -121,7 +154,7 @@ export class UserController {
     userCreateDto.tenantId = headers["tenantid"];
     return this.userService.createUser(request, userCreateDto);
   }
-  
+
 
   @Patch("/:userid")
   @ApiBasicAuth("access-token")
@@ -134,12 +167,12 @@ export class UserController {
     @Headers() headers,
     @Param("userid") userId: string,
     @Req() request: Request,
-    @Body() userUpdateDto:UserUpdateDTO,
+    @Body() userUpdateDto: UserUpdateDTO,
     @Res() response: Response
   ) {
     // userDto.tenantId = headers["tenantid"];
-    userUpdateDto.userId=userId;
-    return await this.userService.updateUser(userUpdateDto,response)
+    userUpdateDto.userId = userId;
+    return await this.userService.updateUser(userUpdateDto, response)
   }
 
   @Post("/search")

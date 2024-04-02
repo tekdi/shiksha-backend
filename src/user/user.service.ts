@@ -90,33 +90,60 @@ export class UserService {
     let apiId = 'api.users.getAllUsersDetails'
     // console.log(userData);
     try {
-      let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
-      // console.log(getUserDetails);
-      let result = {
-        userDetails: [],
-      };
+      
+      console.log(userData.fieldValue);
+      if (userData.fieldValue.toLowerCase() === 'false') {
+        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
+        // console.log(getUserDetails);
+        let result = {
+          userDetails: [],
+        };
 
-      for (let data of getUserDetails) {
-        let userDetails = {
-          userId: data.userId,
-          userName: data.userName,
-          name: data.name,
-          role: data.role,
-          district: data.district,
-          state: data.state,
-          mobile: data.mobile,
-          customField: [],
+        for (let data of getUserDetails) {
+          let userDetails = {
+            userId: data.userId,
+            userName: data.userName,
+            name: data.name,
+            role: data.role,
+            district: data.district,
+            state: data.state,
+            mobile: data.mobile,
+          }
+          result.userDetails.push(userDetails);
         }
-        const fieldValues = await this.getFieldandFieldValues(data.userId)
 
-        userDetails.customField.push(fieldValues);
+        return response
+          .status(HttpStatus.OK)
+          .send(APIResponse.success(apiId, result, 'OK'));
+      } else {
+        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
+        // console.log(getUserDetails);
+        let result = {
+          userDetails: [],
+        };
 
-        result.userDetails.push(userDetails);
+        for (let data of getUserDetails) {
+          let userDetails = {
+            userId: data.userId,
+            userName: data.userName,
+            name: data.name,
+            role: data.role,
+            district: data.district,
+            state: data.state,
+            mobile: data.mobile,
+            customField: [],
+          }
+          const fieldValues = await this.getFieldandFieldValues(data.userId)
+
+          userDetails.customField.push(fieldValues);
+
+          result.userDetails.push(userDetails);
+        }
+
+        return response
+          .status(HttpStatus.OK)
+          .send(APIResponse.success(apiId, result, 'OK'));
       }
-
-      return response
-        .status(HttpStatus.OK)
-        .send(APIResponse.success(apiId, result, 'OK'));
 
     } catch (e) {
       response

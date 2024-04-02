@@ -61,39 +61,26 @@ export class UserController {
    * @since   1.6
    */
 
-  @Get("/:userid?")
+  @Get()
   @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  @ApiParam({
-    name: 'userid',
-    description: 'The user ID (optional)',
-    required: false,
-  })
-  @ApiQuery({
-    name: 'cohortid',
-    description: 'The cohort ID (optional)',
-    required: false,
-  })
-  @ApiQuery({
-    name: 'role',
-    description: 'The role (optional)',
-    required: false,
-  })
+  @SerializeOptions({strategy: "excludeAll",})
+  @ApiHeader({name: "tenantid",})
+  @ApiQuery({name: 'userid',description: 'The user ID (optional)',required: false,})
+  @ApiQuery({name: 'cohortid',description: 'The cohort ID (optional)',required: false,})
+  @ApiQuery({name: 'role',description: 'The role (optional)',required: false,})
+  @ApiQuery({name: 'fieldvalue',description: 'The field Value (optional)',required: false})
+
   public async getUser(
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
-    @Param("userid") userId: string | null = null,
+    @Query("userid") userId: string | null = null,
     @Query("cohortid") cohortId: string | null = null,
-    @Query("role") role: string | null = null
+    @Query("role") role: string | null = null,
+    @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     
     // const tenantId = headers["tenantid"];   Can be Used In future
@@ -102,40 +89,35 @@ export class UserController {
       context: "USERS",
       userId: userId && typeof userId === 'string' && userId !== ',' && userId !== '{userid}' ? userId : null,
       cohortId: cohortId && typeof cohortId === 'string' && cohortId !== ',' && cohortId !== '{cohortid}' ? cohortId : null,
-      contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null
+      contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null,
+      fieldValue: fieldvalue && typeof fieldvalue === 'string' && fieldvalue !== ',' && fieldvalue !== '{fieldvalue}' ? fieldvalue : null
     };
     
-
-    console.log(userData);
-    
     if (userData.userId!==null) {
-      console.log("hi",userId);
       return await this.userService.getUsersDetailsById(userData, response);
     }
     if (userData.cohortId!==null) {
-      console.log("hiiii",cohortId);
-      
       return await this.userService.getUsersDetailsByCohortId(userData, response);
     }
   }
 
 
 
-  @Get()
-  @UseInterceptors(CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "User detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getUserByAuth(@Headers() headers, @Req() request: Request) {
-    const tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
-  }
+  // @Get()
+  // @UseInterceptors(CacheInterceptor)
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "User detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async getUserByAuth(@Headers() headers, @Req() request: Request) {
+  //   const tenantId = headers["tenantid"];
+  //   return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
+  // }
 
   @Post()
   @ApiBasicAuth("access-token")

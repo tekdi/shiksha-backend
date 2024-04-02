@@ -36,62 +36,27 @@ export class CohortService {
     private fieldsService: FieldsService,
   ) { }
 
-  public async getCohortsDetails(tenantId: string,
-    cohortId: string,
+  public async getCohortsDetails(userData,
     request: any,
     response: any){
-    const apiId = "api.concept.cohortDetails";
-    let cohortName = await this.cohortRepository.findOne({
-      where:{cohortId}
-    })
-    // let result = {
-    //   cohortData: [],
-    // };
-    let cohortData = {
-      cohortId: cohortId,
-      name:cohortName.name,
-      parentId:cohortName.parentId,
-      customField:{}
-    };
-    const getDetails = await this.getCohortListDetails(cohortId);
-    cohortData.customField=getDetails
-    // result.cohortData.push(cohortData);
-    return response
-        .status(HttpStatus.OK)
-        .send(
-          APIResponse.success(
-            apiId,
-            cohortData,
-            "OK"
-          )
-        );
-  }
-
-  public async getCohortList(
-    tenantId: string,
-    userId: string,
-    request: any,
-    response: any
-  ) {
-    const apiId = "api.concept.editminiScreeningAnswer";
+    let apiId = 'api.concept.getCohortDetails'
     try {
-      let findCohortId = await this.findCohortName(userId);
+      if(userData.name==='user'){
+      let findCohortId = await this.findCohortName(userData?.id);
       let result = {
         cohortData: [],
       };
-
       for (let data of findCohortId) {
         let cohortData = {
-          cohortId: data.cohortId,
+          cohortId: data?.cohortId,
           name:data.name,
-          parentId:data.parentId,
+          parentId:data?.parentId,
           customField:{}
         };
-        const getDetails = await this.getCohortListDetails(data.cohortId);
+        const getDetails = await this.getCohortListDetails(data?.cohortId);
         cohortData.customField=getDetails
         result.cohortData.push(cohortData);
       }
-
       return response
         .status(HttpStatus.OK)
         .send(
@@ -101,6 +66,30 @@ export class CohortService {
             "OK"
           )
         );
+      }else{
+        let cohortName = await this.cohortRepository.findOne({
+          where:{cohortId:userData?.id},
+          select:['name','parentId']
+        })
+        let cohortData = {
+          cohortId: userData?.id,
+          name:cohortName.name,
+          parentId:cohortName.parentId,
+          customField:{}
+        };
+        const getDetails = await this.getCohortListDetails(userData?.id);
+        cohortData.customField=getDetails
+        return response
+            .status(HttpStatus.OK)
+            .send(
+              APIResponse.success(
+                apiId,
+                cohortData,
+                "OK"
+              )
+            );
+
+      }
     } catch (error) {
       return response
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -121,6 +110,9 @@ export class CohortService {
     LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
     WHERE cm."userId"=$1 AND c.status=true`;
     let result = await this.cohortMembersRepository.query(query, [userId]);
+    // if(!result.length){
+    //   return null;
+    // }
     return result;
   }
 

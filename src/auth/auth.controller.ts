@@ -16,9 +16,10 @@ import {
   Res,
   Request,
   Response,
-  Headers,
   HttpStatus,
   HttpCode,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 import {
   AuthDto,
@@ -34,6 +35,7 @@ export class AuthController {
 
   @Post("/login")
   @ApiBody({ type: AuthDto })
+  @UsePipes(ValidationPipe)
   @HttpCode(HttpStatus.OK)
   @ApiForbiddenResponse({ description: "Forbidden" })
   public async login(@Body() authDto: AuthDto) {
@@ -61,6 +63,7 @@ export class AuthController {
   @Post("/refresh")
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: RefreshTokenRequestBody })
+  @UsePipes(ValidationPipe)
   refreshToken(@Body() body: RefreshTokenRequestBody) {
     const { refresh_token: refreshToken } = body;
 
@@ -68,6 +71,7 @@ export class AuthController {
   }
 
   @Post("/logout")
+  @UsePipes(ValidationPipe)
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: LogoutRequestBody })
   async logout(@Body() body: LogoutRequestBody) {

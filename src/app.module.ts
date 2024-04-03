@@ -16,7 +16,6 @@ import { LikeModule } from "./like/like.module";
 import { CommentModule } from "./comment/comment.module";
 import { TrackAssessmentModule } from "./trackAssessment/trackassessment.module";
 import { AssessmentSetModule } from "./assessmentset/assessmentset.module";
-import { InAppNotificationModule } from "./inAppNotification/inAppNotification.module";
 import { MentorTrackingModule } from "./mentorTracking/mentorTracking.module";
 import { MonitorTrackingModule } from "./monitorTracking/monitorTracking.module";
 import { CourseModule } from "./course/course.module";
@@ -55,7 +54,6 @@ import { SwaggerModule } from "@nestjs/swagger";
     CommentModule,
     TrackAssessmentModule,
     AssessmentSetModule,
-    InAppNotificationModule,
     MentorTrackingModule,
     MonitorTrackingModule,
     CourseModule,

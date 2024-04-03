@@ -26,7 +26,6 @@ import {
   Headers,
   Delete,
   UseGuards,
-  ValidationPipe
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -39,7 +38,6 @@ import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { QueryParamsDto } from "./dto/query-params.dto";
 // import { FieldsService } from "../fields/fields.service";
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -85,7 +83,29 @@ export class CohortController {
     return this.cohortService.createCohort(request, cohortCreateDto);
   }
 
-  @Get("cohortDetails")
+  @Get("cohortList/:id")
+  @UseInterceptors(CacheInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Cohort detail" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async getCohortList(
+    @Headers() headers,
+    @Param("id") id: string,
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
+    let tenantid = headers["tenantid"];
+    console.log(request);
+    return this.cohortService.getCohortList(tenantid, id, request, response);
+  }
+
+  @Get("cohortDetails/:id")
   @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort details" })
@@ -98,27 +118,13 @@ export class CohortController {
   })
   public async getCohortDetails(
     @Headers() headers,
-    @Query() queryParams: QueryParamsDto,
+    @Param("id") cohortId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    queryParams.name = queryParams.name.toLocaleLowerCase();
-    let data;
-    let tenantId = request.headers['tenantId']
-    if (queryParams.name=== 'user') {
-      data=queryParams
-      return this.cohortService.getCohortsDetails(data,request,response)
-    } else if (queryParams.name === 'cohort') {
-      data=queryParams
-      return this.cohortService.getCohortsDetails(data,request,response)
-    } else {
-      return response.status(400).json({
-        message:"Invaid Parameters"
-      })
-    }
+    let tenantid = headers["tenantid"];
+    return this.cohortService.getCohortsDetails(tenantid, cohortId, request, response);
   }
-
-
 
   // search
   @Post("/search")

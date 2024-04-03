@@ -13,6 +13,7 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -29,7 +30,8 @@ import {
 } from "@nestjs/common";
 import { AdminFormDto } from "./dto/adminForm.dto";
 import { AdminFormSearchDto } from "./dto/adminForm-search.dto";
-@ApiTags("AdminForm")
+// @ApiTags("AdminForm")
+@ApiExcludeController()
 @Controller("adminForm")
 export class AdminFormController {
   constructor(
@@ -39,9 +41,9 @@ export class AdminFormController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "AdminForm detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "AdminForm detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -50,12 +52,12 @@ export class AdminFormController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "AdminForm has been created successfully.",
-  })
-  @ApiBody({ type: AdminFormDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "AdminForm has been created successfully.",
+  // })
+  // @ApiBody({ type: AdminFormDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createAdminForm(
     @Req() request: Request,
@@ -65,11 +67,11 @@ export class AdminFormController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "AdminForm has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "AdminForm has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateAdminForm(
     @Param("id") id: string,
@@ -80,10 +82,10 @@ export class AdminFormController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "AdminForm list." })
-  @ApiBody({ type: AdminFormSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "AdminForm list." })
+  // @ApiBody({ type: AdminFormSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -95,3 +97,7 @@ export class AdminFormController {
     return await this.service.searchAdminForm(request, adminFormSearchDto);
   }
 }
+function ApiExclude(): (target: typeof AdminFormController) => void | typeof AdminFormController {
+  throw new Error("Function not implemented.");
+}
+

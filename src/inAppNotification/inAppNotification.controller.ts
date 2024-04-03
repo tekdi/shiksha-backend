@@ -4,6 +4,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -17,21 +18,22 @@ import {
 } from "@nestjs/common";
 import { InAppNotificationService } from "src/adapters/sunbirdrc/inAppNotification.adapter";
 
-@ApiTags("In App Notification")
+// @ApiTags("In App Notification")
+@ApiExcludeController()
 @Controller("inappnotification")
 export class InAppNotificationController {
   constructor(private service: InAppNotificationService) {}
 
   @Post("inappnotification")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Notification has been sent successfully.",
-  })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Notification has been sent successfully.",
+  // })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "module" })
-  @ApiQuery({ name: "groupId" })
-  @ApiQuery({ name: "templateId" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "module" })
+  // @ApiQuery({ name: "groupId" })
+  // @ApiQuery({ name: "templateId" })
   public async inAppNotification(
     @Query("module") module: string,
     @Query("groupId") groupId: string,
@@ -42,16 +44,16 @@ export class InAppNotificationController {
   }
 
   @Get("/userhistory")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "User Notification History.",
-  })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "User Notification History.",
+  // })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "userId" })
-  @ApiQuery({ name: "provider" })
-  @ApiQuery({ name: "startDate" })
-  @ApiQuery({ name: "endDate" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "userId" })
+  // @ApiQuery({ name: "provider" })
+  // @ApiQuery({ name: "startDate" })
+  // @ApiQuery({ name: "endDate" })
   public async userHistoryNotification(
     @Query("userId") userId: string,
     @Query("provider") provider: string,
@@ -69,16 +71,16 @@ export class InAppNotificationController {
   }
 
   @Get("/bothistory")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Bot Notification History.",
-  })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Bot Notification History.",
+  // })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "botId" })
-  @ApiQuery({ name: "provider" })
-  @ApiQuery({ name: "startDate" })
-  @ApiQuery({ name: "endDate" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "botId" })
+  // @ApiQuery({ name: "provider" })
+  // @ApiQuery({ name: "startDate" })
+  // @ApiQuery({ name: "endDate" })
   public async botHistoryNotification(
     @Query("botId") botId: string,
     @Query("provider") provider: string,
@@ -96,19 +98,19 @@ export class InAppNotificationController {
   }
 
   @Post("readreceipt")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Read Receipt.",
-  })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Read Receipt.",
+  // })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "eventType", required: false })
-  @ApiQuery({ name: "externalId", required: false })
-  @ApiQuery({ name: "destAdd", required: false })
-  @ApiQuery({ name: "fcmDestAdd", required: false })
-  @ApiQuery({ name: "messageId", required: false })
-  @ApiQuery({ name: "text", required: false })
-  @ApiQuery({ name: "from", required: false })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "eventType", required: false })
+  // @ApiQuery({ name: "externalId", required: false })
+  // @ApiQuery({ name: "destAdd", required: false })
+  // @ApiQuery({ name: "fcmDestAdd", required: false })
+  // @ApiQuery({ name: "messageId", required: false })
+  // @ApiQuery({ name: "text", required: false })
+  // @ApiQuery({ name: "from", required: false })
   public async readReceipt(
     @Query("eventType") eventType: string,
     @Query("externalId") externalId: string,

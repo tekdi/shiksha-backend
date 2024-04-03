@@ -20,10 +20,12 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { SchoolSearchDto } from "./dto/school-search.dto";
 import { SchoolAdapter } from "./schooladapter";
-@ApiTags("School")
+// @ApiTags("School")
+@ApiExcludeController()
 @Controller("school")
 export class SchoolController {
   constructor(private schoolAdapter: SchoolAdapter) {}
@@ -31,8 +33,8 @@ export class SchoolController {
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "School detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiOkResponse({ description: "School detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -41,10 +43,10 @@ export class SchoolController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "School has been created successfully." })
-  @ApiBody({ type: SchoolDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "School has been created successfully." })
+  // @ApiBody({ type: SchoolDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createSchool(
     @Req() request: Request,
@@ -56,9 +58,9 @@ export class SchoolController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "School has been updated successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "School has been updated successfully." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateSchool(
     @Param("id") id: string,
@@ -70,10 +72,10 @@ export class SchoolController {
       .updateSchool(id, request, schoolDto);
   }
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "School list." })
-  @ApiBody({ type: SchoolSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "School list." })
+  // @ApiBody({ type: SchoolSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

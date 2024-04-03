@@ -6,6 +6,7 @@ import {
   ApiBody,
   ApiQuery,
   ApiOkResponse,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -27,18 +28,19 @@ import { TrackAssessmentService } from "src/adapters/hasura/trackassessment.adap
 import { TrackAssessmentDto } from "./dto/trackassessment.dto";
 import { isUUID } from "class-validator";
 
-@ApiTags("Track Assessment")
+// @ApiTags("Track Assessment")
+@ApiExcludeController()
 @Controller("trackassessment")
 export class AssessmentController {
   constructor(private service: TrackAssessmentService) {}
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Track Assessment has been created successfully.",
-  })
-  @ApiBody({ type: TrackAssessmentDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Track Assessment has been created successfully.",
+  // })
+  // @ApiBody({ type: TrackAssessmentDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({}))
   public async createAssessment(
@@ -50,9 +52,9 @@ export class AssessmentController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Track Assessment detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Track Assessment detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -64,22 +66,22 @@ export class AssessmentController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Track Assessment list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Track Assessment list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  @ApiQuery({ name: "fromDate", required: false })
-  @ApiQuery({ name: "toDate", required: false })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "source", required: false })
-  @ApiQuery({ name: "studentId", required: false })
-  @ApiQuery({ name: "teacherId", required: false })
-  @ApiQuery({ name: "groupId", required: false })
-  @ApiQuery({ name: "subject", required: false })
-  @ApiQuery({ name: "page", required: false })
+  // @ApiQuery({ name: "fromDate", required: false })
+  // @ApiQuery({ name: "toDate", required: false })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "source", required: false })
+  // @ApiQuery({ name: "studentId", required: false })
+  // @ApiQuery({ name: "teacherId", required: false })
+  // @ApiQuery({ name: "groupId", required: false })
+  // @ApiQuery({ name: "subject", required: false })
+  // @ApiQuery({ name: "page", required: false })
   public async searchAssessment(
     @Query("fromDate") date: string,
     @Query("toDate") toDate: string,

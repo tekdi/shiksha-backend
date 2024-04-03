@@ -18,21 +18,23 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { CommentDto } from "./dto/comment.dto";
 import { CommentSearchDto } from "./dto/comment-search.dto";
 import { IServicelocator } from "src/adapters/commentservicelocator";
 import { CommentAdapter } from "./commentadapter";
-@ApiTags("Comment")
+// @ApiTags("Comment")
+@ApiExcludeController()
 @Controller("comment")
 export class CommentController implements IServicelocator {
   constructor(private commentAdapter: CommentAdapter) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Comment detail." })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Comment detail." })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -43,12 +45,12 @@ export class CommentController implements IServicelocator {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Comment has been created successfully.",
-  })
-  @ApiBody({ type: CommentDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Comment has been created successfully.",
+  // })
+  // @ApiBody({ type: CommentDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createComment(
     @Req() request: Request,
@@ -60,11 +62,11 @@ export class CommentController implements IServicelocator {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Comment has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Comment has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateComment(
     @Param("id") commentId: string,
@@ -77,10 +79,10 @@ export class CommentController implements IServicelocator {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Comment list." })
-  @ApiBody({ type: CommentSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Comment list." })
+  // @ApiBody({ type: CommentSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

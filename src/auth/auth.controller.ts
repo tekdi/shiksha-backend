@@ -21,6 +21,8 @@ import {
   Request,
   Response,
   Headers,
+  ValidationPipe,
+  UsePipes
 } from "@nestjs/common";
 import { AuthDto } from "./dto/auth-dto";
 import { AuthService } from "./auth.service";
@@ -33,6 +35,7 @@ export class AuthController {
   @Post("/login")
   @ApiBody({ type: AuthDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
+  @UsePipes(ValidationPipe)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

@@ -4,6 +4,7 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -24,16 +25,17 @@ import { GroupMembershipDto } from "./dto/groupMembership.dto";
 import { GroupMembershipSearchDto } from "./dto/groupMembership-search.dto";
 import { GroupMembershipService } from "src/adapters/hasura/groupMembership.adapter";
 
-@ApiTags("Group Membership")
+// @ApiTags("Group Membership")
+@ApiExcludeController()
 @Controller("groupmembership")
 export class GroupMembershipController {
   constructor(private service: GroupMembershipService) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group Membership detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group Membership detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -45,12 +47,12 @@ export class GroupMembershipController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Group Membership has been created successfully.",
-  })
-  @ApiBody({ type: GroupMembershipDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Group Membership has been created successfully.",
+  // })
+  // @ApiBody({ type: GroupMembershipDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createGroupMembership(
     @Req() request: Request,
@@ -60,12 +62,12 @@ export class GroupMembershipController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Group Membership has been updated successfully.",
-  })
-  @ApiBody({ type: GroupMembershipDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Group Membership has been updated successfully.",
+  // })
+  // @ApiBody({ type: GroupMembershipDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateGroupMembership(
     @Param("id") groupMembershipId: string,
@@ -80,10 +82,10 @@ export class GroupMembershipController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group Membership list." })
-  @ApiBody({ type: GroupMembershipSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group Membership list." })
+  // @ApiBody({ type: GroupMembershipSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

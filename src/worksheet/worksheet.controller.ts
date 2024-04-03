@@ -2,6 +2,7 @@ import {
   ApiBasicAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExcludeController,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiQuery,
@@ -26,18 +27,19 @@ import { WorksheetService } from "src/adapters/hasura/worksheet.adapter";
 import { WorksheetDto } from "./dto/worksheet.dto";
 import { WorksheetSearchDto } from "./dto/worksheet-search.dto";
 
-@ApiTags("Worksheet")
+// @ApiTags("Worksheet")
+@ApiExcludeController()
 @Controller("worksheet")
 export class WorksheetController {
   constructor(private service: WorksheetService) {}
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Worksheet has been created successfully.",
-  })
-  @ApiBody({ type: WorksheetDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Worksheet has been created successfully.",
+  // })
+  // @ApiBody({ type: WorksheetDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createWorksheet(
     @Req() request: Request,
@@ -47,11 +49,11 @@ export class WorksheetController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Worksheet has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Worksheet has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateWorksheet(
     @Param("id") id: string,
@@ -63,9 +65,9 @@ export class WorksheetController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Worksheet detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Worksheet detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -77,9 +79,9 @@ export class WorksheetController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Worksheet list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Worksheet list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -93,11 +95,11 @@ export class WorksheetController {
 
   @Post(":worksheet/pdf")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "worksheetId", required: true })
-  @ApiQuery({ name: "templateId", required: true })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " Ok." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "worksheetId", required: true })
+  // @ApiQuery({ name: "templateId", required: true })
   public async getWorksheetPdf(
     @Query("worksheetId") worksheetId: string,
     @Query("templateId") templateId: number,
@@ -108,15 +110,15 @@ export class WorksheetController {
 
   @Post("/share")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "studentIds", required: true })
-  @ApiQuery({ name: "teacherId", required: true })
-  @ApiQuery({ name: "templateId", required: true })
-  @ApiQuery({ name: "link", required: true })
-  @ApiQuery({ name: "subject", required: true })
-  @ApiQuery({ name: "topic", required: true })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " Ok." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "studentIds", required: true })
+  // @ApiQuery({ name: "teacherId", required: true })
+  // @ApiQuery({ name: "templateId", required: true })
+  // @ApiQuery({ name: "link", required: true })
+  // @ApiQuery({ name: "subject", required: true })
+  // @ApiQuery({ name: "topic", required: true })
   public async sendWorksheet(
     @Query("studentIds") studentIds: [string],
     @Query("teacherId") teacherId: string,

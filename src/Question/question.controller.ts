@@ -2,6 +2,7 @@ import {
   ApiBasicAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExcludeController,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiQuery,
@@ -31,7 +32,8 @@ import { IServicelocator } from "src/adapters/questionservicelocator";
 import { QuestionDto } from "./dto/question.dto";
 import { HasuraQuestionToken } from "src/adapters/hasura/question.adapter";
 
-@ApiTags("Question")
+// @ApiTags("Question")
+@ApiExcludeController()
 @Controller("question")
 export class QuestionController {
   constructor(
@@ -44,16 +46,16 @@ export class QuestionController {
   @Get(":adapter/search")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   //@ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Get all Questions detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "questionType", required: false })
-  @ApiQuery({ name: "subject", required: false })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "language", required: false })
-  @ApiQuery({ name: "medium", required: false })
-  @ApiQuery({ name: "bloomsLevel", required: false })
-  @ApiQuery({ name: "topic", required: false })
-  @ApiQuery({ name: "className", required: false })
+  // @ApiOkResponse({ description: "Get all Questions detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "questionType", required: false })
+  // @ApiQuery({ name: "subject", required: false })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "language", required: false })
+  // @ApiQuery({ name: "medium", required: false })
+  // @ApiQuery({ name: "bloomsLevel", required: false })
+  // @ApiQuery({ name: "topic", required: false })
+  // @ApiQuery({ name: "className", required: false })
   public async getAllQuestions(
     @Param("adapter") adapter: string,
     @Query("questionType") questionType: string,
@@ -84,9 +86,9 @@ export class QuestionController {
   @Get(":adapter/questionIds")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   //@ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Get all Questions detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "questionIds", required: false })
+  // @ApiOkResponse({ description: "Get all Questions detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "questionIds", required: false })
   public async getAllQuestionsByQuestionIds(
     @Param("adapter") adapter: string,
     @Query("questionIds") questionIds: [string],
@@ -102,9 +104,9 @@ export class QuestionController {
 
   @Get(":adapter/subjectlist")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiOkResponse({ description: "Get all subject list" })
-  @ApiQuery({ name: "gradeLevel", required: true })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiOkResponse({ description: "Get all subject list" })
+  // @ApiQuery({ name: "gradeLevel", required: true })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   public async getSubjectList(
     @Param("adapter") adapter: string,
     @Query("gradeLevel") gradeLevel: string
@@ -116,9 +118,9 @@ export class QuestionController {
 
   @Get(":adapter/topicslist")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiOkResponse({ description: "Get all subject list" })
-  @ApiQuery({ name: "subject", required: true })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiOkResponse({ description: "Get all subject list" })
+  // @ApiQuery({ name: "subject", required: true })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   public async getTopicsList(
     @Param("adapter") adapter: string,
     @Query("subject") subject: string
@@ -131,9 +133,9 @@ export class QuestionController {
   @Get(":adapter/questionid")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   // @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Get Questions detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "questionId", required: false })
+  // @ApiOkResponse({ description: "Get Questions detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "questionId", required: false })
   public async getOneQuestion(
     @Param("adapter") adapter: string,
     @Query("questionId") questionId: string,
@@ -147,10 +149,10 @@ export class QuestionController {
   @Get(":adapter/competencieslist")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   //@ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Get all competencies list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "subject", required: false })
-  @ApiQuery({ name: "limit", required: false })
+  // @ApiOkResponse({ description: "Get all competencies list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "subject", required: false })
+  // @ApiQuery({ name: "limit", required: false })
   public async getcompetenciesList(
     @Param("adapter") adapter: string,
     @Query("subject") subject: string,
@@ -164,12 +166,12 @@ export class QuestionController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Question detail." })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiQuery({ name: "adapter" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Question detail." })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiQuery({ name: "adapter" })
   getQuestion(
     @Param("id") questionId: string,
     @Query("adapter") adapter: string,
@@ -183,14 +185,14 @@ export class QuestionController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Question has been created successfully.",
-  })
-  @ApiBody({ type: QuestionDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "adapter" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Question has been created successfully.",
+  // })
+  // @ApiBody({ type: QuestionDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiQuery({ name: "adapter" })
   public async createQuestion(
     @Req() request: Request,
     @Query("adapter") adapter: string,
@@ -204,13 +206,13 @@ export class QuestionController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Question has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Question has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "adapter" })
+  // @ApiQuery({ name: "adapter" })
   public async updateQuestion(
     @Param("id") questionId: string,
     @Req() request: Request,
@@ -234,18 +236,18 @@ export class QuestionController {
 
   @Post("filter/:adapter")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "body", required: false })
-  @ApiQuery({ name: "className", required: false })
-  @ApiQuery({ name: "maxScore", required: false })
-  @ApiQuery({ name: "questionId", required: false })
-  @ApiQuery({ name: "subject", required: false })
-  @ApiQuery({ name: "topic", required: false })
-  @ApiQuery({ name: "type", required: false })
-  @ApiQuery({ name: "page", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " Ok." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "body", required: false })
+  // @ApiQuery({ name: "className", required: false })
+  // @ApiQuery({ name: "maxScore", required: false })
+  // @ApiQuery({ name: "questionId", required: false })
+  // @ApiQuery({ name: "subject", required: false })
+  // @ApiQuery({ name: "topic", required: false })
+  // @ApiQuery({ name: "type", required: false })
+  // @ApiQuery({ name: "page", required: false })
   public async filterQuestion(
     @Param("adapter") adapter: string,
     @Query("limit") limit: string,
@@ -289,11 +291,11 @@ export class QuestionController {
   }
 
   @Post(":adapter/bulkImport")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Bulk Question has been created successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Bulk Question has been created successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async bulkImport(
     @Param("adapter") adapter: string,

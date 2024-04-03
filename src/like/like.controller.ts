@@ -21,20 +21,22 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { LikeDto } from "./dto/like.dto";
 import { LikeSearchDto } from "./dto/like-search.dto";
 import { LikeAdapter } from "./likeadapter";
-@ApiTags("Like")
+// @ApiTags("Like")
+@ApiExcludeController()
 @Controller("like")
 export class LikeController {
   constructor(private likeAdapter: LikeAdapter) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Like detail." })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Like detail." })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -43,23 +45,23 @@ export class LikeController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Like has been created successfully.",
-  })
-  @ApiBody({ type: LikeDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Like has been created successfully.",
+  // })
+  // @ApiBody({ type: LikeDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async createLike(@Req() request: Request, @Body() likeDto: LikeDto) {
     return this.likeAdapter.buildLikeAdapter().createLike(request, likeDto);
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Like has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Like has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateLike(
     @Param("id") likeId: string,
@@ -72,10 +74,10 @@ export class LikeController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Like list." })
-  @ApiBody({ type: LikeSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Like list." })
+  // @ApiBody({ type: LikeSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -91,10 +93,10 @@ export class LikeController {
 
   @Post("/getAllLikes")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "All Like." })
-  @ApiQuery({ name: "contextId" })
-  @ApiQuery({ name: "context" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "All Like." })
+  // @ApiQuery({ name: "contextId" })
+  // @ApiQuery({ name: "context" })
   public async getCountLike(
     @Query("contextId") contextId: string,
     @Query("context") context: string,
@@ -107,8 +109,8 @@ export class LikeController {
 
   @Delete("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Delete like. " })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Delete like. " })
   public async deleteLike(
     @Param("id") likeId: string,
     @Req() request: Request

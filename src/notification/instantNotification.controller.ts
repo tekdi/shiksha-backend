@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -24,24 +25,25 @@ import {
 
 import { NotificationService } from "src/adapters/sunbirdrc/notification.adapter";
 import { NotificationSearchDto } from "./dto/notification-search.dto";
-@ApiTags("Instant Notification")
+// @ApiTags("Instant Notification")
 @Controller("instantNotification")
+@ApiExcludeController()
 export class instantNotificationController {
   constructor(private service: NotificationService) {}
 
   @Post("instantSend")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Notification has been sent successfully.",
-  })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Notification has been sent successfully.",
+  // })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "module" })
-  @ApiQuery({ name: "eventTrigger" })
-  @ApiQuery({ name: "templateId" })
-  @ApiQuery({ name: "senderId" })
-  @ApiQuery({ name: "groupId" })
-  @ApiQuery({ name: "channel" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "module" })
+  // @ApiQuery({ name: "eventTrigger" })
+  // @ApiQuery({ name: "templateId" })
+  // @ApiQuery({ name: "senderId" })
+  // @ApiQuery({ name: "groupId" })
+  // @ApiQuery({ name: "channel" })
   public async instantSendNotification(
     @Query("module") module: string,
     @Query("eventTrigger") eventTrigger: string,
@@ -64,9 +66,9 @@ export class instantNotificationController {
 
   @Get("log/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Notification Log detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Notification Log detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -78,10 +80,10 @@ export class instantNotificationController {
   }
 
   @Post("log/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Notification log list." })
-  @ApiBody({ type: NotificationSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Notification log list." })
+  // @ApiBody({ type: NotificationSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

@@ -6,6 +6,7 @@ import {
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiTags,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Body,
@@ -25,18 +26,19 @@ import { TemplateService } from "src/adapters/sunbirdrc/template.adapter";
 import { TemplateProcessDto } from "./dto/template-process.dto";
 import { TemplateCreateDto } from "./dto/template-create.dto";
 
-@ApiTags("Template")
+// @ApiTags("Template")
+@ApiExcludeController()
 @Controller("template")
 export class TemplateController {
   constructor(private service: TemplateService) {}
 
   @Post("create")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: " Template has been created successfully.",
-  })
-  @ApiBody({ type: TemplateCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: " Template has been created successfully.",
+  // })
+  // @ApiBody({ type: TemplateCreateDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createTemplate(
     @Req() request: Request,
@@ -46,10 +48,10 @@ export class TemplateController {
   }
 
   @Post("process")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: " template process." })
-  @ApiBody({ type: TemplateProcessDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: " template process." })
+  // @ApiBody({ type: TemplateProcessDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async processTemplate(
     @Req() request: Request,
@@ -60,9 +62,9 @@ export class TemplateController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " template detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " template detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -72,9 +74,9 @@ export class TemplateController {
   @Get(":/searchByTag")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
   //@ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Get all Questions detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "tag", required: true })
+  // @ApiOkResponse({ description: "Get all Questions detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "tag", required: true })
   public async getTemplates(
     @Query("tag") tag: string,
     @Req() request: Request

@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -25,7 +26,8 @@ import {
 import { NotificationService } from "src/adapters/sunbirdrc/notification.adapter";
 import { NotificationSearchDto } from "./dto/notification-search.dto";
 
-@ApiTags("Schedule Notification")
+// @ApiTags("Schedule Notification")
+@ApiExcludeController()
 @Controller("scheduleNotification")
 export class scheduleNotificationController {
   constructor(private service: NotificationService) {}

@@ -18,20 +18,22 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { LessonPlanDto } from "./dto/lessonPlan.dto";
 import { LessonPlanSearchDto } from "./dto/lessonPlan.search.dto";
 import { LessonPlanService } from "src/adapters/sunbirdrc/lessonPlan.adapter";
-@ApiTags("Lesson Plan")
+// @ApiTags("Lesson Plan")
+@ApiExcludeController()
 @Controller("lessonPlan")
 export class LessonPlanController {
   constructor(private readonly service: LessonPlanService) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "LessonPlan detail." })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "LessonPlan detail." })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -40,12 +42,12 @@ export class LessonPlanController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "LessonPlan has been created successfully.",
-  })
-  @ApiBody({ type: LessonPlanDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "LessonPlan has been created successfully.",
+  // })
+  // @ApiBody({ type: LessonPlanDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createLessonPlan(
     @Req() request: Request,
@@ -55,11 +57,11 @@ export class LessonPlanController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "LessonPlan has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "LessonPlan has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateLessonPlan(
     @Param("id") lessonPlanId: string,
@@ -74,10 +76,10 @@ export class LessonPlanController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "LessonPlan list." })
-  @ApiBody({ type: LessonPlanSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "LessonPlan list." })
+  // @ApiBody({ type: LessonPlanSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

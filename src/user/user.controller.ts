@@ -17,9 +17,7 @@ import {
   Patch,
   UseGuards,
 } from "@nestjs/common";
-import {
-  SunbirdUserToken,
-} from "../adapters/sunbirdrc/user.adapter";
+
 import { Request, Response } from "@nestjs/common";
 import {
   ApiTags,
@@ -47,19 +45,18 @@ export class UserController {
   constructor(
     private readonly service: UserService,
     private userAdapter: UserAdapter,
-    private userService:UserService
+    private userService: UserService
   ) {}
 
-  
   /**
-	 * Method to get The User Details and Custome Fields Data.
-	 *
-	 * @param   userId    $data     User Id of User
-	 *
-	 * @return  UserData Object containing all teh detals
-	 *
-	 * @since   1.6
-	 */
+   * Method to get The User Details and Custome Fields Data.
+   *
+   * @param   userId    $data     User Id of User
+   *
+   * @return  UserData Object containing all teh detals
+   *
+   * @since   1.6
+   */
   @Get("/:userid/:role")
   @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
@@ -74,18 +71,18 @@ export class UserController {
   public async getUser(
     @Headers() headers,
     @Param("userid") userId: string,
-    @Param("role") role:string,
+    @Param("role") role: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
     // Context and ContextType can be taked from .env later
-    let userData  = {
-      userId:userId,
-      context:"USERS",
-      contextType:role
-    }
-    return this.userService.getUsersDetailsById(userData,response);
+    let userData = {
+      userId: userId,
+      context: "USERS",
+      contextType: role,
+    };
+    return this.userService.getUsersDetailsById(userData, response);
   }
 
   @Get()
@@ -121,7 +118,6 @@ export class UserController {
     userCreateDto.tenantId = headers["tenantid"];
     return this.userService.createUser(request, userCreateDto);
   }
-  
 
   @Patch("/:userid")
   @ApiBasicAuth("access-token")
@@ -134,12 +130,12 @@ export class UserController {
     @Headers() headers,
     @Param("userid") userId: string,
     @Req() request: Request,
-    @Body() userUpdateDto:UserUpdateDTO,
+    @Body() userUpdateDto: UserUpdateDTO,
     @Res() response: Response
   ) {
     // userDto.tenantId = headers["tenantid"];
-    userUpdateDto.userId=userId;
-    return await this.userService.updateUser(userUpdateDto,response)
+    userUpdateDto.userId = userId;
+    return await this.userService.updateUser(userUpdateDto, response);
   }
 
   @Post("/search")
@@ -184,6 +180,4 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
-
-
 }

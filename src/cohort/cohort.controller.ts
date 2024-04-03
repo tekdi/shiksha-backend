@@ -41,7 +41,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 // import { FieldsService } from "../fields/fields.service";
 @ApiTags("Cohort")
 @Controller("cohort")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(
     private cohortAdapter: CohortAdapter,
@@ -63,7 +63,7 @@ export class CohortController {
   )
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -71,7 +71,8 @@ export class CohortController {
     @Headers() headers,
     @Req() request: Request,
     @Body() cohortCreateDto: CohortCreateDto,
-    @UploadedFile() image
+    @UploadedFile() image,
+    @Res() response: Response,
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
@@ -79,12 +80,12 @@ export class CohortController {
       tenantId: tenantid,
     };
     Object.assign(cohortCreateDto, payload);
-
-    return this.cohortService.createCohort(request, cohortCreateDto);
+    const result = await this.cohortService.createCohort(request, cohortCreateDto);
+    return response.status(result.statusCode).json(result);
   }
 
   @Get("cohortList/:id")
-  @UseInterceptors(CacheInterceptor)
+  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -101,12 +102,12 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    console.log(request);
-    return this.cohortService.getCohortList(tenantid, id, request, response);
+    const result = await this.cohortService.getCohortList(tenantid, id, request, response);
+    return response.status(result.statusCode).json(result);
   }
 
   @Get("cohortDetails/:id")
-  @UseInterceptors(CacheInterceptor)
+  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort details" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -132,7 +133,7 @@ export class CohortController {
   @ApiCreatedResponse({ description: "Cohort list." })
   @ApiBody({ type: CohortSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -143,9 +144,11 @@ export class CohortController {
     @Headers() headers,
     @Req() request: Request,
     @Body() cohortSearchDto: CohortSearchDto,
+    @Res() response: Response,
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.searchCohort(tenantid, request, cohortSearchDto);
+    const result = await this.cohortService.searchCohort(tenantid, request, cohortSearchDto);
+    return response.status(result.statusCode).json(result);
   }
 
   //update
@@ -164,19 +167,21 @@ export class CohortController {
   )
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohort(
     @Param("id") cohortId: string,
     @Req() request: Request,
     @Body() cohortCreateDto: CohortCreateDto,
-    @UploadedFile() image
+    @UploadedFile() image,
+    @Res() response: Response
   ) {
-    const response = {
+    const imgresponse = {
       image: image?.filename,
     };
-    Object.assign(cohortCreateDto, response);
+    Object.assign(cohortCreateDto, imgresponse);
 
-    return this.cohortService.updateCohort(cohortId, request, cohortCreateDto);
+    const result = await this.cohortService.updateCohort(cohortId, request, cohortCreateDto);
+    return response.status(result.statusCode).json(result);
 
   }
 
@@ -187,19 +192,22 @@ export class CohortController {
   @ApiCreatedResponse({ description: "Cohort has been deleted successfully." })
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohortStatus(
     @Param("id") cohortId: string,
     @Req() request: Request,
     @Body() cohortCreateDto: CohortCreateDto,
-    @UploadedFile() image
+    @UploadedFile() image,
+    @Res() response: Response
   ) {
-    const response = {
+    const imgresponse = {
       image: image?.filename,
-    };
-    Object.assign(cohortCreateDto, response);
+    }
+    Object.assign(cohortCreateDto, imgresponse);
+    const result = await this.cohortService.updateCohortStatus(cohortId);
+    return response.status(result.statusCode).json(result);
 
-    return this.cohortService.updateCohortStatus(cohortId);
+
 
   }
 

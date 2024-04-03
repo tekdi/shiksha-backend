@@ -20,7 +20,7 @@ import {
 import {
   SunbirdUserToken,
 } from "../adapters/sunbirdrc/user.adapter";
-import { Request, Response } from "@nestjs/common";
+import { Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -40,6 +40,7 @@ import { UserCreateDto } from "./dto/user-create.dto";
 import { UserService } from "./user.service";
 import { UserUpdateDTO } from "./dto/user-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { Response } from "express";
 @ApiTags("User")
 @Controller("user")
 @UseGuards(JwtAuthGuard)
@@ -61,7 +62,7 @@ export class UserController {
 	 * @since   1.6
 	 */
   @Get("/:userid/:role")
-  @UseInterceptors(CacheInterceptor)
+  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -85,11 +86,13 @@ export class UserController {
       context:"USERS",
       contextType:role
     }
-    return this.userService.getUsersDetailsById(userData,response);
+
+    const result = await this.userService.getUsersDetailsById(userData,response);
+     return response.status(result.statusCode).json(result);  
   }
 
   @Get()
-  @UseInterceptors(CacheInterceptor)
+  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -109,17 +112,19 @@ export class UserController {
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
   async createUser(
     @Headers() headers,
     @Req() request: Request,
-    @Body() userCreateDto: UserCreateDto
+    @Body() userCreateDto: UserCreateDto,
+    @Res() response:Response
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    return this.userService.createUser(request, userCreateDto);
+    const result = await this.userService.createUser(request, userCreateDto);
+     return response.status(result.statusCode).json(result);   
   }
   
 
@@ -139,15 +144,16 @@ export class UserController {
   ) {
     // userDto.tenantId = headers["tenantid"];
     userUpdateDto.userId=userId;
-    return await this.userService.updateUser(userUpdateDto,response)
+    const result = await this.userService.updateUser(userUpdateDto,response)
+    return response.status(result.statusCode).json(result);   
   }
 
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User list." })
-  @ApiBody({ type: UserSearchDto })
+  // @ApiBody({ type: UserSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -171,7 +177,7 @@ export class UserController {
   @ApiOkResponse({ description: "Password reset successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiBody({ type: Object })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async resetUserPassword(
     @Req() request: Request,
     @Body()

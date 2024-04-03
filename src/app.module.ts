@@ -13,7 +13,6 @@ import { WorksheetModule } from "./worksheet/worksheet.module";
 import { MulterModule } from "@nestjs/platform-express/multer";
 import { QuestionModule } from "./Question/question.module";
 import { LessonPlanModule } from "./lessonPlan/lessonPlan.module";
-import { AdminFormModule } from "./adminForm/adminForm.module";
 import { LikeModule } from "./like/like.module";
 import { CommentModule } from "./comment/comment.module";
 import { TrackAssessmentModule } from "./trackAssessment/trackassessment.module";
@@ -54,7 +53,6 @@ import { SwaggerModule } from "@nestjs/swagger";
     WorksheetModule,
     QuestionModule,
     LessonPlanModule,
-    AdminFormModule,
     LikeModule,
     CommentModule,
     TrackAssessmentModule,

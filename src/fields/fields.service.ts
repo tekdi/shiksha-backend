@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldsSearchDto } from "src/fields/dto/fields-search.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
@@ -13,6 +13,7 @@ import { SuccessResponse } from "src/success-response";
 import { off } from "process";
 import APIResponse from "src/utils/response";
 import { log } from "util";
+import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 
 @Injectable()
 export class FieldsService {
@@ -43,15 +44,14 @@ export class FieldsService {
 
             let result = await this.fieldsRepository.save(fieldsData);
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.CREATED,
                 message: "Ok.",
                 data: result,
             });
 
         } catch (e) {
-            console.error(e);
-            return new ErrorResponse({
-                errorCode: "400",
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
             });
         }
@@ -69,16 +69,15 @@ export class FieldsService {
 
 
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Ok.',
                 totalCount : getFieldValue.totalCount,
                 data: getFieldValue.mappedResponse,
             });
 
         } catch (e) {
-            console.error(e);
-            return new ErrorResponse({
-                errorCode: "400",
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
             });
         }
@@ -120,15 +119,14 @@ export class FieldsService {
             
             let result = await this.fieldsValuesRepository.save(fieldsData);
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.CREATED,
                 message: "Ok.",
                 data: result,
             });
 
         } catch (e) {
-            console.error(e);
-            return new ErrorResponse({
-                errorCode: "400",
+            return new ErrorResponseTypeOrm({
+                statusCode:HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
             });
         }
@@ -144,16 +142,15 @@ export class FieldsService {
             const getFieldValue = await this.getSearchFieldValueData(offset, limit, whereClause)
 
             return new SuccessResponse({
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Ok.',
                 totalCount: getFieldValue.totalCount,
                 data: getFieldValue.mappedResponse,
             });
 
         } catch (e) {
-            console.error(e);
-            return new ErrorResponse({
-                errorCode: "400",
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
             });
         }
@@ -203,7 +200,6 @@ export class FieldsService {
 
             return response;
         } catch (e) {
-            console.error(e);
             return new ErrorResponse({
                 errorCode: "400",
                 errorMessage: e,

@@ -22,6 +22,7 @@ import APIResponse from "src/utils/response";
 import { FieldValues } from "../fields/entities/fields-values.entity";
 import { v4 as uuidv4 } from 'uuid';
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
+import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 
 @Injectable()
 export class CohortService {
@@ -92,26 +93,16 @@ export class CohortService {
         result.cohortData.push(cohortData);
       }
 
-      return response
-        .status(HttpStatus.OK)
-        .send(
-          APIResponse.success(
-            apiId,
-            result,
-            "OK"
-          )
-        );
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: "Ok.",
+        data: result,
+      });
     } catch (error) {
-      return response
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .send(
-          APIResponse.error(
-            apiId,
-            "Something went wrong",
-            `Failure Retrieving Cohort Member. Error is: ${error}`,
-            "INTERNAL_SERVER_ERROR"
-          )
-        );
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: error,
+      });
     }
   }
 
@@ -177,15 +168,14 @@ export class CohortService {
       }
 
       return new SuccessResponse({
-        statusCode: 200,
+        statusCode: HttpStatus.CREATED,
         message: "Ok.",
         data: response,
       });
 
     } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
       });
     }
@@ -253,16 +243,15 @@ export class CohortService {
       }
 
       return new SuccessResponse({
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: "Ok.",
         data: {
           rowCount: response.affected,
         }
       });
     } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
       });
     }
@@ -301,16 +290,15 @@ export class CohortService {
       const mappedResponse = await this.mappedResponse(results);
 
       return new SuccessResponse({
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Ok.',
         totalCount,
         data: mappedResponse,
       });
 
     } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
       });
     }
@@ -348,15 +336,13 @@ export class CohortService {
       SET "status" = false
       WHERE "cohortId" = $1`;
       const results = await this.cohortRepository.query(query, [cohortId]);
-
       return new SuccessResponse({
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: "Cohort Deleted Successfully.",
       });
     } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "401",
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
       });
     }

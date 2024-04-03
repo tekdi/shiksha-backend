@@ -24,13 +24,14 @@ import {
   UploadedFile,
   Headers,
   UseGuards,
+  Res,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
 import { FieldsDto } from "./dto/fields.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
-
+import { Response } from "express";
 import { FieldsAdapter } from "./fieldsadapter";
 import { FieldValuesDto } from "./dto/field-values.dto";
 import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
@@ -53,22 +54,23 @@ export class FieldsController {
   @ApiCreatedResponse({ description: "Fields has been created successfully." })
   @ApiBody({ type: FieldsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
   public async createFields(
     @Headers() headers,
     @Req() request: Request,
-    @Body() fieldsDto: FieldsDto
+    @Body() fieldsDto: FieldsDto,
+    @Res() response:Response,
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
       tenantId: tenantid,
     };
     Object.assign(fieldsDto, payload);
-
-    return this.fieldsService.createFields(request, fieldsDto);
+    const result = await this.fieldsService.createFields(request, fieldsDto);
+    return response.status(result.statusCode).json(result); 
 
   }
 
@@ -79,7 +81,7 @@ export class FieldsController {
   @ApiCreatedResponse({ description: "Fields list." })
   @ApiBody({ type: FieldsSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -89,10 +91,12 @@ export class FieldsController {
   public async searchFields(
     @Headers() headers,
     @Req() request: Request,
-    @Body() fieldsSearchDto: FieldsSearchDto
+    @Body() fieldsSearchDto: FieldsSearchDto,
+    @Res() response:Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
+    const result = await this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
+    return response.status(result.statusCode).json(result);  
   }
 
 
@@ -105,12 +109,15 @@ export class FieldsController {
   })
   @ApiBody({ type: FieldValuesDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async createFieldValues(
     @Req() request: Request,
-    @Body() fieldValuesDto: FieldValuesDto
+    @Body() fieldValuesDto: FieldValuesDto,
+    @Res() response:Response
   ) {
-    return this.fieldsService.createFieldValues(request, fieldValuesDto);
+
+    const result = await this.fieldsService.createFieldValues(request, fieldValuesDto);
+    return response.status(result.statusCode).json(result);  
   }
 
   //search fields values
@@ -119,15 +126,18 @@ export class FieldsController {
   @ApiCreatedResponse({ description: "Fields Values list." })
   @ApiBody({ type: FieldValuesSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
   public async searchFieldValues(
     @Req() request: Request,
-    @Body() fieldValuesSearchDto: FieldValuesSearchDto
+    @Body() fieldValuesSearchDto: FieldValuesSearchDto,
+    @Res()response:Response
   ) {
-    return this.fieldsService.searchFieldValues(request, fieldValuesSearchDto);
+
+    const result = await this.fieldsService.searchFieldValues(request, fieldValuesSearchDto);
+    return response.status(result.statusCode).json(result);  
   }
 
   

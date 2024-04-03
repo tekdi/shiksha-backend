@@ -4,7 +4,7 @@ import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-entity';
-import { format, isAfter, isBefore, isValid } from 'date-fns'; // Import isAfter function from date-fns
+import { addHours, format, isAfter, isBefore, isValid } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 //for student valid enum are[present,absent]
@@ -19,8 +19,8 @@ enum Attendance{
 @ValidatorConstraint({ name: 'isNotAfterToday', async: false })
 export class IsNotAfterToday implements ValidatorConstraintInterface {
   validate(date: Date, args: ValidationArguments) {
-    return isBefore(date, new Date());
-  }
+    const currentDateIST = addHours(new Date(), 5.5);
+    return isBefore(date, currentDateIST);  }
 
   defaultMessage(args: ValidationArguments) {
     return 'Attendance date must not be after today';
@@ -33,7 +33,7 @@ export class AttendanceDto {
   @Expose()
   tenantId: string;
 
-  @ApiProperty({
+  @ApiProperty({ 
     type: String,
     description: "The userid of the attendance",
     default: "",

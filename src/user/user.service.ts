@@ -22,6 +22,7 @@ import { v5 as uuidv5 } from 'uuid';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 import { AnyARecord } from 'dns';
 import { CohortSearchDto } from 'src/cohort/dto/cohort-search.dto';
+import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 
 
 @Injectable()
@@ -65,20 +66,16 @@ export class UserService {
         customFieldsArray.push(customField);
     }
     result.userData['customFields'] = customFieldsArray;
-    return response
-        .status(HttpStatus.OK)
-        .send(APIResponse.success(apiId, result, 'OK'));
+    return new SuccessResponse({
+      statusCode: HttpStatus.OK,
+      message: 'Ok.',
+      data: result,
+  });
     } catch (e) {
-      response
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .send(
-          APIResponse.error(
-            apiId,
-            'Something went wrong In finding UserDetails',
-            e,
-            'INTERNAL_SERVER_ERROR',
-          ),
-        );
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+    });
     }
 }
 
@@ -120,7 +117,6 @@ export class UserService {
       }
       if(userDto.customFields.length > 0){
         for (let data of userDto.customFields) {
-          console.log(data);
           const result = await this.updateCustomFields(userDto.userId, data);
           if (result) {
               if (!updatedData['customFields']) 
@@ -129,20 +125,16 @@ export class UserService {
           }
       }
       }
-      return response
-        .status(HttpStatus.OK)
-        .send(APIResponse.success(apiId, updatedData, 'OK'));
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: 'Ok',
+        data: updatedData,
+    });
     } catch (e) {
-      response
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .send(
-          APIResponse.error(
-            apiId,
-            'Something went wrong In finding UserDetails',
-            e,
-            'INTERNAL_SERVER_ERROR',
-          ),
-        );
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+    });
     }
   }
 
@@ -192,8 +184,8 @@ export class UserService {
       const token = keycloakResponse.data.access_token;
       let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
       if(checkUserinKeyCloakandDb){
-        return new ErrorResponse({
-          errorCode: "400",
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
           errorMessage: "User Already Exists",
         });
       }
@@ -201,8 +193,8 @@ export class UserService {
         (error) => {
           errKeycloak = error.response?.data.errorMessage;
 
-          return new ErrorResponse({
-            errorCode: "500",
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
             errorMessage: "Someting went wrong",
           });
         }
@@ -221,21 +213,21 @@ export class UserService {
         }
         let result = await this.updateCustomFields(userId,fieldData);
         if(!result) {
-          return new ErrorResponse({
-            errorCode: "500",
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
             errorMessage: `Error is ${result}`,
           });
         }
       }
      }
      return new SuccessResponse({
-      statusCode: 200,
+      statusCode: HttpStatus.CREATED,
       message: "ok",
       data: result,
     });
     } catch (e) {
-      return new ErrorResponse({
-        errorCode: "500",
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: `Error is ${e}`,
       });
     }
@@ -294,7 +286,6 @@ export class UserService {
     let result = await this.cohortMemberRepository.insert(cohortData);
     return result;;
     } catch (error) {
-      console.log(error);
       throw new Error(error)
     }
   }

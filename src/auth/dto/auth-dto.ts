@@ -18,7 +18,7 @@ export class AuthDto {
   @IsNotEmpty()
   password: string;
 
-  constructor(partial: Partial<AuthDto>) {
+  constructor(partial: AuthDto) {
     Object.assign(this, partial);
   }
 }
@@ -28,9 +28,11 @@ export class RefreshTokenRequestBody {
     type: String,
     description: "token",
   })
+  @IsString()
+  @IsNotEmpty()
   refresh_token: string;
 
-  constructor(partial: Partial<RefreshTokenRequestBody>) {
+  constructor(partial: RefreshTokenRequestBody) {
     Object.assign(this, partial);
   }
 }
@@ -40,9 +42,11 @@ export class LogoutRequestBody {
     type: String,
     description: "token",
   })
+  @IsString()
+  @IsNotEmpty()
   refresh_token: string;
 
-  constructor(partial: Partial<LogoutRequestBody>) {
+  constructor(partial: LogoutRequestBody) {
     Object.assign(this, partial);
   }
 }

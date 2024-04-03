@@ -26,6 +26,8 @@ import {
   Headers,
   Delete,
   UseGuards,
+  ValidationPipe,
+  UsePipes,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -134,6 +136,7 @@ export class CohortController {
   @ApiBody({ type: CohortSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
+  @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
   })

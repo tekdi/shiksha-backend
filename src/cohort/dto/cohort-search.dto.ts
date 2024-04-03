@@ -1,10 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNumberString } from "class-validator";
+
 
 export class CohortSearchDto {
   @ApiProperty({
     type: String,
     description: "Limit",
   })
+  @IsNumberString()
   limit: string;
 
   @ApiProperty({

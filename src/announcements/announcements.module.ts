@@ -1,4 +1,4 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { ScheduleModule } from "@nestjs/schedule";
 import {
@@ -7,15 +7,8 @@ import {
 } from "../adapters/hasura/announcements.adapter";
 import { AnnouncementsController } from "./announcements.controller";
 
-const ttl = process.env.TTL as never;
 @Module({
-  imports: [
-    HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
-    ScheduleModule.forRoot(),
-  ],
+  imports: [HttpModule, ScheduleModule.forRoot()],
   providers: [
     AnnouncementsService,
     {

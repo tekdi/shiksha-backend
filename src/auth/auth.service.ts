@@ -1,46 +1,46 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
 import { UserService } from "../user/user.service";
 import axios from "axios";
-import qs from "qs";
 import jwt_decode from "jwt-decode";
 import APIResponse from "src/utils/response";
+import { KeycloakService } from "src/common/utils/keycloak.service";
 
+type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  refresh_expires_in: number;
+};
 @Injectable()
 export class AuthService {
   private axiosInstance;
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly keycloakService: KeycloakService
+  ) {
     this.axiosInstance = axios.create();
   }
 
-  async login(authDto, response) {
-    try {
-      const { KEYCLOAK, KEYCLOAK_USER_TOKEN, KEYCLOAK_HASURA_CLIENT_SECRET } =
-        process.env;
-      const data = qs.stringify({
-        username: authDto.username,
-        password: authDto.password,
-        grant_type: "password",
-        client_id: "hasura",
-        client_secret: KEYCLOAK_HASURA_CLIENT_SECRET,
-      });
+  async login(authDto) {
+    const { username, password } = authDto;
+    const {
+      access_token,
+      expires_in,
+      refresh_token,
+      refresh_expires_in,
+      token_type,
+    } = await this.keycloakService.login(username, password).catch(() => {
+      throw new UnauthorizedException();
+    });
 
-      const axiosConfig = {
-        method: "post",
-        url: `${KEYCLOAK}${KEYCLOAK_USER_TOKEN}`,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data: data,
-      };
-
-      const res = await this.axiosInstance(axiosConfig);
-      return response.status(200).send(res.data);
-    } catch (error) {
-      return response
-      .status(error.response ? error.response.status : 500)
-      .send({ message: error.message });
+    return {
+      access_token,
+      refresh_token,
+      expires_in,
+      refresh_expires_in,
+      token_type,
+    };
   }
-}
 
   public async getUserByAuth(request: any, response) {
     let apiId = "api.auth.getUserDetails";
@@ -63,5 +63,25 @@ export class AuthService {
           )
         );
     }
+  }
+
+  async refreshToken(refreshToken: string): Promise<LoginResponse> {
+    const { access_token, expires_in, refresh_token, refresh_expires_in } =
+      await this.keycloakService.refreshToken(refreshToken).catch(() => {
+        throw new UnauthorizedException();
+      });
+
+    return {
+      access_token,
+      refresh_token,
+      expires_in,
+      refresh_expires_in,
+    };
+  }
+
+  async logout(refreshToken: string) {
+    await this.keycloakService.logout(refreshToken).catch(() => {
+      throw new UnauthorizedException();
+    });
   }
 }

@@ -11,20 +11,20 @@ import {
   Get,
   Post,
   Body,
-  Put,
-  Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
   Res,
   Request,
   Response,
   Headers,
-  ValidationPipe,
-  UsePipes
+  HttpStatus,
+  HttpCode,
 } from "@nestjs/common";
-import { AuthDto } from "./dto/auth-dto";
+import {
+  AuthDto,
+  RefreshTokenRequestBody,
+  LogoutRequestBody,
+} from "./dto/auth-dto";
 import { AuthService } from "./auth.service";
 
 @ApiTags("Auth")
@@ -34,18 +34,10 @@ export class AuthController {
 
   @Post("/login")
   @ApiBody({ type: AuthDto })
+  @HttpCode(HttpStatus.OK)
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UsePipes(ValidationPipe)
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  public async login(
-    @Req() request: Request,
-    @Res() response: Response,
-    @Body() authDto: AuthDto
-  ) {
-    return this.authService.login(authDto, response);
+  public async login(@Body() authDto: AuthDto) {
+    return this.authService.login(authDto);
   }
 
   @Get("/getUserDetails")
@@ -64,5 +56,23 @@ export class AuthController {
   ) {
     // const tenantId = headers["tenantid"];
     return this.authService.getUserByAuth(request, response);
+  }
+
+  @Post("/refresh")
+  @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: RefreshTokenRequestBody })
+  refreshToken(@Body() body: RefreshTokenRequestBody) {
+    const { refresh_token: refreshToken } = body;
+
+    return this.authService.refreshToken(refreshToken);
+  }
+
+  @Post("/logout")
+  @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: LogoutRequestBody })
+  async logout(@Body() body: LogoutRequestBody) {
+    const { refresh_token: refreshToken } = body;
+
+    await this.authService.logout(refreshToken);
   }
 }

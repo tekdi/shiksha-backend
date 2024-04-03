@@ -41,7 +41,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 // import { FieldsService } from "../fields/fields.service";
 @ApiTags("Cohort")
 @Controller("cohort")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(
     private cohortAdapter: CohortAdapter,

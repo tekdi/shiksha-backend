@@ -7,7 +7,6 @@ import { AttendanceModule } from "./attendance/attendance.module";
 import { HolidayModule } from "./holiday/holiday.module";
 import { ConfigurationModule } from "./configs/configuration.module";
 import { ConfigModule } from "@nestjs/config";
-import { TemplateModule } from "./template/template.module";
 import { WorksheetModule } from "./worksheet/worksheet.module";
 import { MulterModule } from "@nestjs/platform-express/multer";
 import { QuestionModule } from "./Question/question.module";
@@ -45,7 +44,6 @@ import { SwaggerModule } from "@nestjs/swagger";
     AttendanceModule,
     HolidayModule,
     ConfigurationModule,
-    TemplateModule,
     WorksheetModule,
     QuestionModule,
     LikeModule,

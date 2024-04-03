@@ -1,9 +1,3 @@
-import { StudentInterface } from "./interfaces/student.interface";
-import {
-  StudentService,
-  SunbirdStudentToken,
-} from "../adapters/sunbirdrc/student.adapter";
-
 import {
   CacheInterceptor,
   CACHE_MANAGER,
@@ -39,7 +33,6 @@ import { StudentAdapter } from "./studentadapter";
 @Controller("student")
 export class StudentController {
   constructor(
-    private service: StudentService,
     @Inject(CACHE_MANAGER) private cacheManager,
 
     private studentAdapter: StudentAdapter

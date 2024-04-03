@@ -7,16 +7,13 @@ import { Fields } from "./entities/fields.entity";
 import { FieldValues } from "./entities/fields-values.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { FieldsService } from "./fields.service";
-const ttl = process.env.TTL as never;
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Fields]),
     TypeOrmModule.forFeature([FieldValues]),
     HttpModule,
     HasuraModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
   ],
   controllers: [FieldsController],
   providers: [FieldsAdapter, FieldsService],

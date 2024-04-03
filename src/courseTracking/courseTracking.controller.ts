@@ -3,9 +3,7 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
-  ApiBody,
   ApiQuery,
-  ApiOkResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -16,9 +14,7 @@ import {
   SerializeOptions,
   Req,
   Request,
-  CacheInterceptor,
   Post,
-  Body,
   Query,
   Put,
 } from "@nestjs/common";
@@ -73,7 +69,7 @@ export class CourseTrackingController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Course Tracking detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })

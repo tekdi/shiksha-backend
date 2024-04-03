@@ -5,7 +5,6 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
-  ApiConsumes,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -19,7 +18,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Headers,
   Res,
   UseGuards,
@@ -37,10 +35,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 @Controller("cohortmembers")
 @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
-  constructor(
-    private cohortMembersAdapter: CohortMembersAdapter,
-    private readonly cohortMembersService: CohortMembersService
-  ) {}
+  constructor(private readonly cohortMembersService: CohortMembersService) {}
 
   //create cohort members
   @Post()
@@ -75,7 +70,7 @@ export class CohortMembersController {
 
   //get cohort members
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -100,7 +95,7 @@ export class CohortMembersController {
     );
   }
 
-  search
+  search;
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members list." })

@@ -1,6 +1,5 @@
 import {
   Body,
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Delete,
@@ -12,10 +11,8 @@ import {
   Query,
   Req,
   Request,
-  SerializeOptions,
   UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiBasicAuth,
   ApiBody,
@@ -40,7 +37,7 @@ export class AnnouncementsController {
   ) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Get announcement detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -52,7 +49,7 @@ export class AnnouncementsController {
   }
 
   @Get("")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Get announcements" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -101,7 +98,7 @@ export class AnnouncementsController {
   }
 
   @Delete("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Deleted the announcement " })
   public async deleteAnnouncement(

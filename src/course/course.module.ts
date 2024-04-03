@@ -6,14 +6,9 @@ import {
   DikshaCourseService,
   DikshaCourseToken,
 } from "src/adapters/diksha/dikshaCourse.adapter";
-const ttl = process.env.TTL as never;
+
 @Module({
-  imports: [
-    HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
-  ],
+  imports: [HttpModule],
   controllers: [CourseController],
   providers: [{ provide: DikshaCourseToken, useClass: DikshaCourseService }],
 })

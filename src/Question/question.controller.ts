@@ -8,7 +8,6 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -42,7 +41,7 @@ export class QuestionController {
   ) {}
 
   @Get(":adapter/search")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Get all Questions detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -82,7 +81,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/questionIds")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Get all Questions detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -101,7 +100,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/subjectlist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get all subject list" })
   @ApiQuery({ name: "gradeLevel", required: true })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -115,7 +114,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/topicslist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get all subject list" })
   @ApiQuery({ name: "subject", required: true })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -129,7 +128,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/questionid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   // @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Get Questions detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -145,7 +144,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/competencieslist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Get all competencies list." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -163,7 +162,7 @@ export class QuestionController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Question detail." })
   @SerializeOptions({

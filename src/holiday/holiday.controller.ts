@@ -9,7 +9,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Query,
 } from "@nestjs/common";
 import {
@@ -31,7 +30,7 @@ export class HolidayController {
   constructor(private holidayProvider: HolidayAdapter) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Holiday detail." })
   @SerializeOptions({
@@ -92,7 +91,7 @@ export class HolidayController {
   }
 
   @Get("")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })

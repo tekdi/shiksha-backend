@@ -1,7 +1,6 @@
 import {
   ApiTags,
   ApiBody,
-  ApiOkResponse,
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
@@ -16,11 +15,8 @@ import {
   Put,
   Param,
   UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  Query,
-  CacheInterceptor,
   UploadedFile,
   Res,
   Headers,
@@ -31,7 +27,6 @@ import {
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
-import { CohortDto } from "./dto/cohort.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
@@ -40,15 +35,12 @@ import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-// import { FieldsService } from "../fields/fields.service";
+
 @ApiTags("Cohort")
 @Controller("cohort")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
-  constructor(
-    private cohortAdapter: CohortAdapter,
-    private readonly cohortService: CohortService
-  ) { }
+  constructor(private readonly cohortService: CohortService) {}
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -74,7 +66,7 @@ export class CohortController {
     @Req() request: Request,
     @Body() cohortCreateDto: CohortCreateDto,
     @UploadedFile() image,
-    @Res() response: Response,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
@@ -82,12 +74,14 @@ export class CohortController {
       tenantId: tenantid,
     };
     Object.assign(cohortCreateDto, payload);
-    const result = await this.cohortService.createCohort(request, cohortCreateDto);
+    const result = await this.cohortService.createCohort(
+      request,
+      cohortCreateDto
+    );
     return response.status(result.statusCode).json(result);
   }
 
   @Get("cohortList/:id")
-  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -104,12 +98,16 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.cohortService.getCohortList(tenantid, id, request, response);
+    const result = await this.cohortService.getCohortList(
+      tenantid,
+      id,
+      request,
+      response
+    );
     return response.status(result.statusCode).json(result);
   }
 
   @Get("cohortDetails/:id")
-  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort details" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -126,7 +124,12 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortService.getCohortsDetails(tenantid, cohortId, request, response);
+    return this.cohortService.getCohortsDetails(
+      tenantid,
+      cohortId,
+      request,
+      response
+    );
   }
 
   // search
@@ -147,10 +150,14 @@ export class CohortController {
     @Headers() headers,
     @Req() request: Request,
     @Body() cohortSearchDto: CohortSearchDto,
-    @Res() response: Response,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.cohortService.searchCohort(tenantid, request, cohortSearchDto);
+    const result = await this.cohortService.searchCohort(
+      tenantid,
+      request,
+      cohortSearchDto
+    );
     return response.status(result.statusCode).json(result);
   }
 
@@ -183,9 +190,12 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, imgresponse);
 
-    const result = await this.cohortService.updateCohort(cohortId, request, cohortCreateDto);
+    const result = await this.cohortService.updateCohort(
+      cohortId,
+      request,
+      cohortCreateDto
+    );
     return response.status(result.statusCode).json(result);
-
   }
 
   //delete cohort
@@ -205,13 +215,9 @@ export class CohortController {
   ) {
     const imgresponse = {
       image: image?.filename,
-    }
+    };
     Object.assign(cohortCreateDto, imgresponse);
     const result = await this.cohortService.updateCohortStatus(cohortId);
     return response.status(result.statusCode).json(result);
-
-
-
   }
-
 }

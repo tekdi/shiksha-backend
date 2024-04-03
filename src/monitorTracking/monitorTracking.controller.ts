@@ -9,7 +9,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Query,
   ValidationPipe,
   UsePipes,
@@ -33,7 +32,7 @@ export class MonitorTrackingController {
   constructor(private readonly service: MonitorTrackingService) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Monitor Tracking detail." })
   @SerializeOptions({

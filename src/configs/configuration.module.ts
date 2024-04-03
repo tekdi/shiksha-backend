@@ -8,15 +8,8 @@ import {
 import { ConfigsAdapter } from "./configsadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
 
-const ttl = process.env.TTL as never;
 @Module({
-  imports: [
-    HasuraModule,
-    HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
-  ],
+  imports: [HasuraModule, HttpModule],
   controllers: [ConfigController],
   providers: [ConfigsAdapter],
 })

@@ -9,7 +9,6 @@ import {
 } from "@nestjs/swagger";
 import {
   Body,
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -62,7 +61,7 @@ export class WorksheetController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Worksheet detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })

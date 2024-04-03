@@ -28,9 +28,7 @@ export class KeycloakService {
   private clientSecret: string;
   private axios;
   userToken: any;
-  constructor(
-    private readonly configService: ConfigService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.baseURL = this.configService.get("KEYCLOAK");
     this.userToken = this.configService.get("KEYCLOAK_USER_TOKEN");
     this.realm = this.configService.get("KEYCLOAK_REALM");

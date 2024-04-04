@@ -1,4 +1,4 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { CohortController } from "./cohort.controller";
 import { HttpModule } from "@nestjs/axios";
 import { CohortAdapter } from "./cohortadapter";
@@ -10,23 +10,14 @@ import { FieldsService } from "../fields/fields.service";
 import { Fields } from "../fields/entities/fields.entity";
 import { FieldValues } from "../fields/entities/fields-values.entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
-const ttl = process.env.TTL as never;
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Cohort,
-      FieldValues,
-      Fields,
-      CohortMembers
-    ]),
+    TypeOrmModule.forFeature([Cohort, FieldValues, Fields, CohortMembers]),
     HttpModule,
     HasuraModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
   ],
   controllers: [CohortController],
   providers: [CohortAdapter, CohortService, FieldsService],
 })
 export class CohortModule {}
-

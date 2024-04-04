@@ -15,12 +15,10 @@ import {
   SerializeOptions,
   Req,
   Request,
-  CacheInterceptor,
   Post,
   Body,
   Query,
 } from "@nestjs/common";
-import { AssessmentSetSearchDto } from "./dto/assessmentset-search-dto";
 import { AssessmentsetDto } from "./dto/assessmentset.dto";
 import { AssessmentsetService } from "src/adapters/hasura/assessmentset.adapter";
 
@@ -44,7 +42,7 @@ export class AssessmentsetController {
     return this.service.createAssessmentSet(request, assessmentsetDto);
   }
   @Get("assessmentset/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Assessment set detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })

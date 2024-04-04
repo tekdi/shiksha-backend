@@ -1,4 +1,4 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { QuestionController } from "./question.controller";
 import {
@@ -9,14 +9,9 @@ import {
   HasuraQuestionToken,
   QuestionService,
 } from "src/adapters/hasura/question.adapter";
-const ttl = process.env.TTL as never;
+
 @Module({
-  imports: [
-    HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
-  ],
+  imports: [HttpModule],
   controllers: [QuestionController],
   providers: [
     QumlQuestionService,

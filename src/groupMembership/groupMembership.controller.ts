@@ -16,7 +16,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Request,
 } from "@nestjs/common";
 
@@ -30,7 +29,7 @@ export class GroupMembershipController {
   constructor(private service: GroupMembershipService) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Group Membership detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })

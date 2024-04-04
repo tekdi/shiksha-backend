@@ -9,11 +9,9 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Query,
   ValidationPipe,
   UsePipes,
-  Header,
   UploadedFile,
 } from "@nestjs/common";
 import {
@@ -39,7 +37,7 @@ export class MentorTrackingController {
   constructor(private readonly service: MentorTrackingService) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Mentor Tracking detail." })
   @SerializeOptions({

@@ -9,7 +9,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -30,7 +29,7 @@ export class CommentController implements IServicelocator {
   constructor(private commentAdapter: CommentAdapter) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Comment detail." })
   @SerializeOptions({

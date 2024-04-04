@@ -1,9 +1,4 @@
-import {
-  CacheInterceptor,
-  CACHE_MANAGER,
-  Inject,
-  Request,
-} from "@nestjs/common";
+import { Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -32,14 +27,10 @@ import { StudentAdapter } from "./studentadapter";
 @ApiTags("Student")
 @Controller("student")
 export class StudentController {
-  constructor(
-    @Inject(CACHE_MANAGER) private cacheManager,
-
-    private studentAdapter: StudentAdapter
-  ) {}
+  constructor(private studentAdapter: StudentAdapter) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Student detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })

@@ -5,7 +5,6 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -24,11 +23,11 @@ import { IServicelocator } from "src/adapters/courseservicelocator";
 @Controller("course")
 export class CourseController {
   constructor(
-    @Inject(DikshaCourseToken) private dikshaProvider: IServicelocator,
+    @Inject(DikshaCourseToken) private dikshaProvider: IServicelocator
   ) {}
 
   @Get(":adapter/search")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get all Course detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiQuery({ name: "subject", required: false })
@@ -58,7 +57,7 @@ export class CourseController {
   }
 
   @Get(":adapter/courseIds")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get all Course detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiQuery({ name: "courseIds", required: false })
@@ -72,7 +71,7 @@ export class CourseController {
     }
   }
   @Get(":adapter/hierarchy/courseid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get Course detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiQuery({ name: "courseId", required: false })
@@ -87,7 +86,7 @@ export class CourseController {
   }
 
   @Get(":adapter/content/courseid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOkResponse({ description: "Get Course detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiQuery({ name: "courseId", required: false })

@@ -5,6 +5,7 @@ import {
   ApiBasicAuth,
   ApiBody,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -22,18 +23,19 @@ import {
 import { AssessmentsetDto } from "./dto/assessmentset.dto";
 import { AssessmentsetService } from "src/adapters/hasura/assessmentset.adapter";
 
-@ApiTags("Assessmentset")
+// @ApiTags("Assessmentset")
+@ApiExcludeController()
 @Controller("assessmentset")
 export class AssessmentsetController {
   constructor(private service: AssessmentsetService) {}
 
   @Post("/assessmentset")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Assessment set has been created successfully.",
-  })
-  @ApiBody({ type: AssessmentsetDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Assessment set has been created successfully.",
+  // })
+  // @ApiBody({ type: AssessmentsetDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createAssessmentSet(
     @Req() request: Request,
@@ -57,9 +59,9 @@ export class AssessmentsetController {
   }
 
   @Post("assessmentset/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Assessment set list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Assessment set list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

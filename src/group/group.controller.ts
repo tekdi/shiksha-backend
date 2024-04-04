@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiConsumes,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -30,7 +31,8 @@ import { diskStorage } from "multer";
 
 import { GroupAdapter } from "./groupadapter";
 
-@ApiTags("Group")
+// @ApiTags("Group")
+@ApiExcludeController()
 @Controller("group")
 export class GroupController {
   constructor(private groupAdapter: GroupAdapter) {}
@@ -48,9 +50,9 @@ export class GroupController {
   }
 
   @Post()
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group has been created successfully." })
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group has been created successfully." })
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -60,8 +62,8 @@ export class GroupController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: GroupDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBody({ type: GroupDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createGroup(
     @Req() request: Request,
@@ -77,9 +79,9 @@ export class GroupController {
   }
 
   @Put("/:id")
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group has been updated successfully." })
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group has been updated successfully." })
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -89,8 +91,8 @@ export class GroupController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: GroupDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBody({ type: GroupDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateGroup(
     @Param("id") groupId: string,
@@ -109,10 +111,10 @@ export class GroupController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group list." })
-  @ApiBody({ type: GroupSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group list." })
+  // @ApiBody({ type: GroupSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

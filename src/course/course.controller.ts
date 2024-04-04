@@ -1,4 +1,5 @@
 import {
+  ApiExcludeController,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiQuery,
@@ -19,7 +20,8 @@ import {
 import { DikshaCourseToken } from "src/adapters/diksha/dikshaCourse.adapter";
 import { IServicelocator } from "src/adapters/courseservicelocator";
 
-@ApiTags("Course")
+// @ApiTags("Course")
+@ApiExcludeController()
 @Controller("course")
 export class CourseController {
   constructor(

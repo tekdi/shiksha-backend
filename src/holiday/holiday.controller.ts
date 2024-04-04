@@ -19,12 +19,15 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { HolidayDto } from "./dto/holiday.dto";
 import { HolidaySearchDto } from "./dto/holiday-search.dto";
 import { Request } from "@nestjs/common";
 import { HolidayAdapter } from "./holidayadapter";
-@ApiTags("Holiday")
+// @ApiTags("Holiday")
+
+@ApiExcludeController()
 @Controller("holiday")
 export class HolidayController {
   constructor(private holidayProvider: HolidayAdapter) {}
@@ -43,10 +46,10 @@ export class HolidayController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Holiday has been created successfully." })
-  @ApiBody({ type: HolidayDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Holiday has been created successfully." })
+  // @ApiBody({ type: HolidayDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createHoliday(
     @Req() request: Request,
@@ -58,9 +61,9 @@ export class HolidayController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Holiday has been updated successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Holiday has been updated successfully." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateHoliday(
     @Param("id") holidayId: string,
@@ -73,10 +76,10 @@ export class HolidayController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Holiday list." })
-  @ApiBody({ type: HolidaySearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Holiday list." })
+  // @ApiBody({ type: HolidaySearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

@@ -4,6 +4,7 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -19,7 +20,8 @@ import { Request } from "@nestjs/common";
 import { ConfigDto } from "./dto/config.dto";
 import { ConfigsAdapter } from "./configsadapter";
 
-@ApiTags("Config")
+// @ApiTags("Config")
+@ApiExcludeController()
 @Controller("config")
 export class ConfigController {
   constructor(private configsAdapter: ConfigsAdapter) {}
@@ -27,8 +29,8 @@ export class ConfigController {
   @Get(":module/all")
   @ApiBasicAuth("access-token")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiCreatedResponse({ description: "Config detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiCreatedResponse({ description: "Config detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -37,10 +39,10 @@ export class ConfigController {
   }
 
   @Post("")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Config has been created successfully." })
-  @ApiBody({ type: ConfigDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Config has been created successfully." })
+  // @ApiBody({ type: ConfigDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createConfig(
     @Req() request: Request,
@@ -52,9 +54,9 @@ export class ConfigController {
   }
 
   @Post(":multipleConfigs")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Config has been created successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Config has been created successfully." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createModuleConfigs(
     @Req() request: Request,

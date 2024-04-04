@@ -18,6 +18,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiExcludeController,
   ApiForbiddenResponse,
   ApiOkResponse,
 } from "@nestjs/swagger";
@@ -28,7 +29,7 @@ import {
 } from "src/adapters/hasura/announcements.adapter";
 import { AnnouncementsFilterDto } from "./dto/announcements-filter.dto";
 import { AnnouncementsDto } from "./dto/announcements.dto";
-
+@ApiExcludeController()
 @Controller("announcements")
 export class AnnouncementsController {
   constructor(
@@ -38,9 +39,9 @@ export class AnnouncementsController {
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Get announcement detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Get announcement detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   public async getAnnouncement(
     @Param("id") announcementId: string,
     @Req() request: Request
@@ -50,9 +51,9 @@ export class AnnouncementsController {
 
   @Get("")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Get announcements" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Get announcements" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   public async getAnnouncementSet(
     @Query() query: AnnouncementsFilterDto,
     @Req() request: Request
@@ -61,13 +62,13 @@ export class AnnouncementsController {
   }
 
   @Put("/:id")
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Announcement has been Updated successfully.",
-  })
-  @ApiBody({ type: AnnouncementsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Announcement has been Updated successfully.",
+  // })
+  // @ApiBody({ type: AnnouncementsDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateAnnouncement(
     @Param("id") announcementId: string,
@@ -83,13 +84,13 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Announcement has been created successfully.",
-  })
-  @ApiBody({ type: AnnouncementsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Announcement has been created successfully.",
+  // })
+  // @ApiBody({ type: AnnouncementsDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   public async createAnnouncement(
     @Req() request: Request,
     @Body() announcementData: AnnouncementsDto
@@ -99,8 +100,8 @@ export class AnnouncementsController {
 
   @Delete("/:id")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Deleted the announcement " })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Deleted the announcement " })
   public async deleteAnnouncement(
     @Param("id") announcementId: string,
     @Req() request: Request

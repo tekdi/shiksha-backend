@@ -21,12 +21,14 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { MonitorTrackingDto } from "./dto/monitorTracking.dto";
 import { MonitorTrackingService } from "src/adapters/hasura/monitorTracking.adapter";
 
-@ApiTags("Monitor Tracking")
+// @ApiTags("Monitor Tracking")
+@ApiExcludeController()
 @Controller("monitortracking")
 export class MonitorTrackingController {
   constructor(private readonly service: MonitorTrackingService) {}
@@ -43,12 +45,12 @@ export class MonitorTrackingController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Monitor Tracking has been created successfully.",
-  })
-  @ApiBody({ type: MonitorTrackingDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Monitor Tracking has been created successfully.",
+  // })
+  // @ApiBody({ type: MonitorTrackingDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({}))
   public async createMonitor(
@@ -59,11 +61,11 @@ export class MonitorTrackingController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Monitor Tracking has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Monitor Tracking has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({}))
   public async updateMonitor(
@@ -80,17 +82,17 @@ export class MonitorTrackingController {
 
   @Post("/search")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "monitorTrackingId", required: false })
-  @ApiQuery({ name: "monitorId", required: false })
-  @ApiQuery({ name: "schoolId", required: false })
-  @ApiQuery({ name: "groupId", required: false })
-  @ApiQuery({ name: "scheduleVisitDate", required: false })
-  @ApiQuery({ name: "visitDate", required: false })
-  @ApiQuery({ name: "page", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " Ok." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "monitorTrackingId", required: false })
+  // @ApiQuery({ name: "monitorId", required: false })
+  // @ApiQuery({ name: "schoolId", required: false })
+  // @ApiQuery({ name: "groupId", required: false })
+  // @ApiQuery({ name: "scheduleVisitDate", required: false })
+  // @ApiQuery({ name: "visitDate", required: false })
+  // @ApiQuery({ name: "page", required: false })
   public async searchMonitorTracking(
     @Query("limit") limit: string,
     @Query("monitorTrackingId") monitorTrackingId: string,

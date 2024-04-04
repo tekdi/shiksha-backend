@@ -4,6 +4,8 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
+  ApiOkResponse,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -21,27 +23,28 @@ import {
 import { CourseTrackingService } from "src/adapters/hasura/courseTracking.adapter";
 import { CourseTrackingDto } from "./dto/courseTracking.dto";
 
-@ApiTags("Course Tracking")
+// @ApiTags("Course Tracking")
+@ApiExcludeController()
 @Controller("coursetracking")
 export class CourseTrackingController {
   constructor(private service: CourseTrackingService) {}
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Course Tracking has been created successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "progressDetail", required: false })
-  @ApiQuery({ name: "courseId", required: false })
-  @ApiQuery({ name: "userId", required: false })
-  @ApiQuery({ name: "contentIds", required: false })
-  @ApiQuery({ name: "startTime", required: false })
-  @ApiQuery({ name: "endTime", required: false })
-  @ApiQuery({ name: "certificate", required: false })
-  @ApiQuery({ name: "status", required: false })
-  @ApiQuery({ name: "source", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Course Tracking has been created successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiQuery({ name: "progressDetail", required: false })
+  // @ApiQuery({ name: "courseId", required: false })
+  // @ApiQuery({ name: "userId", required: false })
+  // @ApiQuery({ name: "contentIds", required: false })
+  // @ApiQuery({ name: "startTime", required: false })
+  // @ApiQuery({ name: "endTime", required: false })
+  // @ApiQuery({ name: "certificate", required: false })
+  // @ApiQuery({ name: "status", required: false })
+  // @ApiQuery({ name: "source", required: false })
   public async createCourse(
     @Req() request: Request,
     @Query("progressDetail") progressDetail: string,
@@ -84,21 +87,21 @@ export class CourseTrackingController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Course Tracking has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Course Tracking has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "progressDetail", required: false })
-  @ApiQuery({ name: "courseId", required: false })
-  @ApiQuery({ name: "userId", required: false })
-  @ApiQuery({ name: "contentIds", required: false })
-  @ApiQuery({ name: "startTime", required: false })
-  @ApiQuery({ name: "endTime", required: false })
-  @ApiQuery({ name: "certificate", required: false })
-  @ApiQuery({ name: "status", required: false })
-  @ApiQuery({ name: "source", required: false })
+  // @ApiQuery({ name: "progressDetail", required: false })
+  // @ApiQuery({ name: "courseId", required: false })
+  // @ApiQuery({ name: "userId", required: false })
+  // @ApiQuery({ name: "contentIds", required: false })
+  // @ApiQuery({ name: "startTime", required: false })
+  // @ApiQuery({ name: "endTime", required: false })
+  // @ApiQuery({ name: "certificate", required: false })
+  // @ApiQuery({ name: "status", required: false })
+  // @ApiQuery({ name: "source", required: false })
   public async updateTracking(
     @Param("id") courseTrackingId: string,
     @Req() request: Request,
@@ -128,19 +131,19 @@ export class CourseTrackingController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Course Tracking list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "courseId", required: false })
-  @ApiQuery({ name: "userId", required: false })
-  @ApiQuery({ name: "status", required: false })
-  @ApiQuery({ name: "page", required: false })
-  @ApiQuery({ name: "source", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Course Tracking list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "courseId", required: false })
+  // @ApiQuery({ name: "userId", required: false })
+  // @ApiQuery({ name: "status", required: false })
+  // @ApiQuery({ name: "page", required: false })
+  // @ApiQuery({ name: "source", required: false })
   public async searchCourseTracking(
     @Query("limit") limit: string,
     @Query("courseId") courseId: string,

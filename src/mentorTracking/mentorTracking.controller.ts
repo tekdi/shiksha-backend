@@ -23,6 +23,7 @@ import {
   ApiBasicAuth,
   ApiQuery,
   ApiConsumes,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { MentorTrackingDto } from "./dto/mentorTracking.dto";
@@ -31,7 +32,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
 import { FeedbackCreateDto } from "./dto/feedback-create.dto";
-@ApiTags("Mentor Tracking")
+// @ApiTags("Mentor Tracking")
+@ApiExcludeController()
 @Controller("mentortracking")
 export class MentorTrackingController {
   constructor(private readonly service: MentorTrackingService) {}
@@ -48,11 +50,11 @@ export class MentorTrackingController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Mentor Tracking has been created successfully.",
-  })
-  @ApiBody({ type: MentorTrackingDto })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Mentor Tracking has been created successfully.",
+  // })
+  // @ApiBody({ type: MentorTrackingDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({}))
@@ -64,11 +66,11 @@ export class MentorTrackingController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Mentor Tracking has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Mentor Tracking has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({}))
   public async updateMentor(
@@ -84,9 +86,9 @@ export class MentorTrackingController {
   }
 
   @Put("feedback/:id")
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Group has been updated successfully." })
+  // @ApiConsumes("multipart/form-data")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Group has been updated successfully." })
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -96,8 +98,8 @@ export class MentorTrackingController {
       fileFilter: imageFileFilter,
     })
   )
-  @ApiBody({ type: FeedbackCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBody({ type: FeedbackCreateDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async feedback(
     @Param("id") mentorTrackingId: string,
@@ -119,18 +121,18 @@ export class MentorTrackingController {
 
   @Post("/search")
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "mentorTrackingId", required: false })
-  @ApiQuery({ name: "mentorId", required: false })
-  @ApiQuery({ name: "teacherId", required: false })
-  @ApiQuery({ name: "schoolId", required: false })
-  @ApiQuery({ name: "scheduleVisitDate", required: false })
-  @ApiQuery({ name: "visitDate", required: false })
-  @ApiQuery({ name: "page", required: false })
-  @ApiQuery({ name: "status", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: " Ok." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "mentorTrackingId", required: false })
+  // @ApiQuery({ name: "mentorId", required: false })
+  // @ApiQuery({ name: "teacherId", required: false })
+  // @ApiQuery({ name: "schoolId", required: false })
+  // @ApiQuery({ name: "scheduleVisitDate", required: false })
+  // @ApiQuery({ name: "visitDate", required: false })
+  // @ApiQuery({ name: "page", required: false })
+  // @ApiQuery({ name: "status", required: false })
   public async searchMentorTracking(
     @Query("limit") limit: string,
     @Query("mentorTrackingId") mentorTrackingId: string,

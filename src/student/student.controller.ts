@@ -6,6 +6,7 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiExcludeController,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -24,7 +25,8 @@ import { StudentDto } from "./dto/student.dto";
 import { StudentSearchDto } from "./dto/student-search.dto";
 import { IServicelocator } from "src/adapters/studentservicelocator";
 import { StudentAdapter } from "./studentadapter";
-@ApiTags("Student")
+// @ApiTags("Student")
+@ApiExcludeController()
 @Controller("student")
 export class StudentController {
   constructor(private studentAdapter: StudentAdapter) {}
@@ -44,10 +46,10 @@ export class StudentController {
   }
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Student has been created successfully." })
-  @ApiBody({ type: StudentDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Student has been created successfully." })
+  // @ApiBody({ type: StudentDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createStudent(
     @Req() request: Request,
@@ -59,9 +61,9 @@ export class StudentController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Student has been updated successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Student has been updated successfully." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateStudent(
     @Param("id") id: string,
@@ -74,10 +76,10 @@ export class StudentController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Student list." })
-  @ApiBody({ type: StudentSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Student list." })
+  // @ApiBody({ type: StudentSearchDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",

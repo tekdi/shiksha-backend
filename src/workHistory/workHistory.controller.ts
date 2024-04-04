@@ -2,6 +2,7 @@ import {
   ApiBasicAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExcludeController,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiQuery,
@@ -25,18 +26,19 @@ import {
 import { WorkHistoryService } from "../adapters/hasura/workhistory.adapter";
 import { WorkHistoryDto } from "./dto/work-history.dto";
 
-@ApiTags("Work History")
+// @ApiTags("Work History")
+@ApiExcludeController()
 @Controller("workhistory")
 export class WorkHistoryController {
   constructor(private service: WorkHistoryService) {}
 
   @Post()
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Work History has been created successfully.",
-  })
-  @ApiBody({ type: WorkHistoryDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Work History has been created successfully.",
+  // })
+  // @ApiBody({ type: WorkHistoryDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async createWorkHistory(
     @Req() request: Request,
@@ -46,11 +48,11 @@ export class WorkHistoryController {
   }
 
   @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Work History has been updated successfully.",
-  })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({
+  //   description: "Work History has been updated successfully.",
+  // })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
   @UseInterceptors(ClassSerializerInterceptor)
   public async updateWorkHistory(
     @Param("id") id: string,
@@ -76,16 +78,16 @@ export class WorkHistoryController {
   }
 
   @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Work History list." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiQuery({ name: "limit", required: false })
-  @ApiQuery({ name: "workHistoryId", required: false })
-  @ApiQuery({ name: "userId", required: false })
-  @ApiQuery({ name: "dateOfJoining", required: false })
-  @ApiQuery({ name: "dateOfRelieving", required: false })
-  @ApiQuery({ name: "page", required: false })
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Work History list." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiQuery({ name: "limit", required: false })
+  // @ApiQuery({ name: "workHistoryId", required: false })
+  // @ApiQuery({ name: "userId", required: false })
+  // @ApiQuery({ name: "dateOfJoining", required: false })
+  // @ApiQuery({ name: "dateOfRelieving", required: false })
+  // @ApiQuery({ name: "page", required: false })
   public async searchWorkHistory(
     @Query("limit") limit: string,
     @Query("workHistoryId") workHistoryId: string,

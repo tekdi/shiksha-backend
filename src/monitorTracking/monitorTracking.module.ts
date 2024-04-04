@@ -3,14 +3,9 @@ import { CacheModule, Module } from "@nestjs/common";
 import { MonitorTrackingService } from "src/adapters/hasura/monitorTracking.adapter";
 
 import { MonitorTrackingController } from "./monitorTracking.controller";
-const ttl = process.env.TTL as never;
+
 @Module({
-  imports: [
-    HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
-  ],
+  imports: [HttpModule],
   controllers: [MonitorTrackingController],
   providers: [MonitorTrackingService],
 })

@@ -1,27 +1,17 @@
 import {
   ApiTags,
   ApiBody,
-  ApiOkResponse,
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
-  ApiConsumes,
   ApiHeader,
 } from "@nestjs/swagger";
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Put,
-  Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  Query,
-  CacheInterceptor,
-  UploadedFile,
   Headers,
   UseGuards,
   Res,
@@ -38,14 +28,14 @@ import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 import { FieldsService } from "./fields.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
-
 @ApiTags("Fields")
 @Controller("fields")
 @UseGuards(JwtAuthGuard)
 export class FieldsController {
-  constructor(private fieldsAdapter: FieldsAdapter,
+  constructor(
+    private fieldsAdapter: FieldsAdapter,
     private readonly fieldsService: FieldsService
-  ) { }
+  ) {}
 
   //fields
   //create fields
@@ -62,7 +52,7 @@ export class FieldsController {
     @Headers() headers,
     @Req() request: Request,
     @Body() fieldsDto: FieldsDto,
-    @Res() response:Response,
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
     const payload = {
@@ -70,10 +60,8 @@ export class FieldsController {
     };
     Object.assign(fieldsDto, payload);
     const result = await this.fieldsService.createFields(request, fieldsDto);
-    return response.status(result.statusCode).json(result); 
-
+    return response.status(result.statusCode).json(result);
   }
-
 
   //search
   @Post("/search")
@@ -92,13 +80,16 @@ export class FieldsController {
     @Headers() headers,
     @Req() request: Request,
     @Body() fieldsSearchDto: FieldsSearchDto,
-    @Res() response:Response
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.fieldsService.searchFields(tenantid, request, fieldsSearchDto);
-    return response.status(result.statusCode).json(result);  
+    const result = await this.fieldsService.searchFields(
+      tenantid,
+      request,
+      fieldsSearchDto
+    );
+    return response.status(result.statusCode).json(result);
   }
-
 
   //field values
   //create fields values
@@ -113,11 +104,13 @@ export class FieldsController {
   public async createFieldValues(
     @Req() request: Request,
     @Body() fieldValuesDto: FieldValuesDto,
-    @Res() response:Response
+    @Res() response: Response
   ) {
-
-    const result = await this.fieldsService.createFieldValues(request, fieldValuesDto);
-    return response.status(result.statusCode).json(result);  
+    const result = await this.fieldsService.createFieldValues(
+      request,
+      fieldValuesDto
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   //search fields values
@@ -133,13 +126,12 @@ export class FieldsController {
   public async searchFieldValues(
     @Req() request: Request,
     @Body() fieldValuesSearchDto: FieldValuesSearchDto,
-    @Res()response:Response
+    @Res() response: Response
   ) {
-
-    const result = await this.fieldsService.searchFieldValues(request, fieldValuesSearchDto);
-    return response.status(result.statusCode).json(result);  
+    const result = await this.fieldsService.searchFieldValues(
+      request,
+      fieldValuesSearchDto
+    );
+    return response.status(result.statusCode).json(result);
   }
-
-  
-
 }

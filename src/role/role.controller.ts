@@ -9,7 +9,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Query,
 } from "@nestjs/common";
 import {
@@ -33,9 +32,9 @@ export class RoleController {
   constructor(private readonly service: RoleService) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "role detail." })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "role detail." })
   @SerializeOptions({
     strategy: "excludeAll",
   })

@@ -1,4 +1,4 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { AttendanceController } from "./attendance.controller";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AttendaceAdapter } from "./attendanceadapter";
@@ -8,14 +8,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AttendanceEntity } from "./entities/attendance.entity";
 import { Repository } from "typeorm";
 
-const ttl = process.env.TTL as never;
 @Module({
   imports: [
     TypeOrmModule.forFeature([AttendanceEntity]),
     HasuraModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
     ScheduleModule.forRoot(),
   ],
   controllers: [AttendanceController],

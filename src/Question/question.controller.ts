@@ -9,7 +9,6 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -44,7 +43,7 @@ export class QuestionController {
   ) {}
 
   @Get(":adapter/search")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   // @ApiOkResponse({ description: "Get all Questions detail." })
   // @ApiForbiddenResponse({ description: "Forbidden" })
@@ -84,7 +83,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/questionIds")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   // @ApiOkResponse({ description: "Get all Questions detail." })
   // @ApiForbiddenResponse({ description: "Forbidden" })
@@ -103,10 +102,10 @@ export class QuestionController {
   }
 
   @Get(":adapter/subjectlist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get all subject list" })
-  // @ApiQuery({ name: "gradeLevel", required: true })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get all subject list" })
+  @ApiQuery({ name: "gradeLevel", required: true })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   public async getSubjectList(
     @Param("adapter") adapter: string,
     @Query("gradeLevel") gradeLevel: string
@@ -117,10 +116,10 @@ export class QuestionController {
   }
 
   @Get(":adapter/topicslist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get all subject list" })
-  // @ApiQuery({ name: "subject", required: true })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get all subject list" })
+  @ApiQuery({ name: "subject", required: true })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   public async getTopicsList(
     @Param("adapter") adapter: string,
     @Query("subject") subject: string
@@ -131,7 +130,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/questionid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   // @ApiBasicAuth("access-token")
   // @ApiOkResponse({ description: "Get Questions detail." })
   // @ApiForbiddenResponse({ description: "Forbidden" })
@@ -147,7 +146,7 @@ export class QuestionController {
   }
 
   @Get(":adapter/competencieslist")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   //@ApiBasicAuth("access-token")
   // @ApiOkResponse({ description: "Get all competencies list." })
   // @ApiForbiddenResponse({ description: "Forbidden" })
@@ -165,13 +164,13 @@ export class QuestionController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Question detail." })
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiQuery({ name: "adapter" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Question detail." })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiQuery({ name: "adapter" })
   getQuestion(
     @Param("id") questionId: string,
     @Query("adapter") adapter: string,

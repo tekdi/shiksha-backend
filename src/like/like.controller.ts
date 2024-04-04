@@ -9,7 +9,6 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
   Query,
   Delete,
 } from "@nestjs/common";
@@ -34,9 +33,9 @@ export class LikeController {
   constructor(private likeAdapter: LikeAdapter) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Like detail." })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Like detail." })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -92,11 +91,11 @@ export class LikeController {
   }
 
   @Post("/getAllLikes")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "All Like." })
-  // @ApiQuery({ name: "contextId" })
-  // @ApiQuery({ name: "context" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "All Like." })
+  @ApiQuery({ name: "contextId" })
+  @ApiQuery({ name: "context" })
   public async getCountLike(
     @Query("contextId") contextId: string,
     @Query("context") context: string,
@@ -108,9 +107,9 @@ export class LikeController {
   }
 
   @Delete("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Delete like. " })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Delete like. " })
   public async deleteLike(
     @Param("id") likeId: string,
     @Req() request: Request

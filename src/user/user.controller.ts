@@ -3,15 +3,9 @@ import {
   Get,
   Post,
   Body,
-  Put,
   Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
-  CacheInterceptor,
-  Inject,
-  Query,
   Headers,
   Res,
   Patch,
@@ -59,7 +53,6 @@ export class UserController {
    * @since   1.6
    */
   @Get("/:userid/:role")
-  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -78,18 +71,20 @@ export class UserController {
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
     // Context and ContextType can be taked from .env later
-    let userData  = {
-      userId:userId,
-      context:"USERS",
-      contextType:role
-    }
+    let userData = {
+      userId: userId,
+      context: "USERS",
+      contextType: role,
+    };
 
-    const result = await this.userService.getUsersDetailsById(userData,response);
-     return response.status(result.statusCode).json(result);  
+    const result = await this.userService.getUsersDetailsById(
+      userData,
+      response
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   @Get()
-  // @UseInterceptors(CacheInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -117,11 +112,11 @@ export class UserController {
     @Headers() headers,
     @Req() request: Request,
     @Body() userCreateDto: UserCreateDto,
-    @Res() response:Response
+    @Res() response: Response
   ) {
     userCreateDto.tenantId = headers["tenantid"];
     const result = await this.userService.createUser(request, userCreateDto);
-     return response.status(result.statusCode).json(result);   
+    return response.status(result.statusCode).json(result);
   }
 
   @Patch("/:userid")
@@ -139,9 +134,9 @@ export class UserController {
     @Res() response: Response
   ) {
     // userDto.tenantId = headers["tenantid"];
-    userUpdateDto.userId=userId;
-    const result = await this.userService.updateUser(userUpdateDto,response)
-    return response.status(result.statusCode).json(result);   
+    userUpdateDto.userId = userId;
+    const result = await this.userService.updateUser(userUpdateDto, response);
+    return response.status(result.statusCode).json(result);
   }
 
   @Post("/search")

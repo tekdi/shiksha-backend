@@ -20,7 +20,6 @@ import {
   SerializeOptions,
   Req,
   Query,
-  CacheInterceptor,
   UploadedFile,
 } from "@nestjs/common";
 import { GroupSearchDto } from "./dto/group-search.dto";
@@ -39,10 +38,10 @@ export class GroupController {
   constructor(private groupAdapter: GroupAdapter) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "Group detail" })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Group detail" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -130,10 +129,10 @@ export class GroupController {
   }
 
   @Get(":groupId/participants")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Group detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Group detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   public async findMembersOfGroup(
     @Param("groupId") id: string,
     @Query("role") role: string,
@@ -145,10 +144,10 @@ export class GroupController {
   }
 
   @Get("participant/:userId")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Group detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Group detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   public async getGroupsByUserId(
     @Param("userId") id: string,
     @Query("role") role: string,
@@ -160,10 +159,10 @@ export class GroupController {
   }
 
   @Get(":groupId/child")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Group detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Group detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   public async findMembersOfChildGroup(
     @Param("groupId") id: string,
     @Query("role") role: string,

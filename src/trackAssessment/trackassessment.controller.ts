@@ -17,7 +17,6 @@ import {
   SerializeOptions,
   Req,
   Request,
-  CacheInterceptor,
   Post,
   Body,
   Query,
@@ -51,10 +50,10 @@ export class AssessmentController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "Track Assessment detail" })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Track Assessment detail" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })

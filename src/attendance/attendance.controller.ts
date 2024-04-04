@@ -1,4 +1,3 @@
-// import { AttendanceService } from 'src/adapters/sunbirdrc/attendance.adapter';
 import {
   ApiTags,
   ApiBody,
@@ -7,7 +6,6 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiConsumes,
-  ApiQuery,
   ApiHeader,
 } from "@nestjs/swagger";
 import {
@@ -23,8 +21,6 @@ import {
   Req,
   Request,
   UploadedFile,
-  CacheInterceptor,
-  Query,
   Headers,
   UsePipes,
   ValidationPipe,
@@ -36,27 +32,24 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
-import { AttendanceHasuraService } from "src/adapters/hasura/attendance.adapter";
 import { AttendaceAdapter } from "./attendanceadapter";
 import { AttendanceDateDto } from "./dto/attendance-date.dto";
-import { AttendanceService } from './attendance.service';
+import { AttendanceService } from "./attendance.service";
 import { AttendanceStatsDto } from "./dto/attendance-stats.dto";
 import { Response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-
 
 @ApiTags("Attendance")
 @Controller("attendance")
 @UseGuards(JwtAuthGuard)
 export class AttendanceController {
   constructor(
-    private service: AttendanceHasuraService,
     private attendaceAdapter: AttendaceAdapter,
     private attendaceService: AttendanceService
-  ) { }
+  ) {}
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance detail" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -76,7 +69,6 @@ export class AttendanceController {
       .buildAttenceAdapter()
       .getAttendance(tenantid, attendanceId, request);
   }
-
 
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -104,13 +96,16 @@ export class AttendanceController {
     @Headers() headers,
     @Req() request: Request,
     @Body() attendanceDto: AttendanceDto,
-    @Res() response:Response,
+    @Res() response: Response,
     @UploadedFile() image
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    const result = await this.attendaceService.updateAttendanceRecord(request, attendanceDto);
-     return response.status(result.statusCode).json(result);  
+    const result = await this.attendaceService.updateAttendanceRecord(
+      request,
+      attendanceDto
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   @Put("/:id")
@@ -135,17 +130,19 @@ export class AttendanceController {
     @Param("id") attendanceId: string,
     @Req() request: Request,
     @Body() attendanceDto: AttendanceDto,
-    @Res() response:Response,
+    @Res() response: Response,
     @UploadedFile() image
   ) {
     const Imageresponse = {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);
-    const result = await this.attendaceService
-    .updateAttendance(attendanceId, request, attendanceDto);
-     return response.status(result.statusCode).json(result);  
-   
+    const result = await this.attendaceService.updateAttendance(
+      attendanceId,
+      request,
+      attendanceDto
+    );
+    return response.status(result.statusCode).json(result);
   }
   @Post("/search")
   @ApiBasicAuth("access-token")
@@ -164,13 +161,16 @@ export class AttendanceController {
     @Headers() headers,
     @Req() request: Request,
     @Body() studentSearchDto: AttendanceSearchDto,
-    @Res() response:Response
+    @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
 
-   const result = await this.attendaceService
-      .searchAttendance(tenantid, request, studentSearchDto);
-     return response.status(result.statusCode).json(result);  
+    const result = await this.attendaceService.searchAttendance(
+      tenantid,
+      request,
+      studentSearchDto
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   @Post("/bydate")
@@ -184,12 +184,16 @@ export class AttendanceController {
   public async attendanceFilter(
     @Headers() headers,
     @Req() request: Request,
-    @Res() response:Response,
+    @Res() response: Response,
     @Body() attendanceDateDto: AttendanceDateDto
   ) {
     const tenantId = headers["tenantid"];
-    const result = await this.attendaceService.attendanceByDate(tenantId, request, attendanceDateDto);
-     return response.status(result.statusCode).json(result); 
+    const result = await this.attendaceService.attendanceByDate(
+      tenantId,
+      request,
+      attendanceDateDto
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   @Post("bulkAttendance")
@@ -206,13 +210,16 @@ export class AttendanceController {
   public async multipleAttendance(
     @Headers() headers,
     @Req() request: Request,
-    @Res() response:Response,
+    @Res() response: Response,
     @Body() attendanceDtos: BulkAttendanceDTO
   ) {
     let tenantId = headers["tenantid"];
-    const result = await this.attendaceService
-    .multipleAttendance(tenantId, request, attendanceDtos);
-     return response.status(result.statusCode).json(result); 
+    const result = await this.attendaceService.multipleAttendance(
+      tenantId,
+      request,
+      attendanceDtos
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   @Post("/report")
@@ -227,20 +234,21 @@ export class AttendanceController {
   public async report(
     @Headers() headers,
     @Req() request: Request,
-    @Res() response:Response,
+    @Res() response: Response,
     @Body() attendanceStatsDto: AttendanceStatsDto
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = await this.attendaceService
-    .attendanceReport(attendanceStatsDto);
-     return response.status(result.statusCode).json(result); 
+    const result = await this.attendaceService.attendanceReport(
+      attendanceStatsDto
+    );
+    return response.status(result.statusCode).json(result);
   }
 
   /** No longer required in Shiksha 2.0 */
   /*
   @Get("usersegment/:attendance")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   // @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -255,5 +263,4 @@ export class AttendanceController {
     return await this.service.userSegment(groupId, attendance, date, request);
   }
   */
-
 }

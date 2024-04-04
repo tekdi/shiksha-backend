@@ -6,7 +6,6 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -26,18 +25,18 @@ import { IServicelocator } from "src/adapters/courseservicelocator";
 @Controller("course")
 export class CourseController {
   constructor(
-    @Inject(DikshaCourseToken) private dikshaProvider: IServicelocator,
+    @Inject(DikshaCourseToken) private dikshaProvider: IServicelocator
   ) {}
 
   @Get(":adapter/search")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get all Course detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @ApiQuery({ name: "subject", required: false })
-  // @ApiQuery({ name: "audience", required: false })
-  // @ApiQuery({ name: "className", required: false })
-  // @ApiQuery({ name: "medium", required: false })
-  // @ApiQuery({ name: "limit", required: false })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get all Course detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "subject", required: false })
+  @ApiQuery({ name: "audience", required: false })
+  @ApiQuery({ name: "className", required: false })
+  @ApiQuery({ name: "medium", required: false })
+  @ApiQuery({ name: "limit", required: false })
   public async getAllCourse(
     @Param("adapter") adapter: string,
     @Query("subject") subject: [string],
@@ -60,10 +59,10 @@ export class CourseController {
   }
 
   @Get(":adapter/courseIds")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get all Course detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @ApiQuery({ name: "courseIds", required: false })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get all Course detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "courseIds", required: false })
   public async getCoursesByIds(
     @Param("adapter") adapter: string,
     @Query("courseIds") courseIds: [string],
@@ -74,10 +73,10 @@ export class CourseController {
     }
   }
   @Get(":adapter/hierarchy/courseid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get Course detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @ApiQuery({ name: "courseId", required: false })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get Course detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "courseId", required: false })
   public async getCourseHierarchy(
     @Param("adapter") adapter: string,
     @Query("courseId") courseId: string,
@@ -89,10 +88,10 @@ export class CourseController {
   }
 
   @Get(":adapter/content/courseid")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiOkResponse({ description: "Get Course detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @ApiQuery({ name: "courseId", required: false })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Get Course detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "courseId", required: false })
   public async getCourseDetail(
     @Param("adapter") adapter: string,
     @Query("courseId") courseId: string,

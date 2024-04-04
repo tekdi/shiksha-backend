@@ -10,7 +10,6 @@ import {
 } from "@nestjs/swagger";
 import {
   Body,
-  CacheInterceptor,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -64,10 +63,10 @@ export class WorkHistoryController {
   }
 
   @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "Work History detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Work History detail." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })

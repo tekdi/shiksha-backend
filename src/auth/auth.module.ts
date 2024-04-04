@@ -1,4 +1,4 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -11,14 +11,10 @@ import { Field } from "src/user/entities/field-entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 import { KeycloakService } from "src/common/utils/keycloak.service";
 
-const ttl = process.env.TTL as never;
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, FieldValues, Field, CohortMembers]),
     HttpModule,
-    CacheModule.register({
-      ttl: ttl,
-    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, KeycloakService, UserService],

@@ -4,21 +4,21 @@ import { UserDto } from "src/user/dto/user.dto";
 
 export interface IServicelocator {
   getUser(
-    tenantId: string,
-    id: any,
-    accessRole: string,
-    request: any,
-    response: any
+    userId?:Record<string, string>,
+    response?: any,
+    tenantId?: string,
+    id?: any,
+    accessRole?: string,
+    request?: any,
   );
-  getUserByAuth(tenantId: string, request: any);
-  checkAndAddUser(request: any, userDto: UserCreateDto);
+  updateUser(id?: string, request?: any, userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);
-  updateUser(id: string, request: any, userDto: UserCreateDto);
-  searchUser(
-    tenantId: string,
-    request: any,
-    response: any,
-    userSearchDto: UserSearchDto
-  );
+  findUserDetails(userID:any,username:String)
+  // searchUser(
+  //   tenantId: string,
+  //   request: any,
+  //   response: any,
+  //   userSearchDto: UserSearchDto
+  // );
   resetUserPassword(request: any, username: string, newPassword: string);
 }

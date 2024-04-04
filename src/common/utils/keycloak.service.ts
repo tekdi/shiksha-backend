@@ -54,9 +54,9 @@ export class KeycloakService {
       },
       data: data,
     };
-
+    console.log(axiosConfig);
     const res = await this.axios(axiosConfig);
-
+    console.log(res);
     return res.data;
   }
 

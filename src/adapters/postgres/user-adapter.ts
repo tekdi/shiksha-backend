@@ -1,34 +1,28 @@
-import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
-import { User } from './entities/user-entity'
-import { FieldValues } from './entities/field-value-entities';
-import ApiResponse from '../utils/response'
+import {ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import { User } from '../../user/entities/user-entity'
+import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserCreateDto } from './dto/user-create.dto';
+import { UserCreateDto } from '../../user/dto/user-create.dto';
 import jwt_decode from "jwt-decode";
 import {
-    getUserRole,
     getKeycloakAdminToken,
     createUserInKeyCloak,
     checkIfUsernameExistsInKeycloak,
-} from "../common/utils/keycloak.adapter.util"
-import { FieldValuesCreateDto } from 'src/fields/dto/field-values-create.dto';
+} from "../../common/utils/keycloak.adapter.util"
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
-import { Field } from './entities/field-entity';
-import APIResponse from '../utils/response';
+import { Field } from '../../user/entities/field-entity';
+import APIResponse from '../../utils/response';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
-import { v5 as uuidv5 } from 'uuid';
-import { UUID } from 'typeorm/driver/mongodb/bson.typings';
-import { AnyARecord } from 'dns';
-import { CohortSearchDto } from 'src/cohort/dto/cohort-search.dto';
-import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
+import axios,{AxiosInstance, AxiosRequestConfig} from "axios"
 
 
 @Injectable()
-@Injectable()
-export class UserService {
+export class PostgresUserService {
+  axios = require("axios");
   constructor(
+    // private axiosInstance: AxiosInstance,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     @InjectRepository(FieldValues)
@@ -39,7 +33,7 @@ export class UserService {
     private cohortMemberRepository: Repository<CohortMembers>
   ) {}
   
-  async getUsersDetailsById(userData:Record<string,string>,response){
+  async getUser(userData:Record<string,string>,response){
     let apiId='api.users.getUsersDetails'
     try {
       const result = {
@@ -66,16 +60,20 @@ export class UserService {
         customFieldsArray.push(customField);
     }
     result.userData['customFields'] = customFieldsArray;
-    return new SuccessResponse({
-      statusCode: HttpStatus.OK,
-      message: 'Ok.',
-      data: result,
-  });
+    return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, result, 'OK'));
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-    });
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
     }
 }
 
@@ -125,16 +123,20 @@ export class UserService {
           }
       }
       }
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: 'Ok',
-        data: updatedData,
-    });
+      return response
+        .status(HttpStatus.OK)
+        .send(APIResponse.success(apiId, updatedData, 'OK'));
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-    });
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(
+          APIResponse.error(
+            apiId,
+            'Something went wrong In finding UserDetails',
+            e,
+            'INTERNAL_SERVER_ERROR',
+          ),
+        );
     }
   }
 
@@ -184,8 +186,8 @@ export class UserService {
       const token = keycloakResponse.data.access_token;
       let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
       if(checkUserinKeyCloakandDb){
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
+        return new ErrorResponse({
+          errorCode: "400",
           errorMessage: "User Already Exists",
         });
       }
@@ -193,8 +195,8 @@ export class UserService {
         (error) => {
           errKeycloak = error.response?.data.errorMessage;
 
-          return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          return new ErrorResponse({
+            errorCode: "500",
             errorMessage: "Someting went wrong",
           });
         }
@@ -213,21 +215,21 @@ export class UserService {
         }
         let result = await this.updateCustomFields(userId,fieldData);
         if(!result) {
-          return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          return new ErrorResponse({
+            errorCode: "500",
             errorMessage: `Error is ${result}`,
           });
         }
       }
      }
      return new SuccessResponse({
-      statusCode: HttpStatus.CREATED,
+      statusCode: 200,
       message: "ok",
       data: result,
     });
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      return new ErrorResponse({
+        errorCode: "500",
         errorMessage: `Error is ${e}`,
       });
     }
@@ -286,9 +288,127 @@ export class UserService {
     let result = await this.cohortMemberRepository.insert(cohortData);
     return result;;
     } catch (error) {
+      console.log(error);
       throw new Error(error)
     }
   }
+
+  public async resetUserPassword(
+    request: any,
+    username: string,
+    newPassword: string
+  ) {
+    try {
+      const userData: any = await this.findUserDetails(null, username);
+      let userId;
+
+      if (userData?.userId) {
+        userId = userData?.userId;
+      } else {
+        return new ErrorResponse({
+          errorCode: `404`,
+          errorMessage: "User with given username not found",
+        });
+      }
+
+      // const data = JSON.stringify({
+      //   temporary: "false",
+      //   type: "password",
+      //   value: newPassword,
+      // });
+
+      const keycloakResponse = await getKeycloakAdminToken();
+      const resToken = keycloakResponse.data.access_token;
+      let apiResponse;
+
+      try {
+        apiResponse = await this.resetKeycloakPassword(
+          request,
+          resToken,
+          newPassword,
+          userId
+        );
+      } catch (e) {
+        return new ErrorResponse({
+          errorCode: `${e.response.status}`,
+          errorMessage: e.response.data.error,
+        });
+      }
+
+      if (apiResponse.statusCode === 204) {
+        return new SuccessResponse({
+          statusCode: apiResponse.statusCode,
+          message: apiResponse.message,
+          data: apiResponse.data,
+        });
+      } else {
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: apiResponse.errors,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      return e;
+    }
+  }
+  public async resetKeycloakPassword(
+    request: any,
+    token: string,
+    newPassword: string,
+    userId: string
+  ) {
+    const data = JSON.stringify({
+      temporary: "false",
+      type: "password",
+      value: newPassword,
+    });
+
+    if (!token) {
+      const response = await getKeycloakAdminToken();
+      token = response.data.access_token;
+    }
+
+    let apiResponse;
+
+    const config = {
+      method: "put",
+      url:
+        process.env.KEYCLOAK +
+        process.env.KEYCLOAK_ADMIN +
+        "/" +
+        userId +
+        "/reset-password",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      data: data,
+    };
+
+    try {
+      apiResponse = await this.axios(config);
+    } catch (e) {
+      return new ErrorResponse({
+        errorCode: `${e.response.status}`,
+        errorMessage: e.response.data.error,
+      });
+    }
+
+    if (apiResponse.status === 204) {
+      return new SuccessResponse({
+        statusCode: apiResponse.status,
+        message: apiResponse.statusText,
+        data: { msg: "Password reset successful!" },
+      });
+    } else {
+      return new ErrorResponse({
+        errorCode: "400",
+        errorMessage: apiResponse.errors,
+      });
+    }
+  }
+
 }
     
     

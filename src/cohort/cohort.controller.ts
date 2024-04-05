@@ -40,7 +40,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 @Controller("cohort")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
-  constructor(private readonly cohortService: CohortService) {}
+  constructor(private readonly cohortService: CohortService,private readonly cohortAdapter:CohortAdapter) {}
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -74,7 +74,7 @@ export class CohortController {
       tenantId: tenantid,
     };
     Object.assign(cohortCreateDto, payload);
-    const result = await this.cohortService.createCohort(
+    const result = await this.cohortAdapter.buildCohortAdapter().createCohort(
       request,
       cohortCreateDto
     );
@@ -98,7 +98,7 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.cohortService.getCohortList(
+    const result = await this.cohortAdapter.buildCohortAdapter().getCohortList(
       tenantid,
       id,
       request,

@@ -4,7 +4,7 @@ import axios from "axios";
 import jwt_decode from "jwt-decode";
 import APIResponse from "src/utils/response";
 import { KeycloakService } from "src/common/utils/keycloak.service";
-import { User } from "src/user/entities/user-entity";
+
 
 type LoginResponse = {
   access_token: string;
@@ -31,7 +31,6 @@ export class AuthService {
       refresh_expires_in,
       token_type,
     } = await this.keycloakService.login(username, password).catch(() => {throw new UnauthorizedException();});
-    console.log(access_token);
     return {
       access_token,
       refresh_token,

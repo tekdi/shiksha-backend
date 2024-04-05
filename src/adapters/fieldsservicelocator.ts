@@ -6,12 +6,12 @@ import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 export interface IServicelocatorfields {
   //fields
   createFields(request: any, fieldsDto: FieldsDto);
-  getFields(tenantId, fieldsId, request);
+  // getFields(tenantId, fieldsId, request);
   searchFields(tenantid, request: any, fieldsSearchDto: FieldsSearchDto);
-  updateFields(fieldsId: string, request: any, fieldsDto: FieldsDto);
+  // updateFields(fieldsId: string, request: any, fieldsDto: FieldsDto);
   //field values
   createFieldValues(request: any, fieldValuesDto: FieldValuesDto);
-  getFieldValues(id, request);
+  // getFieldValues(id, request);
   searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto);
   updateFieldValues(id: string, request: any, fieldValuesDto: FieldValuesDto);
 }

@@ -7,6 +7,7 @@ import { Fields } from "./entities/fields.entity";
 import { FieldValues } from "./entities/fields-values.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { FieldsService } from "./fields.service";
+import { PostgresModule } from "src/adapters/postgres/potsgres-module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { FieldsService } from "./fields.service";
     TypeOrmModule.forFeature([FieldValues]),
     HttpModule,
     HasuraModule,
+    PostgresModule
   ],
   controllers: [FieldsController],
   providers: [FieldsAdapter, FieldsService],

@@ -25,13 +25,16 @@ export class HasuraUserService implements IServicelocator {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) {}
-
+  public async findUserDetails(userID: any, username: String) {
+    
+  }
   public async getUser(
-    tenantId: string,
-    userId: string,
-    accessRole: string,
-    request: any,
-    res: any
+    userData?:Record<string,string>,
+    res?: any,
+    tenantId?: string,
+    userId?: string,
+    accessRole?: string,
+    request?: any,
   ) {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);

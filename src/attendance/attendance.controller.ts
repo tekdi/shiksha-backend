@@ -34,7 +34,6 @@ import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
 import { AttendaceAdapter } from "./attendanceadapter";
 import { AttendanceDateDto } from "./dto/attendance-date.dto";
-import { AttendanceService } from "./attendance.service";
 import { AttendanceStatsDto } from "./dto/attendance-stats.dto";
 import { Response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
@@ -45,30 +44,29 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 export class AttendanceController {
   constructor(
     private attendaceAdapter: AttendaceAdapter,
-    private attendaceService: AttendanceService
   ) {}
 
-  @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getAttendance(
-    @Headers() headers,
-    @Param("id") attendanceId: string,
-    @Req() request: Request
-  ) {
-    let tenantid = headers["tenantid"];
-    return await this.attendaceAdapter
-      .buildAttenceAdapter()
-      .getAttendance(tenantid, attendanceId, request);
-  }
+  // @Get("/:id")
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Attendance detail" })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async getAttendance(
+  //   @Headers() headers,
+  //   @Param("id") attendanceId: string,
+  //   @Req() request: Request
+  // ) {
+  //   let tenantid = headers["tenantid"];
+  //   return await this.attendaceAdapter
+  //     .buildAttenceAdapter()
+  //     .getAttendance(tenantid, attendanceId, request);
+  // }
 
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -101,7 +99,7 @@ export class AttendanceController {
   ) {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
-    const result = await this.attendaceService.updateAttendanceRecord(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().updateAttendanceRecord(
       request,
       attendanceDto
     );
@@ -137,13 +135,15 @@ export class AttendanceController {
       image: image?.filename,
     };
     Object.assign(attendanceDto, response);
-    const result = await this.attendaceService.updateAttendance(
+    const result = this.attendaceAdapter.buildAttenceAdapter().updateAttendance(
       attendanceId,
       request,
       attendanceDto
     );
     return response.status(result.statusCode).json(result);
   }
+
+
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
@@ -165,7 +165,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = await this.attendaceService.searchAttendance(
+    const result = this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
       tenantid,
       request,
       studentSearchDto
@@ -188,7 +188,7 @@ export class AttendanceController {
     @Body() attendanceDateDto: AttendanceDateDto
   ) {
     const tenantId = headers["tenantid"];
-    const result = await this.attendaceService.attendanceByDate(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().attendanceByDate(
       tenantId,
       request,
       attendanceDateDto
@@ -214,7 +214,7 @@ export class AttendanceController {
     @Body() attendanceDtos: BulkAttendanceDTO
   ) {
     let tenantId = headers["tenantid"];
-    const result = await this.attendaceService.multipleAttendance(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().multipleAttendance(
       tenantId,
       request,
       attendanceDtos
@@ -239,7 +239,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = await this.attendaceService.attendanceReport(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().attendanceReport(
       attendanceStatsDto
     );
     return response.status(result.statusCode).json(result);

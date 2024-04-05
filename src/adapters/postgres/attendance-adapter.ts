@@ -1,24 +1,24 @@
-import { User } from './../user/entities/user-entity';
+import { User } from '../../user/entities/user-entity';
 import { isAfter } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'pg';
 import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
-import { AttendanceEntity } from "./entities/attendance.entity";
+import { AttendanceEntity } from "../../attendance/entities/attendance.entity";
 import { Repository } from "typeorm";
 import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { AttendanceSearchDto } from "./dto/attendance-search.dto";
+import { AttendanceSearchDto } from "../../attendance/dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
-import { AttendanceDto, BulkAttendanceDTO } from './dto/attendance.dto';
-import { AttendanceDateDto } from './dto/attendance-date.dto';
+import { AttendanceDto, BulkAttendanceDTO } from '../../attendance/dto/attendance.dto';
+import { AttendanceDateDto } from '../../attendance/dto/attendance-date.dto';
 import { Between } from 'typeorm';
-import { AttendanceStatsDto } from './dto/attendance-stats.dto';
+import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
 import { format } from 'date-fns'
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 const moment = require('moment');
 
 @Injectable()
-export class AttendanceService {
+export class PostgresAttendanceService {
     constructor(private configService: ConfigService,
         @InjectRepository(AttendanceEntity)
         private readonly attendanceRepository: Repository<AttendanceEntity>,

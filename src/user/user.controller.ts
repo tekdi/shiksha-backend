@@ -29,18 +29,14 @@ import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
-import { UserService } from "./user.service";
 import { UserUpdateDTO } from "./dto/user-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
 @ApiTags("User")
 @Controller("user")
-@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(
-    private readonly service: UserService,
     private userAdapter: UserAdapter,
-    private userService: UserService
   ) {}
 
   /**
@@ -53,6 +49,7 @@ export class UserController {
    * @since   1.6
    */
   @Get("/:userid/:role")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -77,29 +74,30 @@ export class UserController {
       contextType: role,
     };
 
-    const result = await this.userService.getUsersDetailsById(
+    const result = await this.userAdapter.buildUserAdapter().getUser(
       userData,
       response
     );
     return response.status(result.statusCode).json(result);
   }
 
-  @Get()
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "User detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getUserByAuth(@Headers() headers, @Req() request: Request) {
-    const tenantId = headers["tenantid"];
-    return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
-  }
+  // @Get()
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "User detail." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async getUserByAuth(@Headers() headers, @Req() request: Request) {
+  //   const tenantId = headers["tenantid"];
+  //   return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
+  // }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserCreateDto })
@@ -115,11 +113,12 @@ export class UserController {
     @Res() response: Response
   ) {
     userCreateDto.tenantId = headers["tenantid"];
-    const result = await this.userService.createUser(request, userCreateDto);
+    const result = await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
     return response.status(result.statusCode).json(result);
   }
 
   @Patch("/:userid")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been updated successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -135,40 +134,38 @@ export class UserController {
   ) {
     // userDto.tenantId = headers["tenantid"];
     userUpdateDto.userId = userId;
-    const result = await this.userService.updateUser(userUpdateDto, response);
+    const result = await this.userAdapter.buildUserAdapter().updateUser(userId,request,userUpdateDto,response);
     return response.status(result.statusCode).json(result);
   }
 
-  @Post("/search")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "User list." })
+  // @Post("/search")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "User list." })
   // @ApiBody({ type: UserSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async searchUser(
-    @Headers() headers,
-    @Req() request: Request,
-    @Res() response: Response,
-    @Body() userSearchDto: UserSearchDto
-  ) {
-    const tenantId = headers["tenantid"];
-    return await this.userAdapter
-      .buildUserAdapter()
-      .searchUser(tenantId, request, response, userSearchDto);
-  }
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @SerializeOptions({
+  //   strategy: "excludeAll",
+  // })
+  // @ApiHeader({
+  //   name: "tenantid",
+  // })
+  // public async searchUser(
+  //   @Headers() headers,
+  //   @Req() request: Request,
+  //   @Res() response: Response,
+  //   @Body() userSearchDto: UserSearchDto
+  // ) {
+  //   const tenantId = headers["tenantid"];
+  //   return await this.userAdapter
+  //     .buildUserAdapter()
+  //     .searchUser(tenantId, request, response, userSearchDto);
+  // }
 
   @Post("/reset-password")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Password reset successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiBody({ type: Object })
-  // @UseInterceptors(ClassSerializerInterceptor)
   public async resetUserPassword(
     @Req() request: Request,
     @Body()
@@ -181,4 +178,6 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+
 }

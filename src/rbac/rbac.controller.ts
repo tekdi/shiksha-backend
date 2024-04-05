@@ -36,13 +36,16 @@ import { RoleSearchDto } from "./dto/rbac-search.dto";
 import { RoleService } from "./rbac.service";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { RbacAdapter } from "./rbacadapter";
 
 
 @ApiTags("rbac")
 @Controller("rbac")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
-  constructor(private readonly roleService: RoleService) { }
+  constructor(private readonly roleService: RoleService,private readonly rbacAdapter:RbacAdapter) { }
+  // constructor(private readonly cohortService: CohortService,private readonly cohortAdapter:CohortAdapter) {}
+
 
   //Get role
   @Get("/:id")
@@ -74,7 +77,7 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    const result = await this.roleService.createRole(request, roleDto);
+    const result = await this.rbacAdapter.buildRbacAdapter().createRole(request, roleDto);
     return response.status(result.statusCode).json(result);
   }
 

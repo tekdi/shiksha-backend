@@ -6,12 +6,17 @@ import { Role } from "./entities/rbac.entity";
 import { RoleService } from "./rbac.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { PostgresModule } from "src/adapters/postgres/potsgres-module";
+import { PostgresRbacService } from "src/adapters/postgres/rbac-adapter";
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Role]),
-    HttpModule
+    HttpModule,
+    PostgresModule
+
   ],
   controllers: [RoleController],
-  providers: [RoleService],
+  providers: [RoleService,PostgresRbacService],
 })
 export class RoleModule {}

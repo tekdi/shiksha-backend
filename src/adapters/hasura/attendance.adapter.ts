@@ -18,7 +18,12 @@ export class AttendanceHasuraService implements IServicelocator {
   axios = require("axios");
 
   constructor(private httpService: HttpService) {}
-
+  public async attendanceReport(attendanceStatsDto: any) {
+    
+  }
+  public async updateAttendanceRecord(request: any, attendanceDto: any) {
+    
+  }
   public async getAttendance(
     tenantId: string,
     attendanceId: string,

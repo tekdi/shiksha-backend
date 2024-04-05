@@ -59,7 +59,7 @@ export class FieldsController {
       tenantId: tenantid,
     };
     Object.assign(fieldsDto, payload);
-    const result = await this.fieldsService.createFields(request, fieldsDto);
+    const result = await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -83,7 +83,7 @@ export class FieldsController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.fieldsService.searchFields(
+    const result = await this.fieldsAdapter.buildFieldsAdapter().searchFields(
       tenantid,
       request,
       fieldsSearchDto
@@ -106,7 +106,7 @@ export class FieldsController {
     @Body() fieldValuesDto: FieldValuesDto,
     @Res() response: Response
   ) {
-    const result = await this.fieldsService.createFieldValues(
+    const result = await this.fieldsAdapter.buildFieldsAdapter().createFieldValues(
       request,
       fieldValuesDto
     );
@@ -128,7 +128,7 @@ export class FieldsController {
     @Body() fieldValuesSearchDto: FieldValuesSearchDto,
     @Res() response: Response
   ) {
-    const result = await this.fieldsService.searchFieldValues(
+    const result = await this.fieldsAdapter.buildFieldsAdapter().searchFieldValues(
       request,
       fieldValuesSearchDto
     );

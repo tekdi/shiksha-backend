@@ -22,6 +22,8 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) {}
+  public async  getCohortList(tenantid: any, id: any, request: any, response: any) {
+  }
 
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try{

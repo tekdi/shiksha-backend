@@ -28,8 +28,6 @@ import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./common/database.module";
 import { SwaggerModule } from "@nestjs/swagger";
 // Below modules no longer required in Shiksha 2.0
-// import { GroupModule } from "./group/group.module";
-// import { GroupMembershipModule } from "./groupMembership/groupMembership.module";
 // import { StudentModule } from "./student/student.module";
 
 @Module({

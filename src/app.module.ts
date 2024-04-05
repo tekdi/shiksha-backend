@@ -19,7 +19,7 @@ import { MonitorTrackingModule } from "./monitorTracking/monitorTracking.module"
 import { CourseModule } from "./course/course.module";
 import { CourseTrackingModule } from "./courseTracking/courseTracking.module";
 import { AnnouncementsModule } from "./announcements/announcements.module";
-import { RoleModule } from "./role/role.module";
+import { RoleModule } from "./rbac/rbac.module";
 import { WorkHistoryModule } from "./workHistory/workHistory.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";

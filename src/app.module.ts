@@ -7,7 +7,6 @@ import { AppService } from "./app.service";
 
 /*
 import { ConfigurationModule } from "./configs/configuration.module";
-import { AnnouncementsModule } from "./announcements/announcements.module";
 import { WorkHistoryModule } from "./workHistory/workHistory.module";
 */
 // In use for Shiksha 2.0

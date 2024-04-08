@@ -7,7 +7,6 @@ import { AppService } from "./app.service";
 
 /*
 import { ConfigurationModule } from "./configs/configuration.module";
-import { QuestionModule } from "./Question/question.module";
 import { LikeModule } from "./like/like.module";
 import { CommentModule } from "./comment/comment.module";
 import { TrackAssessmentModule } from "./trackAssessment/trackassessment.module";

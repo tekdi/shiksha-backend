@@ -29,7 +29,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/schedule": "^1.1.0",
-    "@nestjs/swagger": "^5.2.0",
+    "@nestjs/swagger": "^5.2.1",
     "@nestjs/typeorm": "^10.0.2",
     "axios": "^0.26.1",
     "cache-manager": "^3.6.1",

@@ -24,19 +24,18 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
-import { RoleDto } from "./dto/rbac.dto";
-import { RoleSearchDto } from "./dto/rbac-search.dto";
-import { RoleService } from "./rbac.service";
+import { RoleDto } from "./dto/role.dto";
+import { RoleSearchDto } from "./dto/role-search.dto";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { RbacAdapter } from "./rbacadapter";
+import { RoleAdapter } from "./roleadapter"
 
 
 @ApiTags("rbac")
-@Controller("rbac")
+@Controller("role")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
-  constructor(private readonly roleService: RoleService,private readonly rbacAdapter:RbacAdapter) { }
+  constructor(private readonly roleAdapter:RoleAdapter) { }
 
   //Get role
   @Get("/:id")
@@ -50,12 +49,13 @@ export class RoleController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.rbacAdapter.buildRbacAdapter().getRole(roleId, request);
+    const result = await this.roleAdapter.buildRbacAdapter().getRole(roleId, request);
     return response.status(result.statusCode).json(result);
   }
 
   //Create role
   @Post()
+  @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role has been created successfully." })
   @ApiBody({ type: RoleDto })
@@ -66,7 +66,7 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    const result = await this.rbacAdapter.buildRbacAdapter().createRole(request, roleDto);
+    const result = await this.roleAdapter.buildRbacAdapter().createRole(request, roleDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -83,7 +83,7 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    const result = await this.rbacAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto);
+    const result = await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -103,7 +103,7 @@ export class RoleController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.rbacAdapter.buildRbacAdapter().searchRole(tenantid,request,roleSearchDto);
+    const result = await this.roleAdapter.buildRbacAdapter().searchRole(tenantid,request,roleSearchDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -116,7 +116,7 @@ export class RoleController {
     @Param("id") roleId: string,
     @Res() response: Response
   ) {
-    const result = await this.rbacAdapter.buildRbacAdapter().deleteRole(roleId);
+    const result = await this.roleAdapter.buildRbacAdapter().deleteRole(roleId);
     return response.status(result.statusCode).json(result);
   }
 }

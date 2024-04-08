@@ -1,8 +1,10 @@
 import { Expose } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
+import {IsNotEmpty,IsString, IsUUID} from "class-validator"
 
 export class RoleDto {
   @Expose()
+  @IsUUID()
   roleId: string;
 
   @ApiProperty({
@@ -11,6 +13,7 @@ export class RoleDto {
     default: "",
   })
   @Expose()
+  @IsNotEmpty()
   roleName: string;
 
   constructor(obj: any) {

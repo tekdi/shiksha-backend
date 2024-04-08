@@ -1,14 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Role } from "./entities/rbac.entity";
+import { Role } from "src/rbac/role/entities/rbac.entity"
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RoleDto } from "./dto/rbac.dto";
+import { RoleDto } from "../../../rbac/role/dto/role.dto";
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
-import { RoleSearchDto } from "./dto/rbac-search.dto";
+import { RoleSearchDto } from "../../../rbac/role/dto/role-search.dto";
 
 @Injectable()
-export class RoleService {
+export class PostgresRoleService {
     constructor(
         @InjectRepository(Role)
         private roleRepository: Repository<Role>

@@ -5,7 +5,7 @@ import { Role } from './entities/rbac.entity';
 import { HasuraModule } from 'src/adapters/hasura/hasura.module';
 import { PostgresModule } from 'src/adapters/postgres/potsgres-module';
 import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';
-import { HasuraRoleService } from 'src/adapters/hasura/rbac.adapter';
+import { HasuraRoleService } from 'src/adapters/hasura/rbac/role.adapter';
 import { HttpModule } from '@nestjs/axios';
 import { RoleAdapter } from './roleadapter';
 

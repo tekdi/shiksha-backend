@@ -26,7 +26,6 @@ import { AuthModule } from "./auth/auth.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
-import { RoleModule } from "./role/role.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { UserModule } from "./user/user.module";
 
@@ -37,7 +36,6 @@ import { UserModule } from "./user/user.module";
       dest: "./uploads",
     }),
     UserModule,
-    RoleModule,
     AttendanceModule,
     CohortModule,
     CohortMembersModule,

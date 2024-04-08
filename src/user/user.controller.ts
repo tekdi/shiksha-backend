@@ -84,10 +84,17 @@ export class UserController {
       result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(
         userData, response);
     }
-    if (userData.cohortId !== null) {
+    else if (userData.cohortId !== null) {
       result = await this.userAdapter.buildUserAdapter().getUsersDetailsByCohortId(
         userData, response);
     }
+    if (userData.userId == null && userData.cohortId == null) {
+      return response.status(400).json({ 
+        statusCode: 400,
+        error: "Please entire userId or cohortId in query parameters" 
+      });
+    }
+    
     return response.status(result.statusCode).json(result);
   }
 

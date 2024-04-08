@@ -24,6 +24,7 @@ import {
   UseGuards,
   ValidationPipe,
   UsePipes,
+  Query,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -35,6 +36,7 @@ import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortService } from "./cohort.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -80,34 +82,8 @@ export class CohortController {
     );
     return response.status(result.statusCode).json(result);
   }
-
-  @Get("cohortList/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getCohortList(
-    @Headers() headers,
-    @Param("id") id: string,
-    @Req() request: Request,
-    @Res() response: Response
-  ) {
-    let tenantid = headers["tenantid"];
-    const result = await this.cohortAdapter.buildCohortAdapter().getCohortList(
-      tenantid,
-      id,
-      request,
-      response
-    );
-    return response.status(result.statusCode).json(result);
-  }
-
-  @Get("cohortDetails/:id")
+  
+  @Get("cohortDetails?")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort details" })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -119,17 +95,30 @@ export class CohortController {
   })
   public async getCohortDetails(
     @Headers() headers,
-    @Param("id") cohortId: string,
+    @Query() queryParams: QueryParamsDto,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    let tenantid = headers["tenantid"];
-    return this.cohortService.getCohortsDetails(
-      tenantid,
-      cohortId,
-      request,
-      response
-    );
+    if(!Object.keys(queryParams).length){
+      return response.status(400).json({
+        message:"Please enter Query Params"
+      })
+    }
+    queryParams.name = queryParams.name.toLocaleLowerCase();
+    let data;
+    let tenantId = request.headers['tenantId']
+    if (queryParams?.name=== 'user') {
+      data=queryParams
+      return this.cohortService.getCohortsDetails(data,request,response)
+    } else if (queryParams?.name === 'cohort') {
+      data=queryParams
+      return this.cohortService.getCohortsDetails(data,request,response)
+    } else {
+      return response.status(400).json({
+        message:"Invaid Parameters.",
+        data:`Valid format should be name="cohortoruser" and id=value`
+      })
+    }
   }
 
   // search

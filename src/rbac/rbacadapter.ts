@@ -3,9 +3,6 @@ import { IServicelocatorRbac } from "../adapters/rbacservicelocator";
 import { HasuraRoleService } from "../adapters/hasura/rbac.adapter";
 import { PostgresRbacService } from "../adapters/postgres/rbac-adapter";
 
-
-
-
 @Injectable()
 export class RbacAdapter {
   constructor(private hasuraProvider: HasuraRoleService,

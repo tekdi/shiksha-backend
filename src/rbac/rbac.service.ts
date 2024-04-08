@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import { RoleDto } from "./dto/rbac.dto";
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
-import { v4 as uuidv4 } from 'uuid';
 import { RoleSearchDto } from "./dto/rbac-search.dto";
 
 @Injectable()

@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { IServicelocatorRbac } from "../adapters/rbacservicelocator";
-import { HasuraRoleService } from "../adapters/hasura/rbac.adapter";
-import { PostgresRbacService } from "../adapters/postgres/rbac-adapter";
+import { IServicelocatorRbac } from "../../adapters/rbacservicelocator";
+import { HasuraRoleService } from "../../adapters/hasura/rbac.adapter";
+import { PostgresRoleService } from "../../adapters/postgres/rbac/role-adapter";
 
 @Injectable()
-export class RbacAdapter {
+export class RoleAdapter {
   constructor(private hasuraProvider: HasuraRoleService,
-    private postgresProvider:PostgresRbacService) {}
+    private postgresProvider:PostgresRoleService) {}
   buildRbacAdapter(): IServicelocatorRbac {
     let adapter: IServicelocatorRbac;
 

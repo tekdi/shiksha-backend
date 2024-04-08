@@ -1,5 +1,5 @@
-import { RoleSearchDto } from "../rbac/dto/rbac-search.dto";
-import { RoleDto } from "../rbac/dto/rbac.dto";
+import { RoleSearchDto } from "../rbac/role/dto/role-search.dto";
+import { RoleDto } from "../rbac/role/dto/role.dto";
 
 export interface IServicelocatorRbac {
     getRole(

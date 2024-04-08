@@ -1,7 +1,6 @@
 import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
 import { AttendanceHasuraService } from "./attendance.adapter";
-import { HasuraCommentService } from "./comment.adapter";
 import { HasuraConfigService } from "./config.adapter";
 import { HasuraCohortService } from "./cohort.adapter";
 import { HasuraCohortMembersService } from "./cohortMembers.adapter";
@@ -15,7 +14,6 @@ import { HasuraUserService } from "./user.adapter";
     AttendanceHasuraService,
     HasuraCohortService,
     HasuraCohortMembersService,
-    HasuraCommentService,
     HasuraConfigService,
     HasuraFieldsService,
     FieldsService,
@@ -25,7 +23,6 @@ import { HasuraUserService } from "./user.adapter";
     AttendanceHasuraService,
     HasuraCohortService,
     HasuraCohortMembersService,
-    HasuraCommentService,
     HasuraConfigService,
     HasuraFieldsService,
     HasuraUserService,

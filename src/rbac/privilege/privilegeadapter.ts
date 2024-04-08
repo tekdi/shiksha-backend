@@ -4,7 +4,7 @@ import { HasuraRoleService } from "../../adapters/hasura/rbac/role.adapter";
 import { PostgresRoleService } from "../../adapters/postgres/rbac/role-adapter";
 
 @Injectable()
-export class RoleAdapter {
+export class PrivilegeAdapter {
   constructor(private hasuraProvider: HasuraRoleService,
     private postgresProvider:PostgresRoleService) {}
   buildRbacAdapter(): IServicelocatorRbac {

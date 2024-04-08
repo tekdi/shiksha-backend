@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { AttendanceHasuraService } from "./attendance.adapter";
 import { HasuraCommentService } from "./comment.adapter";
 import { HasuraConfigService } from "./config.adapter";
-import { HasuraGroupService } from "./group.adapter";
 import { HasuraHolidayService } from "./holiday.adapter";
 import { HasuraLikeService } from "./like.adapter";
 import { SchoolHasuraService } from "./school.adapter";
@@ -18,7 +17,6 @@ import { HasuraUserService } from "./user.adapter";
   providers: [
     AttendanceHasuraService,
     SchoolHasuraService,
-    HasuraGroupService,
     HasuraCohortService,
     HasuraCohortMembersService,
     HasuraCommentService,
@@ -27,12 +25,11 @@ import { HasuraUserService } from "./user.adapter";
     HasuraHolidayService,
     HasuraFieldsService,
     FieldsService,
-    HasuraUserService
+    HasuraUserService,
   ],
   exports: [
     AttendanceHasuraService,
     SchoolHasuraService,
-    HasuraGroupService,
     HasuraCohortService,
     HasuraCohortMembersService,
     HasuraCommentService,
@@ -40,7 +37,7 @@ import { HasuraUserService } from "./user.adapter";
     HasuraLikeService,
     HasuraHolidayService,
     HasuraFieldsService,
-    HasuraUserService
+    HasuraUserService,
   ],
 })
 export class HasuraModule {}

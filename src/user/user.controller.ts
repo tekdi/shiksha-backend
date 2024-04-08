@@ -10,6 +10,7 @@ import {
   Res,
   Patch,
   UseGuards,
+  Query,
 } from "@nestjs/common";
 
 import { Request } from "@nestjs/common";
@@ -48,36 +49,45 @@ export class UserController {
    *
    * @since   1.6
    */
-  @Get("/:userid/:role")
-  @UseGuards(JwtAuthGuard)
+  @Get()
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
+  @SerializeOptions({ strategy: "excludeAll", })
+  @ApiHeader({ name: "tenantid", })
+  @ApiQuery({ name: 'userid', description: 'The user ID (optional)', required: false, })
+  @ApiQuery({ name: 'cohortid', description: 'The cohort ID (optional)', required: false, })
+  @ApiQuery({ name: 'role', description: 'The role (optional)', required: false, })
+  @ApiQuery({ name: 'fieldvalue', description: 'The field Value (optional)', required: false })
   public async getUser(
     @Headers() headers,
-    @Param("userid") userId: string,
-    @Param("role") role: string,
     @Req() request: Request,
-    @Res() response: Response
+    @Res() response: Response,
+    @Query("userid") userId: string | null = null,
+    @Query("cohortid") cohortId: string | null = null,
+    @Query("role") role: string | null = null,
+    @Query("fieldvalue") fieldvalue: string | null = null
   ) {
+
     // const tenantId = headers["tenantid"];   Can be Used In future
-    // Context and ContextType can be taked from .env later
-    let userData = {
-      userId: userId,
+    // Context and ContextType can be taken from .env later
+    let userData: any = {
       context: "USERS",
-      contextType: role,
+      userId: userId && typeof userId === 'string' && userId !== ',' && userId !== '{userid}' ? userId : null,
+      cohortId: cohortId && typeof cohortId === 'string' && cohortId !== ',' && cohortId !== '{cohortid}' ? cohortId : null,
+      contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null,
+      fieldValue: fieldvalue && typeof fieldvalue === 'string' && fieldvalue !== ',' && fieldvalue !== '{fieldvalue}' ? fieldvalue : null
     };
 
-    const result = await this.userAdapter.buildUserAdapter().getUser(
-      userData,
-      response
-    );
+    let result;
+    if (userData.userId !== null) {
+      result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(
+        userData, response);
+    }
+    if (userData.cohortId !== null) {
+      result = await this.userAdapter.buildUserAdapter().getUsersDetailsByCohortId(
+        userData, response);
+    }
     return response.status(result.statusCode).json(result);
   }
 

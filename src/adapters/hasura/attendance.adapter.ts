@@ -8,7 +8,6 @@ import moment from "moment";
 import jwt_decode from "jwt-decode";
 import { IServicelocator } from "../attendanceservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 import { ErrorResponse } from "src/error-response";
 import { AttendanceDateDto } from "src/attendance/dto/attendance-date.dto";
 export const ShikshaAttendanceToken = "ShikshaAttendance";

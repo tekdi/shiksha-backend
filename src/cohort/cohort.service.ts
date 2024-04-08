@@ -8,7 +8,6 @@ import jwt_decode from "jwt-decode";
 import { CohortDto } from "src/cohort/dto/cohort.dto";
 import { CohortSearchDto } from "src/cohort/dto/cohort-search.dto";
 import { UserDto } from "src/user/dto/user.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
@@ -20,7 +19,7 @@ import { FieldsService } from "../fields/fields.service";
 import { response } from "express";
 import APIResponse from "src/utils/response";
 import { FieldValues } from "../fields/entities/fields-values.entity";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 
@@ -28,67 +27,52 @@ import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 export class CohortService {
   private cohort: CohortInterface;
 
-
   constructor(
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(CohortMembers)
     private cohortMembersRepository: Repository<CohortMembers>,
-    private fieldsService: FieldsService,
-  ) { }
+    private fieldsService: FieldsService
+  ) {}
 
-  public async getCohortsDetails(userData,
-    request: any,
-    response: any){
-    let apiId = 'api.concept.getCohortDetails'
+  public async getCohortsDetails(userData, request: any, response: any) {
+    let apiId = "api.concept.getCohortDetails";
     try {
-      if(userData.name==='user'){
-      let findCohortId = await this.findCohortName(userData?.id);
-      let result = {
-        cohortData: [],
-      };
-      for (let data of findCohortId) {
-        let cohortData = {
-          cohortId: data?.cohortId,
-          name:data.name,
-          parentId:data?.parentId,
-          customField:{}
+      if (userData.name === "user") {
+        let findCohortId = await this.findCohortName(userData?.id);
+        let result = {
+          cohortData: [],
         };
-        const getDetails = await this.getCohortListDetails(data?.cohortId);
-        cohortData.customField=getDetails
-        result.cohortData.push(cohortData);
-      }
-      return response
-        .status(HttpStatus.OK)
-        .send(
-          APIResponse.success(
-            apiId,
-            result,
-            "OK"
-          )
-        );
-      }else{
+        for (let data of findCohortId) {
+          let cohortData = {
+            cohortId: data?.cohortId,
+            name: data.name,
+            parentId: data?.parentId,
+            customField: {},
+          };
+          const getDetails = await this.getCohortListDetails(data?.cohortId);
+          cohortData.customField = getDetails;
+          result.cohortData.push(cohortData);
+        }
+        return response
+          .status(HttpStatus.OK)
+          .send(APIResponse.success(apiId, result, "OK"));
+      } else {
         let cohortName = await this.cohortRepository.findOne({
-          where:{cohortId:userData?.id},
-          select:['name','parentId']
-        })
+          where: { cohortId: userData?.id },
+          select: ["name", "parentId"],
+        });
         let cohortData = {
           cohortId: userData?.id,
-          name:cohortName?.name,
-          parentId:cohortName?.parentId,
-          customField:{}
+          name: cohortName?.name,
+          parentId: cohortName?.parentId,
+          customField: {},
         };
         const getDetails = await this.getCohortListDetails(userData?.id);
-        cohortData.customField=getDetails
+        cohortData.customField = getDetails;
         return response
-            .status(HttpStatus.OK)
-            .send(
-              APIResponse.success(
-                apiId,
-                cohortData,
-                "OK"
-              )
-            );
+          .status(HttpStatus.OK)
+          .send(APIResponse.success(apiId, cohortData, "OK"));
       }
     } catch (error) {
       return response
@@ -125,9 +109,7 @@ export class CohortService {
     ) fv ON fv."itemId" = cm."cohortId"
     INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
     WHERE cm."cohortId" = $1;`;
-    let result = await this.cohortMembersRepository.query(query, [
-      userId
-    ]);
+    let result = await this.cohortMembersRepository.query(query, [userId]);
     return result;
   }
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
@@ -135,7 +117,11 @@ export class CohortService {
       const cohortData: any = {};
       cohortCreateDto.cohortId = uuidv4();
       Object.keys(cohortCreateDto).forEach((e) => {
-        if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
+        if (
+          cohortCreateDto[e] &&
+          cohortCreateDto[e] != "" &&
+          e != "fieldValues"
+        ) {
           if (Array.isArray(cohortCreateDto[e])) {
             cohortData[e] = JSON.stringify(cohortCreateDto[e]);
           } else {
@@ -151,7 +137,6 @@ export class CohortService {
       if (field_value_array.length > 0) {
         let field_values = [];
         for (let i = 0; i < field_value_array.length; i++) {
-
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
             fieldValuesId: "", // Provide a value for fieldValuesId
@@ -173,7 +158,6 @@ export class CohortService {
         message: "Ok.",
         data: response,
       });
-
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -191,7 +175,10 @@ export class CohortService {
       const cohortUpdateData: any = {};
 
       Object.keys(cohortUpdateDto).forEach((e) => {
-        if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
+        if (
+          cohortUpdateDto[e] &&
+          cohortUpdateDto[e] != "" &&
+          e != "fieldValues"
         ) {
           if (Array.isArray(cohortUpdateDto[e])) {
             cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
@@ -201,19 +188,23 @@ export class CohortService {
         }
       });
 
-      const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
-
+      const response = await this.cohortRepository.update(
+        cohortId,
+        cohortUpdateData
+      );
 
       let field_value_array = cohortUpdateDto.fieldValues.split("|");
 
       if (field_value_array.length > 0) {
         let field_values = [];
         for (let i = 0; i < field_value_array.length; i++) {
-
           let fieldValues = field_value_array[i].split(":");
           let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
           try {
-            const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+            const fieldVauesRowId = await this.fieldsService.searchFieldValueId(
+              cohortId,
+              fieldId
+            );
             const rowid = fieldVauesRowId.fieldValuesId;
 
             let fieldValueDto: FieldValuesDto = {
@@ -227,7 +218,7 @@ export class CohortService {
               updatedAt: new Date().toISOString(),
             };
             await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
-          }catch{
+          } catch {
             let fieldValueDto: FieldValuesDto = {
               fieldValuesId: null,
               value: fieldValues[1] ? fieldValues[1].trim() : "",
@@ -248,7 +239,7 @@ export class CohortService {
         message: "Ok.",
         data: {
           rowCount: response.affected,
-        }
+        },
       });
     } catch (e) {
       return new ErrorResponseTypeOrm({
@@ -261,10 +252,9 @@ export class CohortService {
   public async searchCohort(
     tenantId: string,
     request: any,
-    cohortSearchDto: CohortSearchDto,
+    cohortSearchDto: CohortSearchDto
   ) {
     try {
-
       let { limit, page, filters } = cohortSearchDto;
 
       let offset = 0;
@@ -272,8 +262,8 @@ export class CohortService {
         offset = parseInt(limit) * (page - 1);
       }
 
-      if (limit.trim() === '') {
-        limit = '0';
+      if (limit.trim() === "") {
+        limit = "0";
       }
 
       const whereClause = {};
@@ -292,11 +282,10 @@ export class CohortService {
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
-        message: 'Ok.',
+        message: "Ok.",
         totalCount,
         data: mappedResponse,
       });
-
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -324,14 +313,11 @@ export class CohortService {
         metadata: item?.metadata ? `${item.metadata}` : "",
       };
       return new CohortDto(cohortMapping);
-    })
+    });
     return cohortValueResponse;
-
   }
 
-  public async updateCohortStatus(
-    cohortId: string
-  ) {
+  public async updateCohortStatus(cohortId: string) {
     try {
       let query = `UPDATE public."Cohort"
       SET "status" = false

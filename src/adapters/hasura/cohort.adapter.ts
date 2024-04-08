@@ -9,7 +9,6 @@ import { CohortDto } from "src/cohort/dto/cohort.dto";
 import { CohortSearchDto } from "src/cohort/dto/cohort-search.dto";
 import { IServicelocatorcohort } from "../cohortservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 import { FieldsService } from "./services/fields.service";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";

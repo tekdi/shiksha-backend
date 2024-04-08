@@ -3,7 +3,6 @@ import { HttpService } from "@nestjs/axios";
 import { SuccessResponse } from "src/success-response";
 import { WorksheetDto } from "src/worksheet/dto/worksheet.dto";
 import { WorksheetSearchDto } from "src/worksheet/dto/worksheet-search.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 import { ErrorResponse } from "src/error-response";
 
 @Injectable()
@@ -604,7 +603,7 @@ export class WorksheetService {
         createdBy: item?.osCreatedBy ? `${item.osCreatedBy}` : "",
         updatedBy: item?.osUpdatedBy ? `${item.osUpdatedBy}` : "",
       };
-      return new StudentDto(studentMapping);
+      return studentMapping;
     });
 
     return studentResponse;

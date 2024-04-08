@@ -1,6 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude, Expose } from "class-transformer";
-import { StudentDto } from "src/student/dto/student.dto";
 
 export class QuestionDto {
   @Expose()

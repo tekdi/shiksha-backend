@@ -3,8 +3,8 @@ import { Role } from "../../rbac/entities/rbac.entity";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoleDto } from "../../rbac/dto/rbac.dto";
-import { SuccessResponse } from '../../../src/success-response';
-import { ErrorResponseTypeOrm } from '../../../src/error-response-typeorm';
+import { SuccessResponse } from 'src/success-response';
+import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { RoleSearchDto } from "../../rbac/dto/rbac-search.dto";
 
 @Injectable()

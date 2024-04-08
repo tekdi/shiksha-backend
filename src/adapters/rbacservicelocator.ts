@@ -3,7 +3,7 @@ import { RoleDto } from "../rbac/dto/rbac.dto";
 
 export interface IServicelocatorRbac {
     getRole(
-        roleId?: Record<string, string>,
+        roleId?: string,
         request?: any,
     );
     updateRole(id?: string, request?: any, userDto?: any);

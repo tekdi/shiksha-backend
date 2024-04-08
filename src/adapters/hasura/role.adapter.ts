@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { SuccessResponse } from "src/success-response";
 import { RoleDto } from "src/role/dto/role.dto";
 @Injectable()
-export class HasuraRoleService {
+export class RoleService {
   constructor(private httpService: HttpService) {}
 
   public async getRole(title: string, request: any) {

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { IServicelocatorRbac } from "../adapters/rbacservicelocator";
-import { HasuraRoleService } from "../adapters/hasura/role.adapter";
+import { HasuraRoleService } from "../adapters/hasura/rbac.adapter";
 import { PostgresRbacService } from "../adapters/postgres/rbac-adapter";
 
 

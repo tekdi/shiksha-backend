@@ -28,117 +28,119 @@ export class HasuraUserService implements IServicelocator {
   public async findUserDetails(userID: any, username: String) {
     
   }
-  public async getUser(
-    userData?:Record<string,string>,
-    res?: any,
-    tenantId?: string,
-    userId?: string,
-    accessRole?: string,
-    request?: any,
-  ) {
-    try {
-      const decoded: any = jwt_decode(request.headers.authorization);
-      const userRoles =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+  public async getUsersDetailsById(userData: Record<string, string>, response:any) {}
+  public async getUsersDetailsByCohortId(userData: Record<string, string>, response:any) {}
+  // public async getUser(
+  //   userData?:Record<string,string>,
+  //   res?: any,
+  //   tenantId?: string,
+  //   userId?: string,
+  //   accessRole?: string,
+  //   request?: any,
+  // ) {
+  //   try {
+  //     const decoded: any = jwt_decode(request.headers.authorization);
+  //     const userRoles =
+  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      const data = {
-        query: `query GetUser($userId: uuid!, $tenantId: uuid!, $context: String!, $contextId: uuid!, $access : String!) {
-          Users(where: {tenantId: {_eq: $tenantId}, userId: {_eq: $userId}}) {
-            username
-            userId
-            name
-            email
-            district
-            state
-            address
-            pincode
-            mobile
-            dob
-            role
-            tenantId
-            updatedAt
-            updatedBy
-            createdBy
-            createdAt
-            fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, _and: {_or: [{access: {_is_null: true}}, {access: {_eq: $access}}]}}) {
-              tenantId
-              fieldId
-              assetId
-              context
-              contextId
-              groupId
-              name
-              label
-              defaultValue
-              type
-              note
-              description
-              state
-              required
-              ordering
-              metadata
-              access
-              onlyUseInSubform
-              updatedAt
-              updatedBy
-              createdAt
-              createdBy
-              fieldValues: FieldValues(where: {itemId: {_eq: $contextId}}) {
-                value
-                itemId
-                fieldId
-                fieldValuesId
-                updatedBy
-                updatedAt
-                createdBy
-                createdAt
-              }
-            }
-          }
-        }`,
-        variables: {
-          userId: userId,
-          tenantId: tenantId,
-          context: "Users",
-          contextId: userId,
-          access: accessRole,
-        },
-      };
+  //     const data = {
+  //       query: `query GetUser($userId: uuid!, $tenantId: uuid!, $context: String!, $contextId: uuid!, $access : String!) {
+  //         Users(where: {tenantId: {_eq: $tenantId}, userId: {_eq: $userId}}) {
+  //           username
+  //           userId
+  //           name
+  //           email
+  //           district
+  //           state
+  //           address
+  //           pincode
+  //           mobile
+  //           dob
+  //           role
+  //           tenantId
+  //           updatedAt
+  //           updatedBy
+  //           createdBy
+  //           createdAt
+  //           fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, _and: {_or: [{access: {_is_null: true}}, {access: {_eq: $access}}]}}) {
+  //             tenantId
+  //             fieldId
+  //             assetId
+  //             context
+  //             contextId
+  //             groupId
+  //             name
+  //             label
+  //             defaultValue
+  //             type
+  //             note
+  //             description
+  //             state
+  //             required
+  //             ordering
+  //             metadata
+  //             access
+  //             onlyUseInSubform
+  //             updatedAt
+  //             updatedBy
+  //             createdAt
+  //             createdBy
+  //             fieldValues: FieldValues(where: {itemId: {_eq: $contextId}}) {
+  //               value
+  //               itemId
+  //               fieldId
+  //               fieldValuesId
+  //               updatedBy
+  //               updatedAt
+  //               createdBy
+  //               createdAt
+  //             }
+  //           }
+  //         }
+  //       }`,
+  //       variables: {
+  //         userId: userId,
+  //         tenantId: tenantId,
+  //         context: "Users",
+  //         contextId: userId,
+  //         access: accessRole,
+  //       },
+  //     };
 
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-role": getUserRole(userRoles),
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
+  //     const config = {
+  //       method: "post",
+  //       url: process.env.REGISTRYHASURA,
+  //       headers: {
+  //         Authorization: request.headers.authorization,
+  //         "x-hasura-role": getUserRole(userRoles),
+  //         "Content-Type": "application/json",
+  //       },
+  //       data: data,
+  //     };
 
-      const response = await this.axios(config);
+  //     const response = await this.axios(config);
 
-      if (response?.data?.errors) {
-        return res.status(400).send({
-          errorCode: response?.data?.errors[0]?.extensions?.code,
-          errorMessage: response?.data?.errors[0]?.message,
-        });
-      } else {
-        const result = response.data.data.Users;
-        return res.status(200).send({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      return new ErrorResponse({
-        errorCode: "400",
-        errorMessage: e,
-      });
-    }
-  }
+  //     if (response?.data?.errors) {
+  //       return res.status(400).send({
+  //         errorCode: response?.data?.errors[0]?.extensions?.code,
+  //         errorMessage: response?.data?.errors[0]?.message,
+  //       });
+  //     } else {
+  //       const result = response.data.data.Users;
+  //       return res.status(200).send({
+  //         statusCode: 200,
+  //         message: "Ok.",
+  //         data: result,
+  //       });
+  //     }
+  //   } catch (e) {
+  //     console.error(e);
+  //     return new ErrorResponse({
+  //       errorCode: "400",
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     try {

@@ -3,14 +3,16 @@ import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { UserDto } from "src/user/dto/user.dto";
 
 export interface IServicelocator {
-  getUser(
-    userId?:Record<string, string>,
-    response?: any,
-    tenantId?: string,
-    id?: any,
-    accessRole?: string,
-    request?: any,
-  );
+  // getUser(
+  //   userId?:Record<string, string>,
+  //   response?: any,
+  //   tenantId?: string,
+  //   id?: any,
+  //   accessRole?: string,
+  //   request?: any,
+  // );
+  getUsersDetailsById(userData: Record<string, string>, response:any);
+  getUsersDetailsByCohortId(userData: Record<string, string>, response:any);
   updateUser(id?: string, request?: any, userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);
   findUserDetails(userID:any,username:String)

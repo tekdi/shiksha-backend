@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { AttendanceHasuraService } from "./attendance.adapter";
 import { HasuraCommentService } from "./comment.adapter";
 import { HasuraConfigService } from "./config.adapter";
-import { HasuraHolidayService } from "./holiday.adapter";
 import { HasuraLikeService } from "./like.adapter";
 import { HasuraCohortService } from "./cohort.adapter";
 import { HasuraCohortMembersService } from "./cohortMembers.adapter";
@@ -20,7 +19,6 @@ import { HasuraUserService } from "./user.adapter";
     HasuraCommentService,
     HasuraConfigService,
     HasuraLikeService,
-    HasuraHolidayService,
     HasuraFieldsService,
     FieldsService,
     HasuraUserService,
@@ -32,7 +30,6 @@ import { HasuraUserService } from "./user.adapter";
     HasuraCommentService,
     HasuraConfigService,
     HasuraLikeService,
-    HasuraHolidayService,
     HasuraFieldsService,
     HasuraUserService,
   ],

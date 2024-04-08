@@ -6,7 +6,6 @@ import { AppService } from "./app.service";
 // Below modules not in use for Shiksha 2.0
 
 /*
-import { HolidayModule } from "./holiday/holiday.module";
 import { ConfigurationModule } from "./configs/configuration.module";
 import { WorksheetModule } from "./worksheet/worksheet.module";
 import { QuestionModule } from "./Question/question.module";

@@ -5,7 +5,6 @@ import { HasuraCommentService } from "./comment.adapter";
 import { HasuraConfigService } from "./config.adapter";
 import { HasuraHolidayService } from "./holiday.adapter";
 import { HasuraLikeService } from "./like.adapter";
-import { SchoolHasuraService } from "./school.adapter";
 import { HasuraCohortService } from "./cohort.adapter";
 import { HasuraCohortMembersService } from "./cohortMembers.adapter";
 import { HasuraFieldsService } from "./fields.adapter";
@@ -16,7 +15,6 @@ import { HasuraUserService } from "./user.adapter";
   imports: [HttpModule],
   providers: [
     AttendanceHasuraService,
-    SchoolHasuraService,
     HasuraCohortService,
     HasuraCohortMembersService,
     HasuraCommentService,
@@ -29,7 +27,6 @@ import { HasuraUserService } from "./user.adapter";
   ],
   exports: [
     AttendanceHasuraService,
-    SchoolHasuraService,
     HasuraCohortService,
     HasuraCohortMembersService,
     HasuraCommentService,

@@ -7,7 +7,6 @@ import { AppService } from "./app.service";
 
 /*
 import { ConfigurationModule } from "./configs/configuration.module";
-import { MonitorTrackingModule } from "./monitorTracking/monitorTracking.module";
 import { AnnouncementsModule } from "./announcements/announcements.module";
 import { WorkHistoryModule } from "./workHistory/workHistory.module";
 */

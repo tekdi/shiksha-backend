@@ -284,18 +284,18 @@ export class PostgresUserService {
       const token = keycloakResponse.data.access_token;
       let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
       if (checkUserinKeyCloakandDb) {
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: "User Already Exists",
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.FORBIDDEN,
+          errorMessage: "User Already Exist",
         });
       }
       resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
         (error) => {
           errKeycloak = error.response?.data.errorMessage;
 
-          return new ErrorResponse({
-            errorCode: "500",
-            errorMessage: "Someting went wrong",
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            errorMessage: error,
           });
         }
       );
@@ -313,9 +313,9 @@ export class PostgresUserService {
           }
           let result = await this.updateCustomFields(userId, fieldData);
           if (!result) {
-            return new ErrorResponse({
-              errorCode: "500",
-              errorMessage: `Error is ${result}`,
+            return new ErrorResponseTypeOrm({
+              statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+              errorMessage:  `Error is ${result}`,
             });
           }
         }
@@ -326,9 +326,9 @@ export class PostgresUserService {
         data: result,
       });
     } catch (e) {
-      return new ErrorResponse({
-        errorCode: "500",
-        errorMessage: `Error is ${e}`,
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage:  `Error is ${e}`,
       });
     }
   }

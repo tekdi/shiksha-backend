@@ -3,22 +3,10 @@ import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 // import { MulterModule } from "@nestjs/platform-express/multer";
-/*
 // Below modules not in use for Shiksha 2.0
-import { StudentModule } from "./student/student.module";
-import { SchoolModule } from "./school/school.module";
-import { HolidayModule } from "./holiday/holiday.module";
+
+/*
 import { ConfigurationModule } from "./configs/configuration.module";
-import { WorksheetModule } from "./worksheet/worksheet.module";
-import { QuestionModule } from "./Question/question.module";
-import { LikeModule } from "./like/like.module";
-import { CommentModule } from "./comment/comment.module";
-import { TrackAssessmentModule } from "./trackAssessment/trackassessment.module";
-import { AssessmentSetModule } from "./assessmentset/assessmentset.module";
-import { MentorTrackingModule } from "./mentorTracking/mentorTracking.module";
-import { MonitorTrackingModule } from "./monitorTracking/monitorTracking.module";
-import { AnnouncementsModule } from "./announcements/announcements.module";
-import { WorkHistoryModule } from "./workHistory/workHistory.module";
 */
 // In use for Shiksha 2.0
 import { DatabaseModule } from "./common/database.module";

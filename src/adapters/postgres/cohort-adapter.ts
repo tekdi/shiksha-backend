@@ -7,7 +7,6 @@ import jwt_decode from "jwt-decode";
 import { CohortDto } from "src/cohort/dto/cohort.dto";
 import { CohortSearchDto } from "src/cohort/dto/cohort-search.dto";
 import { UserDto } from "src/user/dto/user.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";

@@ -9,7 +9,6 @@ import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
-import { StudentDto } from "src/student/dto/student.dto";
 export const HasuraFieldsToken = "HasuraFields";
 
 import { FieldsService } from "./services/fields.service";

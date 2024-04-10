@@ -47,9 +47,6 @@ export class PostgresRoleService {
                 errorMessage: e,
             });
         }
-
-
-
     }
 
     public async updateRole(roleId: string, request: any, roleDto: RoleDto) {

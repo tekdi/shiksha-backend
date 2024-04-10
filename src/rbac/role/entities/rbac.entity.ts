@@ -7,4 +7,5 @@ export class Role {
 
   @Column()
   roleName: string;
+  userRoleMappings: any;
 }

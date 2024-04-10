@@ -8,4 +8,7 @@ export class Privilege {
 
   @Column()
   privilegeName: string;
+
+  @Column()
+  label:string
 }

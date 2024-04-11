@@ -2,11 +2,12 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, Validation
 import { AssignRoleAdapter } from './assign-role.apater';
 import { CreateAssignRoleDto } from './dto/create-assign-role.dto';
 import { Response, response } from "express";
-import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 
 
 @Controller('assignrole')
+@ApiTags('rbac')
 export class AssignRoleController {
   constructor(private readonly assignRoleAdpater: AssignRoleAdapter) {}
 

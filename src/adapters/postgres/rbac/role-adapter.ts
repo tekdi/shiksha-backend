@@ -16,10 +16,10 @@ export class PostgresRoleService {
     public async createRole(request: any, roleDto: RoleDto) {
         try {
             // Convert role name to lowercase
-            roleDto.roleName = roleDto.roleName.toLowerCase();
+            const roleNameInLower = roleDto.roleName.toLowerCase();
 
             // Check if role name already exists
-            const existingRole = await this.roleRepository.findOne({ where: { roleName: roleDto.roleName } })
+            const existingRole = await this.roleRepository.findOne({ where: { roleName: roleNameInLower } })
             if (existingRole) {
                 return new SuccessResponse({
                     statusCode: HttpStatus.FORBIDDEN,
@@ -30,7 +30,7 @@ export class PostgresRoleService {
                 // Convert roleDto to lowercase
                 const roleDtoLowercase = {
                     ...roleDto,
-                    roleName: roleDto.roleName.toLowerCase()
+                    roleName: roleNameInLower
                 };
 
                 const response = await this.roleRepository.save(roleDtoLowercase);

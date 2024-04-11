@@ -16,6 +16,9 @@ export class AssignRoleAdapter {
         break;
       case "postgres":
         adapter = this.postgresProvider;
+        break;
+      default:
+        throw new Error("Invalid ADAPTERSOURCE environment variable. Please specify either 'hasura' or 'postgres'.");
     }
     return adapter;
   }

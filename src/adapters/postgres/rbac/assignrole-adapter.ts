@@ -34,7 +34,6 @@ export class PostgresAssignroleService {
             data: data,
         });
     } catch (error) {
-        console.log(error);
         return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
             errorMessage: JSON.stringify(error)
@@ -42,7 +41,7 @@ export class PostgresAssignroleService {
     }
    }
 
-   public async getassignedRole(userId:string,request: Request){
+   public async getAssignedRole(userId:string,request: Request){
     try {
         if (!isUUID(userId)) {
             return new SuccessResponse({
@@ -72,7 +71,7 @@ export class PostgresAssignroleService {
     
    } 
 
-   public async deleteassignedRole(userId){
+   public async deleteAssignedRole(userId){
     try {
         let result = await this.checkExistingRole(userId);
         if(!result){

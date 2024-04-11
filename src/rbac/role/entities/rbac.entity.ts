@@ -7,5 +7,5 @@ export class Role {
 
   @Column()
   roleName: string;
-  userRoleMappings: any;
+  userRoleMappings: Role;
 }

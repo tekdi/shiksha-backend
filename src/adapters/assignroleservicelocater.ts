@@ -2,6 +2,6 @@ import { CreateAssignRoleDto } from "src/rbac/assign-role/dto/create-assign-role
 
 export interface IServicelocatorassignRole {
     createAssignRole(request: any, createAssignRoleDto:CreateAssignRoleDto);
-    getassignedRole(userId, request);
-    deleteassignedRole(roleId);
+    getAssignedRole(userId, request);
+    deleteAssignedRole(userId);
 }

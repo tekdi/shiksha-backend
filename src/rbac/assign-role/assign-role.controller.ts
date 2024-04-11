@@ -8,7 +8,7 @@ import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHea
 
 @Controller('assignrole')
 export class AssignRoleController {
-  constructor(private readonly assignRoleapater: AssignRoleAdapter) {}
+  constructor(private readonly assignRoleAdpater: AssignRoleAdapter) {}
 
   @Post()
   @UsePipes(new ValidationPipe())
@@ -20,7 +20,7 @@ export class AssignRoleController {
   public async create(@Req() request: Request,
   @Body() createAssignRoleDto:CreateAssignRoleDto ,
   @Res() response: Response) {
-    const result = await this.assignRoleapater.buildassignroleAdapter().createAssignRole(request,createAssignRoleDto);
+    const result = await this.assignRoleAdpater.buildassignroleAdapter().createAssignRole(request,createAssignRoleDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -35,7 +35,7 @@ export class AssignRoleController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.assignRoleapater.buildassignroleAdapter().getassignedRole(userId, request);
+    const result = await this.assignRoleAdpater.buildassignroleAdapter().getAssignedRole(userId, request);
     return response.status(result.statusCode).json(result);
   }
 
@@ -47,7 +47,7 @@ export class AssignRoleController {
     @Param("id") userId: string,
     @Res() response: Response
   ) {
-    const result = await this.assignRoleapater.buildassignroleAdapter().deleteassignedRole(userId);
+    const result = await this.assignRoleAdpater.buildassignroleAdapter().deleteAssignedRole(userId);
     return response.status(result.statusCode).json(result);
   }
   

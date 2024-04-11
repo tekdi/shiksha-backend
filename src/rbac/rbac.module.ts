@@ -1,14 +1,13 @@
 import { Module } from "@nestjs/common";
 import { RoleModule } from "./role/role.module";
 import { PrivilegeModule } from './privilege/privilege.module';
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { Privilege } from "./privilege/entities/privilege.entity";
-import { Role } from "./role/entities/rbac.entity";
+import { AssignRoleModule } from './assign-role/assign-role.module';
 
 @Module({
     imports: [
     RoleModule,
-    PrivilegeModule
+    PrivilegeModule,
+    AssignRoleModule
   ],
 })
 export class RbacModule {}

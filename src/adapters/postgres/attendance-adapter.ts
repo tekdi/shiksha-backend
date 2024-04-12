@@ -5,7 +5,7 @@ import { Client } from 'pg';
 import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "../../attendance/entities/attendance.entity";
-import { Repository } from "typeorm";
+import { EntityMetadata, QueryRunner, Repository } from "typeorm";
 import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { AttendanceSearchDto } from "../../attendance/dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
@@ -15,13 +15,18 @@ import { Between } from 'typeorm';
 import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
 import { format } from 'date-fns'
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
+import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 const moment = require('moment');
 
 @Injectable()
 export class PostgresAttendanceService {
     constructor(private configService: ConfigService,
         @InjectRepository(AttendanceEntity)
-        private readonly attendanceRepository: Repository<AttendanceEntity>,
+        private attendanceRepository: Repository<AttendanceEntity>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
+        @InjectRepository(CohortMembers)
+        private cohortMembersRepository: Repository<CohortMembers>
     ) { }
 
 
@@ -45,26 +50,69 @@ export class PostgresAttendanceService {
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-            const whereClause = {};
+
+            const UserKeys = this.userRepository.metadata.columns.map((column) => column.propertyName);
+            const AttendaceKeys = this.attendanceRepository.metadata.columns.map((column) => column.propertyName);
+            const CohortMembersKeys = this.cohortMembersRepository.metadata.columns.map((column) => column.propertyName);
+
+            let whereClause = `u."tenantId" = '${tenantId}'`; // Default WHERE clause for filtering by tenantId
+            let attendanceList = ''
             if (filters && Object.keys(filters).length > 0) {
-                Object.entries(filters).forEach(([key, value]) => {
-                    whereClause[key] = value;
-                });
+                // Construct additional WHERE conditions based on filters
+                for (const [key, value] of Object.entries(filters)) {
+                    // Check if the key exists in UserKeys, AttendanceKeys, or CohortMembersKeys
+                    if (UserKeys.includes(key)) {
+                        whereClause += ` AND u."${key}" = '${value}'`;
+                    } else if (AttendaceKeys.includes(key)) {
+                        if(key==="attendanceDate"){
+                            attendanceList = ` AND (a."attendanceDate" = '${value}' OR a."attendanceDate" IS NULL)`
+                            continue
+                        }
+                        whereClause += ` AND a."${key}" = '${value}'`;
+                    } else if (CohortMembersKeys.includes(key)) {
+                        whereClause += ` AND cm."${key}" = '${value}'`;
+                    }
+                    else{
+                        return new ErrorResponseTypeOrm({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            errorMessage: `${key} Invalid key`,
+                        });    
+                    
+}
+                };
             }
-            else {
-                whereClause['tenantId'] = tenantId;
-            }
-            const [results, totalCount] = await this.attendanceRepository.findAndCount({
-                where: whereClause,
-                take: parseInt(limit),
-                skip: offset,
-            });
-            const mappedResponse = await this.mappedResponse(results);
+
+
+
+
+                console.log(attendanceList,whereClause,"Shubham");
+                const query =`SELECT 
+                u.*, 
+                cm.*, 
+                a.*     
+                FROM 
+                "Users" u
+                LEFT JOIN 
+                "CohortMembers" cm ON cm."userId" = u."userId" 
+                LEFT JOIN 
+                "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
+                where
+                ${whereClause}
+                `
+console.log(query,"query")
+
+
+
+                const results = await this.userRepository.query(query);
+
+            // console.log(results,"results")
+                const mappedResponse = await this.mappedResponse(results);
+
 
             return new SuccessResponse({
                 statusCode: HttpStatus.OK,
                 message: 'Ok.',
-                totalCount,
+                // totalCount,
                 data: mappedResponse,
             });
         } catch (error) {
@@ -162,7 +210,7 @@ export class PostgresAttendanceService {
                 });
             }
 
-                
+
             }
             else if (report === false) {
                 if (attendanceDate) {
@@ -214,11 +262,14 @@ export class PostgresAttendanceService {
 
     public async mappedResponse(result: any) {
         const attendanceResponse = result.map((item: any) => {
+
+            const dateObject = new Date(item.attendanceDate);
+            const formattedDate = moment(dateObject).format('YYYY-MM-DD');
             const attendanceMapping = {
                 tenantId: item?.tenantId ? `${item.tenantId}` : "",
                 attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",
                 userId: item?.userId ? `${item.userId}` : "",
-                attendanceDate: item?.attendanceDate ? `${item.attendanceDate}` : "",
+                attendanceDate: item.attendanceDate ? formattedDate : null,
                 attendance: item?.attendance ? `${item.attendance}` : "",
                 remark: item?.remark ? `${item.remark}` : "",
                 latitude: item?.latitude ? item.latitude : 0,
@@ -233,7 +284,11 @@ export class PostgresAttendanceService {
                 updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
                 createdBy: item?.createdBy ? `${item.createdBy}` : "",
                 updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+                username:item?.username ? `${item.username}` : "",
+                role:item?.role ? `${item.role}` : "",
+
             };
+
 
             return new AttendanceDto(attendanceMapping);
         });

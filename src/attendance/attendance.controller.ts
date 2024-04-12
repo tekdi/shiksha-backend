@@ -26,6 +26,7 @@ import {
   ValidationPipe,
   Res,
   UseGuards,
+  HttpStatus,
 } from "@nestjs/common";
 import { AttendanceDto, BulkAttendanceDTO } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";

@@ -15,6 +15,15 @@ export class PostgresProgramService {
   ) {}
   public async getProgram(programId: string, request: any) {
     try {
+      const programExists = await this.programRepository.findOne({
+        where: { programId: programId },
+      });
+      if (!programExists) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Program not found",
+        });
+      }
       const [results, totalCount] = await this.programRepository.findAndCount({
         where: { programId },
       });

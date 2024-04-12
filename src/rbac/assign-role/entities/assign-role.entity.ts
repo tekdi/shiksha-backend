@@ -13,11 +13,11 @@ export class UserRoleMapping {
   @Column('uuid')
   roleId: string;
 
-  @ManyToOne(() => User, user => user.userRoleMappings)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Role, role => role.userRoleMappings)
+  @ManyToOne(() => Role)
   @JoinColumn({ name: 'roleId' })
   role: Role;
 }

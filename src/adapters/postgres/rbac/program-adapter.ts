@@ -15,9 +15,8 @@ export class PostgresProgramService {
   ) {}
   public async getProgram(programId: string, request: any) {
     try {
-      const programExists = await this.programRepository.findOne({
-        where: { programId: programId },
-      });
+      const programExists = await this.checkProgram(programId);
+
       if (!programExists) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,
@@ -40,7 +39,13 @@ export class PostgresProgramService {
       });
     }
   }
+  async checkProgram(programId) {
+    const programExists = await this.programRepository.findOne({
+      where: { programId: programId },
+    });
 
+    return programExists; // Return the result
+  }
   public async createProgram(request: any, programDto: ProgramDto) {
     try {
       // Convert role name to lowercase
@@ -82,9 +87,8 @@ export class PostgresProgramService {
     programDto: ProgramDto
   ) {
     try {
-      const programExists = await this.programRepository.findOne({
-        where: { programId: programId },
-      });
+      const programExists = await this.checkProgram(programId);
+
       if (!programExists) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,

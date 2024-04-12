@@ -15,12 +15,31 @@ export class PostgresRoleService {
     ) { }
     public async createRole(request: any, roleDto: RoleDto) {
         try {
-            const response = await this.roleRepository.save(roleDto);
-            return new SuccessResponse({
-                statusCode: HttpStatus.CREATED,
-                message: "Ok.",
-                data: response,
-            });
+            // Convert role name to lowercase
+            const roleNameInLower = roleDto.roleName.toLowerCase();
+
+            // Check if role name already exists
+            const existingRole = await this.roleRepository.findOne({ where: { roleName: roleNameInLower } })
+            if (existingRole) {
+                return new SuccessResponse({
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message: "Role name already exists.",
+                    data: existingRole,
+                });
+            }else{
+                // Convert roleDto to lowercase
+                const roleDtoLowercase = {
+                    ...roleDto,
+                    roleName: roleNameInLower
+                };
+
+                const response = await this.roleRepository.save(roleDtoLowercase);
+                return new SuccessResponse({
+                    statusCode: HttpStatus.CREATED,
+                    message: "Ok.",
+                    data: response,
+                });
+            }
         } catch (e) {
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -47,9 +66,6 @@ export class PostgresRoleService {
                 errorMessage: e,
             });
         }
-
-
-
     }
 
     public async updateRole(roleId: string, request: any, roleDto: RoleDto) {

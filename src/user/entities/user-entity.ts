@@ -52,4 +52,5 @@ export class User {
 
   @Column({ default: "active" })
   status: string;
+  userRoleMappings: User;
 }

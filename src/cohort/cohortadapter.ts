@@ -13,7 +13,7 @@ export class CohortAdapter {
       case "hasura":
         adapter = this.hasuraProvider;
         break;
-      case "hasura":
+      case "postgres":
         adapter = this.postgresProvider;
         break;
     }

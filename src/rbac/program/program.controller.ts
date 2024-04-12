@@ -27,12 +27,11 @@ import { Request } from "@nestjs/common";
 import { ProgramDto } from "./dto/program.dto";
 import { ProgramSearchDto } from "./dto/program-search.dto";
 import { Response, response } from "express";
-//   import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { ProgramAdapter } from "./programadapter";
-
+@UseGuards(JwtAuthGuard)
 @ApiTags("program")
 @Controller("program")
-//   @UseGuards(JwtAuthGuard)
 export class ProgramController {
   constructor(private readonly programAdapter: ProgramAdapter) {}
 

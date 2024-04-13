@@ -29,7 +29,7 @@ import { Request } from "@nestjs/common";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { PrivilegeAdapter } from './privilegeadapter';
-import { UUID } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 
 @UseGuards(JwtAuthGuard)

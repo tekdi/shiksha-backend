@@ -86,11 +86,11 @@ export class PostgresCohortService {
 
       let customFieldsArray = [];
 
-      const [filledValues, cohortDetails] = await Promise.all([
+      const [filledValues, cohortDetails, customFields] = await Promise.all([
         this.findFilledValues(cohortId),
-        this.findCohortDetails(cohortId)
+        this.findCohortDetails(cohortId),
+        this.findCustomFields()
       ]);
-      const customFields = await this.findCustomFields()
       
 
       result.cohortData = cohortDetails;
@@ -108,19 +108,6 @@ export class PostgresCohortService {
       }
       result.cohortData['customFields'] = customFieldsArray;
       
-      // let cohortName = await this.cohortRepository.findOne({
-      //   where: { cohortId: cohortId },
-      //   select: ["name", "parentId"],
-      // });
-      // let cohortData = {
-      //   cohortId: cohortId,
-      //   name: cohortName?.name,
-      //   parentId: cohortName?.parentId,
-      //   customField: {},
-      // };
-      // const getDetails = await this.getCohortListDetails(cohortId);
-      // cohortData.customField = getDetails;
-
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: "Ok.",

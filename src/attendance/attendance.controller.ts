@@ -166,7 +166,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
       tenantid,
       request,
       studentSearchDto

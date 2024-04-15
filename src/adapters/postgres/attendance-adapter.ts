@@ -58,9 +58,7 @@ export class PostgresAttendanceService {
             let whereClause = `u."tenantId" = '${tenantId}'`; // Default WHERE clause for filtering by tenantId
             let attendanceList = ''
             if (filters && Object.keys(filters).length > 0) {
-                // Construct additional WHERE conditions based on filters
                 for (const [key, value] of Object.entries(filters)) {
-                    // Check if the key exists in UserKeys, AttendanceKeys, or CohortMembersKeys
                     if (UserKeys.includes(key)) {
                         whereClause += ` AND u."${key}" = '${value}'`;
                     } else if (AttendaceKeys.includes(key)) {
@@ -71,6 +69,8 @@ export class PostgresAttendanceService {
                         whereClause += ` AND a."${key}" = '${value}'`;
                     } else if (CohortMembersKeys.includes(key)) {
                         whereClause += ` AND cm."${key}" = '${value}'`;
+                    } else if(filters.fromDate && filters.toDate ){
+                          whereClause += ` AND a."attendanceDate" BETWEEN '${filters['fromDate']}' AND '${filters['toDate']}'`;
                     }
                     else{
                         return new ErrorResponseTypeOrm({
@@ -92,18 +92,14 @@ export class PostgresAttendanceService {
                 a.*     
                 FROM 
                 "Users" u
-                LEFT JOIN 
+                INNER JOIN 
                 "CohortMembers" cm ON cm."userId" = u."userId" 
                 LEFT JOIN 
                 "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
                 where
                 ${whereClause}
                 `
-console.log(query,"query")
-
-
-
-                const results = await this.userRepository.query(query);
+                const results = await this.attendanceRepository.query(query);
 
             // console.log(results,"results")
                 const mappedResponse = await this.mappedResponse(results);

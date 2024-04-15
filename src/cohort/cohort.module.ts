@@ -3,7 +3,6 @@ import { CohortController } from "./cohort.controller";
 import { HttpModule } from "@nestjs/axios";
 import { CohortAdapter } from "./cohortadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
-import { CohortService } from "./cohort.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Cohort } from "./entities/cohort.entity";
 import { FieldsService } from "../fields/fields.service";
@@ -21,6 +20,6 @@ import { PostgresCohortService } from "src/adapters/postgres/cohort-adapter";
     PostgresModule
   ],
   controllers: [CohortController],
-  providers: [CohortAdapter, CohortService, FieldsService,PostgresCohortService],
+  providers: [CohortAdapter, FieldsService,PostgresCohortService],
 })
 export class CohortModule {}

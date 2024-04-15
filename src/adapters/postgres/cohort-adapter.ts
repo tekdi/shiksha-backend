@@ -34,37 +34,6 @@ export class PostgresCohortService {
     private fieldsService: PostgresFieldsService,
   ) { }
 
-  public async getCohortsDetails(tenantId: string,
-    cohortId: string,
-    request: any,
-    response: any){
-    const apiId = "api.concept.cohortDetails";
-    let cohortName = await this.cohortRepository.findOne({
-      where:{cohortId}
-    })
-    // let result = {
-    //   cohortData: [],
-    // };
-    let cohortData = {
-      cohortId: cohortId,
-      name:cohortName.name,
-      parentId:cohortName.parentId,
-      customField:{}
-    };
-    const getDetails = await this.getCohortListDetails(cohortId);
-    cohortData.customField=getDetails
-    // result.cohortData.push(cohortData);
-    return response
-        .status(HttpStatus.OK)
-        .send(
-          APIResponse.success(
-            apiId,
-            cohortData,
-            "OK"
-          )
-        );
-  }
-
   public async getCohortList(
     tenantId: string,
     userId: string,
@@ -184,6 +153,7 @@ export class PostgresCohortService {
     cohortUpdateDto: CohortCreateDto
   ) {
     try {
+      
       const cohortUpdateData: any = {};
 
       Object.keys(cohortUpdateDto).forEach((e) => {
@@ -199,42 +169,42 @@ export class PostgresCohortService {
 
       const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
 
+      if(cohortUpdateDto.fieldValues){
+        let field_value_array = cohortUpdateDto.fieldValues.split("|");
+        if (field_value_array.length > 0) {
+          let field_values = [];
+          for (let i = 0; i < field_value_array.length; i++) {
 
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
+            let fieldValues = field_value_array[i].split(":");
+            let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
+            try {
+              const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+              const rowid = fieldVauesRowId.fieldValuesId;
 
-      if (field_value_array.length > 0) {
-        let field_values = [];
-        for (let i = 0; i < field_value_array.length; i++) {
-
-          let fieldValues = field_value_array[i].split(":");
-          let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
-          try {
-            const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
-            const rowid = fieldVauesRowId.fieldValuesId;
-
-            let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: rowid,
-              value: fieldValues[1] ? fieldValues[1].trim() : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-              createdBy: cohortUpdateDto?.createdBy,
-              updatedBy: cohortUpdateDto?.updatedBy,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
-          }catch{
-            let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: null,
-              value: fieldValues[1] ? fieldValues[1].trim() : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-              createdBy: cohortUpdateDto?.createdBy,
-              updatedBy: cohortUpdateDto?.updatedBy,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await this.fieldsService.createFieldValues(request, fieldValueDto);
+              let fieldValueDto: FieldValuesDto = {
+                fieldValuesId: rowid,
+                value: fieldValues[1] ? fieldValues[1].trim() : "",
+                itemId: cohortId,
+                fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+                createdBy: cohortUpdateDto?.createdBy,
+                updatedBy: cohortUpdateDto?.updatedBy,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
+            }catch{
+              let fieldValueDto: FieldValuesDto = {
+                fieldValuesId: null,
+                value: fieldValues[1] ? fieldValues[1].trim() : "",
+                itemId: cohortId,
+                fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+                createdBy: cohortUpdateDto?.createdBy,
+                updatedBy: cohortUpdateDto?.updatedBy,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              await this.fieldsService.createFieldValues(request, fieldValueDto);
+            }
           }
         }
       }

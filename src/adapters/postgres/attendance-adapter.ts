@@ -83,9 +83,6 @@ export class PostgresAttendanceService {
             }
 
 
-
-
-                console.log(attendanceList,whereClause,"Shubham");
                 const query =`SELECT 
                 u.*, 
                 cm.*, 
@@ -101,7 +98,6 @@ export class PostgresAttendanceService {
                 `
                 const results = await this.attendanceRepository.query(query);
 
-            // console.log(results,"results")
                 const mappedResponse = await this.mappedResponse(results);
 
 

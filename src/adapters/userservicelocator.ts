@@ -13,7 +13,7 @@ export interface IServicelocator {
   // );
   getUsersDetailsById(userData: Record<string, string>, response:any);
   getUsersDetailsByCohortId(userData: Record<string, string>, response:any);
-  updateUser(id?: string, request?: any, userDto?: any,response?: any);
+  updateUser(userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);
   findUserDetails(userID:any,username:String)
   // searchUser(

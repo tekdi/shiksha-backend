@@ -46,7 +46,7 @@ export class AuthService {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const username = decoded.preferred_username;
-      let data = await this.useradapter.buildUserAdapter().findUserDetails(null, username);
+      let data = await this.useradapter.buildUserAdapter().findUserDetails(null, username); 
       return response
         .status(HttpStatus.OK)
         .send(APIResponse.success(apiId, data, "OK"));

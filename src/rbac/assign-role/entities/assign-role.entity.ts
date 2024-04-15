@@ -9,7 +9,7 @@ export class UserRoleMapping {
 
   @Column('uuid')
   userId: string;
-
+ 
   @Column('uuid')
   roleId: string;
 

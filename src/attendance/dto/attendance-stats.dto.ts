@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Expose, Transform, Type } from "class-transformer";
-import { IsEnum, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Matches, ValidateNested } from 'class-validator';
 
 enum Order {
     ASC = 'asc',
@@ -24,6 +24,21 @@ class FiltersDto {
     @IsString()
     @IsOptional()
     userId: string;
+
+
+    @IsOptional()
+    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+    // @Validate(IsFromDateBeforeToDateConstraint, ['toDate'])
+    fromDate: Date;
+  
+    @IsOptional()
+    @ApiProperty({
+      type: Date,
+      description: "To Date",
+    })
+    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+   
+    toDate: Date;
     
 }
 
@@ -70,12 +85,12 @@ export class AttendanceStatsDto {
     @Expose()
     attendance: string;
 
-    @ApiProperty({
-        type: String,
-        description: "flag",
-    })
-    @Expose()
-    report: boolean; 
+    // @ApiProperty({
+    //     type: String,
+    //     description: "flag",
+    // })
+    // @Expose()
+    // report: boolean; 
 
     @ApiProperty({
         type: Number,

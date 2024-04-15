@@ -123,7 +123,7 @@ export class AttendanceController {
   )
   @ApiBody({ type: AttendanceDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
+  // @UseInterceptors(ClassSerializerInterceptor)
   public async updateAttendace(
     @Param("id") attendanceId: string,
     @Req() request: Request,
@@ -165,7 +165,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
       tenantid,
       request,
       studentSearchDto

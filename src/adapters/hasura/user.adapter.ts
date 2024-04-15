@@ -16,6 +16,7 @@ import {
 } from "../../common/utils/keycloak.adapter.util";
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import { Response } from "express";
 
 @Injectable()
 export class HasuraUserService implements IServicelocator {
@@ -362,9 +363,8 @@ export class HasuraUserService implements IServicelocator {
   }
 
   public async updateUser(
-    userId: string,
-    request: any,
-    userUpdateDto: UserCreateDto
+    userUpdateDto: UserCreateDto,
+    userData
   ) {
     let query = "";
     Object.keys(userUpdateDto).forEach((e) => {
@@ -399,7 +399,7 @@ export class HasuraUserService implements IServicelocator {
     }
     `,
       variables: {
-        userId: userId,
+        userId: userUpdateDto.userId,
       },
     };
 

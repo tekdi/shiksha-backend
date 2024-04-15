@@ -1,4 +1,4 @@
-import { Exclude, Expose } from "class-transformer";
+import {Expose } from "class-transformer";
 import {
   MaxLength,
   IsNotEmpty,
@@ -18,6 +18,7 @@ export class UserCreateDto {
 
   @ApiProperty({ type: () => User })
   @Expose()
+  @IsNotEmpty()
   username: string;
 
   // @ApiProperty({
@@ -33,6 +34,7 @@ export class UserCreateDto {
     description: "The role of the user",
   })
   @Expose()
+  @IsNotEmpty()
   role: string;
 
   @ApiPropertyOptional({
@@ -55,12 +57,14 @@ export class UserCreateDto {
   })
   @Expose()
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
   @ApiProperty({
     type: String,
     description: "The password of the user",
   })
+  @IsNotEmpty()
   @Expose()
   password: string;
 
@@ -109,6 +113,7 @@ export class UserCreateDto {
     description: "The cohort id of the user",
   })
   @Expose()
+  @IsNotEmpty()
   cohortId: string;
 
   //fieldValues

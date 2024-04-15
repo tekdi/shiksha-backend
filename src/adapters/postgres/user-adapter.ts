@@ -204,7 +204,6 @@ export class PostgresUserService {
   }
 
   async updateUser(userDto, response) {
-    const apiId = 'api.users.UpdateUserDetails'
     try {
       let updatedData = {};
       if (userDto.userData || Object.keys(userDto.userData).length > 0) {
@@ -221,20 +220,16 @@ export class PostgresUserService {
           }
         }
       }
-      return response
-        .status(HttpStatus.OK)
-        .send(APIResponse.success(apiId, updatedData, 'OK'));
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "ok",
+        data: updatedData,
+      });
     } catch (e) {
-      response
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .send(
-          APIResponse.error(
-            apiId,
-            'Something went wrong In finding UserDetails',
-            e,
-            'INTERNAL_SERVER_ERROR',
-          ),
-        );
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+      });
     }
   }
 
@@ -264,7 +259,6 @@ export class PostgresUserService {
 
   async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
-    let apiId = 'api.user.creatUser'
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const userId = decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];

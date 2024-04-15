@@ -11,6 +11,8 @@ import {
   Patch,
   UseGuards,
   Query,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 
 import { Request } from "@nestjs/common";
@@ -68,7 +70,6 @@ export class UserController {
     @Query("role") role: string | null = null,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
-
     // const tenantId = headers["tenantid"];   Can be Used In future
     // Context and ContextType can be taken from .env later
     let userData: any = {
@@ -78,7 +79,6 @@ export class UserController {
       contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null,
       fieldValue: fieldvalue && typeof fieldvalue === 'string' && fieldvalue !== ',' && fieldvalue !== '{fieldvalue}' ? fieldvalue : null
     };
-
     let result;
     if (userData.userId !== null) {
       result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(
@@ -115,11 +115,11 @@ export class UserController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -151,7 +151,7 @@ export class UserController {
   ) {
     // userDto.tenantId = headers["tenantid"];
     userUpdateDto.userId = userId;
-    const result = await this.userAdapter.buildUserAdapter().updateUser(userId,request,userUpdateDto,response);
+    const result = await this.userAdapter.buildUserAdapter().updateUser(userUpdateDto,response);
     return response.status(result.statusCode).json(result);
   }
 

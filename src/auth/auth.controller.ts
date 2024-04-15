@@ -42,7 +42,7 @@ export class AuthController {
     return this.authService.login(authDto);
   }
 
-  @Get("/getUserDetails")
+  @Get("/user")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })

@@ -8,4 +8,5 @@ export class Role {
   @Column()
   roleName: string;
   userRoleMappings: Role;
+  privilegeRoleMappings: Role
 }

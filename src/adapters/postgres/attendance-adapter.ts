@@ -70,7 +70,7 @@ export class PostgresAttendanceService {
                     } else if (CohortMembersKeys.includes(key)) {
                         whereClause += ` AND cm."${key}" = '${value}'`;
                     } else if(filters.fromDate && filters.toDate ){
-                          whereClause += ` AND a."attendanceDate" BETWEEN '${filters['fromDate']}' AND '${filters['toDate']}'`;
+                          whereClause += ` AND a."attendanceDate" BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
                     }
                     else{
                         return new ErrorResponseTypeOrm({

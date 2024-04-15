@@ -19,10 +19,16 @@ pipeline {
        
        stage ('Deploy') {
             steps {
-        
-               
                       sh 'docker-compose up -d --force-recreate --no-deps backend' 
                    }
             }
+       post {
+             stage ('Deploy') {
+            // Send notification to Slack
+               slackSend(channel: '#your_channel_name', color: 'good', message: "Build ${currentBuild.result}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+            }
        }
+
+            
+        }
 }

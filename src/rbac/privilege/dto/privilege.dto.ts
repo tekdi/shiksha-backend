@@ -1,11 +1,9 @@
-// export class CreatePrivilegeDto {}
 import { Expose } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import {IsNotEmpty,IsString, IsUUID} from "class-validator"
+import {IsNotEmpty,IsString, IsUUID, Matches} from "class-validator"
 
 export class PrivilegeDto {
   @Expose()
-  @IsUUID()
   privilegeId: string;
 
   @ApiProperty({
@@ -16,6 +14,14 @@ export class PrivilegeDto {
   @Expose()
   @IsNotEmpty()
   privilegeName: string;
+
+  @ApiProperty({
+    type: String,
+    description: "label",
+    default: "",
+  })
+  @Expose()
+  label: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

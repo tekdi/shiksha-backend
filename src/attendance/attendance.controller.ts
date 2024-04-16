@@ -222,7 +222,7 @@ export class AttendanceController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Post("/report")
+  @Post("/average-report")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Attendance list." })
   @ApiBody({ type: AttendanceStatsDto })

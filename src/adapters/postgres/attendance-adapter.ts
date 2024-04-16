@@ -400,10 +400,7 @@ export class PostgresAttendanceService {
 
 
     async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
-        console.log("hoi")
         let { contextId, limit, offset, filters } = attendanceStatsDto
-
-        console.log(attendanceStatsDto,"attendanceStatsDto")
         try {
 
             let nameFilter = '';
@@ -455,7 +452,6 @@ export class PostgresAttendanceService {
                 u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
                  `;
 
-                 console.log(query,"query")
 
             if (filters) {
                 if (filters.nameOrder && filters.nameOrder === "asc" || filters.nameOrder === "desc") {

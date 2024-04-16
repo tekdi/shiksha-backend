@@ -361,7 +361,7 @@ export class PostgresAttendanceService {
             }
 
             if (
-                attendanceFound.data.length > 0 &&
+                attendanceFound.data.length > 0 && attendanceFound.data[0].attendanceId != "" &&
                 attendanceFound.statusCode === 200 && attendanceFound instanceof SuccessResponse
             ) {
 

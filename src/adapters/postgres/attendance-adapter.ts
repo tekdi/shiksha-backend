@@ -529,7 +529,6 @@ export class PostgresAttendanceService {
                 });
             }
 
-
         }
         catch (error) {
 

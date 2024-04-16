@@ -530,43 +530,6 @@ export class PostgresAttendanceService {
             }
 
 
-
-            // else if (report === false) {
-            //     if (attendanceDate) {
-            //         const query = `
-            //     SELECT *
-            //     FROM public."Users" AS u
-            //     INNER JOIN public."CohortMembers" AS cm ON cm."userId" = u."userId" AND cm."role"='student'
-            //     LEFT JOIN public."Attendance" AS aa ON aa."userId" = cm."userId" AND (aa."attendanceDate" =$1 OR aa."attendanceDate" IS NULL)
-            //     where cm."cohortId" = $2
-            //     LIMIT $3
-            //     OFFSET $4
-            //     `;
-
-
-
-            //         const result = await this.attendanceRepository.query(query, [attendanceDate, contextId, limit, offset]);
-            //         const report = await this.mapAttendanceRecord(result);
-
-
-
-
-            //         return new SuccessResponse({
-            //             statusCode: 200,
-            //             message: "Ok.",
-            //             data: report
-            //         });
-            //     }
-
-            //     else {
-
-            //         return new ErrorResponseTypeOrm({
-            //             statusCode: HttpStatus.BAD_REQUEST,
-            //             errorMessage: "Please provide valid attendance date",
-            //         });
-
-            //     }
-            // }
         }
         catch (error) {
 

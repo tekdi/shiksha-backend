@@ -4,10 +4,8 @@ import { CohortDto } from "src/cohort/dto/cohort.dto";
 
 export interface IServicelocatorcohort {
   createCohort(request: any, cohortDto: CohortCreateDto);
-  // getCohort(tenantId, cohortId, request, res);
   searchCohort(tenantid, request: any, cohortSearchDto: CohortSearchDto);
   updateCohort(cohortId: string, request: any, cohortDto: CohortCreateDto);
   getCohortsDetails(cohortId: string);
-  // getCohortList(tenantid,id,request,response);
   updateCohortStatus(cohortId: string);
 }

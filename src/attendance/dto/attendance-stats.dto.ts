@@ -66,7 +66,6 @@ class FiltersDto {
 export class AttendanceStatsDto {
 
     @Expose()
-    @IsString()
     name: string;
 
     @ApiProperty({

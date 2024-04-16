@@ -6,6 +6,9 @@ import {
   ApiBasicAuth,
   ApiConsumes,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -48,6 +51,9 @@ export class CohortController {
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort has been created successfully." })
+  @ApiBadRequestResponse({description: "Bad request."})
+  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
+
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -58,7 +64,7 @@ export class CohortController {
     })
   )
   @ApiBody({ type: CohortCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+
   // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
@@ -85,8 +91,10 @@ export class CohortController {
   
   @Get("cohortDetails?")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort details" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiOkResponse({ description: "Cohort details" })
+  @ApiBadRequestResponse({description: "Bad request."})
+  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
+
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -124,9 +132,10 @@ export class CohortController {
   // search
   @Post("/search")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort list." })
   @ApiBody({ type: CohortSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiOkResponse({ description: "Cohort list" })
+  @ApiBadRequestResponse({description: "Bad request."})
+  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
   // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(ValidationPipe)
   @SerializeOptions({
@@ -154,7 +163,6 @@ export class CohortController {
   @Put("/:id")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort has been updated successfully." })
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -165,8 +173,10 @@ export class CohortController {
     })
   )
   @ApiBody({ type: CohortCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Cohort has been updated successfully" })
+  @ApiBadRequestResponse({description: "Bad request."})
+  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
+
   public async updateCohort(
     @Param("id") cohortId: string,
     @Req() request: Request,
@@ -189,23 +199,15 @@ export class CohortController {
 
   //delete cohort
   @Delete("/:id")
-  @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort has been deleted successfully." })
-  @ApiBody({ type: CohortCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOkResponse({ description: "Cohort has been deleted successfully." })
+  @ApiBadRequestResponse({description: "Bad request."})
+  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
   public async updateCohortStatus(
     @Param("id") cohortId: string,
-    @Req() request: Request,
-    @Body() cohortCreateDto: CohortCreateDto,
-    @UploadedFile() image,
     @Res() response: Response
   ) {
-    const imgresponse = {
-      image: image?.filename,
-    };
-    Object.assign(cohortCreateDto, imgresponse);
+
     const result = await this.cohortService.updateCohortStatus(cohortId);
     return response.status(result.statusCode).json(result);
   }

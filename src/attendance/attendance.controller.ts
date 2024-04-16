@@ -7,6 +7,8 @@ import {
   ApiBasicAuth,
   ApiConsumes,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -224,9 +226,10 @@ export class AttendanceController {
 
   @Post("/average-report")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiOkResponse({ description: "Average Report" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server error" })
   @ApiBody({ type: AttendanceStatsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })

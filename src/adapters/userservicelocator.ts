@@ -16,11 +16,11 @@ export interface IServicelocator {
   updateUser(userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);
   findUserDetails(userID:any,username:String)
-  // searchUser(
-  //   tenantId: string,
-  //   request: any,
-  //   response: any,
-  //   userSearchDto: UserSearchDto
-  // );
+  searchUser(
+    tenantId: string,
+    request: any,
+    response: any,
+    userSearchDto: UserSearchDto
+  );
   resetUserPassword(request: any, username: string, newPassword: string);
 }

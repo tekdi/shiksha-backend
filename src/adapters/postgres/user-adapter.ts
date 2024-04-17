@@ -17,6 +17,8 @@ import APIResponse from '../../utils/response';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
+import { isUUID } from 'class-validator';
+import { UserSearchDto } from 'src/user/dto/user-search.dto';
 
 
 @Injectable()
@@ -33,22 +35,89 @@ export class PostgresUserService {
     @InjectRepository(CohortMembers)
     private cohortMemberRepository: Repository<CohortMembers>
   ) { }
+  async  searchUser(tenantId: string,
+    request: any,
+    response: any,
+    userSearchDto: UserSearchDto){
+    try {
+      let findData = await this.findAllUserDetails(userSearchDto);
+      if(!findData){
+      return new SuccessResponse({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'No Data Found For User',});
+      }
+      console.log("Hi");
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: 'Ok.',
+        data: findData,
+      });
+    } catch (e) {
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+      });
+    }
+  }
+
+  async findAllUserDetails(userSearchDto){
+    let { limit, page, filters } = userSearchDto;
+
+    let offset = 0;
+    if (page > 1) {
+      offset = parseInt(limit) * (page - 1);
+    }
+
+    if (limit.trim() === '') {
+      limit = '0';
+    }
+
+    const whereClause = {};
+    if (filters && Object.keys(filters).length > 0) {
+      Object.entries(filters).forEach(([key, value]) => {
+        whereClause[key] = value;
+      });
+    }
+    const results = await this.usersRepository.find({
+      where: whereClause,
+      skip: offset,
+      take: parseInt(limit),
+    });
+    return results;
+  }
+
 
   async getUsersDetailsById(userData: Record<string, string>, response: any) {
-    let apiId = 'api.users.getUsersDetails'
     try {
+      if (!isUUID(userData.userId)) {
+        return new SuccessResponse({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Please Enter Valid User ID',
+        });
+      }
       const result = {
         userData: {
         }
       };
-
       let customFieldsArray = [];
 
       const [filledValues, userDetails] = await Promise.all([
         this.findFilledValues(userData.userId),
         this.findUserDetails(userData.userId)
       ]);
-
+      if(!userDetails){
+        return new SuccessResponse({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User Not Found',
+        });
+      }
+      if(!userData.fieldValue){
+        return new SuccessResponse({
+          statusCode: HttpStatus.OK,
+          message: 'Ok.',
+          data: userDetails,
+        });
+      }
       const customFields = await this.findCustomFields(userData, userDetails.role)
 
       result.userData = userDetails;

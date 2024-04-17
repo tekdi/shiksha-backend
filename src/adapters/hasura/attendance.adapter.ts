@@ -206,7 +206,7 @@ export class AttendanceHasuraService implements IServicelocator {
           parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
       }
 
-      attendanceSearchDto.filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+      attendanceSearchDto.filters["tenantId"] = tenantId ? tenantId : "";
       Object.keys(attendanceSearchDto.filters).forEach((item) => {
         Object.keys(attendanceSearchDto.filters[item]).forEach((e) => {
           if (!e.startsWith("_")) {
@@ -401,8 +401,8 @@ export class AttendanceHasuraService implements IServicelocator {
       const attendanceToSearch = new AttendanceSearchDto({});
 
       attendanceToSearch.filters = {
-        attendanceDate: { _eq: attendanceDto.attendanceDate },
-        userId: { _eq: attendanceDto.userId },
+        attendanceDate: attendanceDto.attendanceDate, // Assign the value directly
+        userId: attendanceDto.userId,
       };
 
       const attendanceFound: any = await this.searchAttendance(

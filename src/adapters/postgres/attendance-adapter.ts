@@ -326,19 +326,25 @@ export class PostgresAttendanceService {
     */
 
     public async updateAttendanceRecord(
-        request: any,
+        loginUserId,
         attendanceDto: AttendanceDto
     ) {
 
 
         try {
-            const decoded: any = jwt_decode(request?.headers?.authorization);
 
-            const userId =
-                decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+            const Isvalid = await this.validateUserForCohort(attendanceDto.userId,attendanceDto.contextId)
+
+            if(!Isvalid){
+
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Invalid combination of contextId and userId",
+                }); 
+
+            }
+
             const attendanceToSearch = new AttendanceSearchDto({});
-
-
 
             attendanceToSearch.filters = {
                 attendanceDate: attendanceDto.attendanceDate,
@@ -348,7 +354,7 @@ export class PostgresAttendanceService {
 
             const attendanceFound: any = await this.searchAttendance(
                 attendanceDto.tenantId,
-                request,
+                loginUserId,
                 attendanceToSearch
             );
 
@@ -364,15 +370,16 @@ export class PostgresAttendanceService {
                 attendanceFound.data.length > 0 && attendanceFound.data[0].attendanceId != "" &&
                 attendanceFound.statusCode === 200 && attendanceFound instanceof SuccessResponse
             ) {
-
+                attendanceDto.updatedBy = loginUserId
               return   await this.updateAttendance(
                     attendanceFound.data[0].attendanceId,
-                    request,
+                    loginUserId,
                     attendanceDto
                 );
             } else {
-
-                return await this.createAttendance(request, attendanceDto);
+                attendanceDto.createdBy = loginUserId;
+                attendanceDto.updatedBy = loginUserId;
+                return await this.createAttendance(loginUserId, attendanceDto);
             }
         } catch (e) {
             return new ErrorResponseTypeOrm({
@@ -392,6 +399,7 @@ export class PostgresAttendanceService {
         attendanceDto: AttendanceDto
     ) {
         try {
+
 
             const attendanceRecord = await this.attendanceRepository.findOne({
                 where: { attendanceId },
@@ -418,12 +426,20 @@ export class PostgresAttendanceService {
                 data: updatedAttendanceRecord,
             });
         } catch (error) {
-            
+
+            if (error.code == '23503') {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Please provide valid contextId",
+                });
+            }
+            else{          
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     errorMessage: error,
 
-                });
+                })
+            }
             
         }
     }
@@ -450,12 +466,12 @@ export class PostgresAttendanceService {
             if (error.code == '23503') {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    errorMessage: "Please provide valid userID",
+                    errorMessage: "Please enter valid UserId and contextId",
                 });
             } else {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                    errorMessage: 'Internal Server Error',
+                    errorMessage: error,
                 });
             }
         }
@@ -580,6 +596,21 @@ export class PostgresAttendanceService {
             errors,
         };
     }
+
+
+
+    public async validateUserForCohort(userId,cohortId)
+        {
+            const attendanceRecord = await this.cohortMembersRepository.findOne({
+                where: { userId, cohortId } // Include cohortId in the where clause
+            });
+            if(attendanceRecord){
+                return true
+            }else{
+                return false
+            }
+            
+        }
 
 }
 

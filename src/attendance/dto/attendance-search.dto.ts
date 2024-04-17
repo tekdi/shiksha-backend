@@ -1,7 +1,52 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Matches, Validate, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from "class-validator";
+import { IsOptional, IsUUID, Matches, Validate, ValidateNested, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from "class-validator";
 import { isBefore, isSameDay } from "date-fns";
+import { UserDto } from "src/user/dto/user.dto";
+import { AttendanceDto } from "./attendance.dto";
+import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
+import { UUID } from "crypto";
+import { Type } from "class-transformer";
 
+
+export class AttendanceFiltersDto  {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+  fromDate?: string;
+
+  @ApiPropertyOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+  @IsOptional()
+  toDate?: string;
+
+  @ApiPropertyOptional()
+  @IsUUID()
+  @IsOptional()
+  cohortId ?:string
+
+  @ApiPropertyOptional()
+  role ?: string
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "The date of the attendance in format yyyy-mm-dd",
+    default:"yyyy-mm-dd"
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+  attendanceDate ?:Date
+
+
+  @ApiPropertyOptional()
+  @IsUUID()
+  @IsOptional()
+  userId?: string
+
+  // @ApiPropertyOptional()
+
+
+  [key: string]: any; // Allows additional dynamic keys
+}
 
 @ValidatorConstraint({ name: "validDateRange", async: false })
 export class ValidDateRangeConstraint implements ValidatorConstraintInterface {
@@ -23,7 +68,6 @@ export class ValidDateRangeConstraint implements ValidatorConstraintInterface {
 
 
 
-
 export class AttendanceSearchDto {
   @ApiProperty({
     type: String,
@@ -37,17 +81,14 @@ export class AttendanceSearchDto {
   })
   page: number;
 
-  @ApiProperty({
-    type: Object,
+  @ApiPropertyOptional({
+    type: AttendanceFiltersDto,
     description: "Filters",
   })
-  @ApiPropertyOptional()
-  @Validate(ValidDateRangeConstraint, { message: "Invalid date range." })
-  filters: {
-    fromDate?: string;
-    toDate?: string;
-    [key: string]: any; // Allows additional dynamic keys
-  };
+  @ValidateNested({ each: true })
+  @Type(() => AttendanceFiltersDto)
+  // @Validate(ValidDateRangeConstraint, { message: "Invalid date range." })
+  filters: AttendanceFiltersDto
 
 
 

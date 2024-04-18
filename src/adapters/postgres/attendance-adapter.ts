@@ -1,17 +1,13 @@
 import { User } from '../../user/entities/user-entity';
-import { isAfter } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
-import { Client } from 'pg';
-import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "../../attendance/entities/attendance.entity";
-import { EntityMetadata, QueryRunner, Repository } from "typeorm";
-import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {  Repository,Between } from "typeorm";
+import {  HttpStatus, Injectable } from "@nestjs/common";
 import { AttendanceSearchDto } from "../../attendance/dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto, BulkAttendanceDTO } from '../../attendance/dto/attendance.dto';
 import { AttendanceDateDto } from '../../attendance/dto/attendance-date.dto';
-import { Between } from 'typeorm';
 import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
 import { format } from 'date-fns'
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';

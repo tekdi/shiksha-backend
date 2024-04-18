@@ -38,76 +38,82 @@ export class PostgresAttendanceService {
     */
 
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
-
         try {
-
             let { limit, page, filters } = attendanceSearchDto;
             if (!limit) {
                 limit = '0';
             }
-
+    
             let offset = 0;
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-
+    
             const UserKeys = this.userRepository.metadata.columns.map((column) => column.propertyName);
             const AttendaceKeys = this.attendanceRepository.metadata.columns.map((column) => column.propertyName);
             const CohortMembersKeys = this.cohortMembersRepository.metadata.columns.map((column) => column.propertyName);
-
-            let whereClause = `u."tenantId" = '${tenantId}'`; // Default WHERE clause for filtering by tenantId
-            let attendanceList = ''
+    
+            let whereClause = `u."tenantId" = $1`; // Default WHERE clause for filtering by tenantId
+            let queryParams = [tenantId]; // Parameters for the query
+            let attendanceList = '';
             if (filters && Object.keys(filters).length > 0) {
+                let index = 2; // Starting index for additional parameters
                 for (const [key, value] of Object.entries(filters)) {
                     if (UserKeys.includes(key)) {
-                        whereClause += ` AND u."${key}" = '${value}'`;
+                        whereClause += ` AND u."${key}" = $${index}`;
+                        queryParams.push(value);
                     } else if (AttendaceKeys.includes(key)) {
-                        if(key==="attendanceDate"){
-                            attendanceList = ` AND (a."attendanceDate" = '${value}' OR a."attendanceDate" IS NULL)`
-                            continue
+                        if (key === "attendanceDate") {
+                            attendanceList = ` AND (a."attendanceDate" = $${index} OR a."attendanceDate" IS NULL)`;
                         }
-                        whereClause += ` AND a."${key}" = '${value}'`;
+                        whereClause += ` AND a."${key}" = $${index}`;
+                        queryParams.push(value);
                     } else if (CohortMembersKeys.includes(key)) {
-                        whereClause += ` AND cm."${key}" = '${value}'`;
-                    } else if(filters.fromDate && filters.toDate ){
-                          whereClause += ` AND a."attendanceDate" BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
-                    }
-                    else{
+                        whereClause += ` AND cm."${key}" = $${index}`;
+                        queryParams.push(value);
+                    } else if (filters.fromDate && filters.toDate) {
+                        whereClause += ` AND a."attendanceDate" BETWEEN $${index} AND $${index + 1}`;
+                        queryParams.push(filters.fromDate);
+                        queryParams.push(filters.toDate);
+                        index += 1; // Increment index for toDate parameter
+                    } else {
                         return new ErrorResponseTypeOrm({
                             statusCode: HttpStatus.BAD_REQUEST,
                             errorMessage: `${key} Invalid key`,
-                        });    
-                    
-}
-                };
+                        });
+                    }
+                    index += 1; // Increment index for next parameter
+                }
             }
-
-
-                const query =`SELECT 
-                u.*, 
-                cm.*, 
-                a.*     
-                FROM 
-                "Users" u
-                INNER JOIN 
-                "CohortMembers" cm ON cm."userId" = u."userId" 
-                LEFT JOIN 
-                "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
-                where
-                ${whereClause}
-                `
-                const results = await this.attendanceRepository.query(query);
-
-                const mappedResponse = await this.mappedResponse(results);
-
-
+    
+            const query = `
+                SELECT u.*, cm.*, a.*     
+                FROM "Users" u
+                INNER JOIN "CohortMembers" cm ON cm."userId" = u."userId" 
+                LEFT JOIN "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
+                WHERE ${whereClause};
+            `;
+            const results = await this.attendanceRepository.query(query, queryParams);
+            if(!results.length){
+                return new SuccessResponse({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'No data Found For Entered Filter',
+                }); 
+            }
+            const mappedResponse = await this.mappedResponse(results);
+    
             return new SuccessResponse({
                 statusCode: HttpStatus.OK,
                 message: 'Ok.',
-                // totalCount,
                 data: mappedResponse,
             });
         } catch (error) {
+            if (error.code=== "22P02"){
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: `Invalid value Entered For ${error.routine}`,
+                })
+            }
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: error,
@@ -256,7 +262,7 @@ export class PostgresAttendanceService {
         const attendanceResponse = result.map((item: any) => {
 
             const dateObject = new Date(item.attendanceDate);
-            const formattedDate = moment(dateObject).format('YYYY-MM-DD');
+            const formattedDate = format(dateObject, 'yyyy-MM-dd');
             const attendanceMapping = {
                 tenantId: item?.tenantId ? `${item.tenantId}` : "",
                 attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",

@@ -9,7 +9,6 @@ import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto, BulkAttendanceDTO } from '../../attendance/dto/attendance.dto';
 import { AttendanceDateDto } from '../../attendance/dto/attendance-date.dto';
 import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
-import { format } from 'date-fns'
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 const moment = require('moment');
@@ -258,8 +257,7 @@ export class PostgresAttendanceService {
         const attendanceResponse = result.map((item: any) => {
 
             const dateObject = new Date(item.attendanceDate);
-            const formattedDate = format(dateObject, 'yyyy-MM-dd');
-            const attendanceMapping = {
+            const formattedDate = moment(dateObject).format('YYYY-MM-DD');            const attendanceMapping = {
                 tenantId: item?.tenantId ? `${item.tenantId}` : "",
                 attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",
                 userId: item?.userId ? `${item.userId}` : "",

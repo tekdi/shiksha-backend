@@ -4,7 +4,7 @@ import { CohortMembersUpdateDto } from "src/cohortMembers/dto/cohortMember-updat
 
 export interface IServicelocatorcohortMembers {
   createCohortMembers(
-    request: any,
+    loginUser: any,
     cohortMembersDto: CohortMembersDto,
     response: any
   );
@@ -12,7 +12,7 @@ export interface IServicelocatorcohortMembers {
   searchCohortMembers(cohortMembersSearchDto: CohortMembersSearchDto);
   updateCohortMembers(
     cohortMembershipId: string,
-    request: any,
+    loginUser: any,
     cohortMemberUpdateDto: CohortMembersUpdateDto,
 
     response: any

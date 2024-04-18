@@ -262,13 +262,15 @@ export class PostgresCohortMembersService {
   }
 
   public async createCohortMembers(
-    request: any,
+    loginUser: any,
     cohortMembers: CohortMembersDto,
     response: any
   ) {
     const apiId = "api.cohortMember.createCohortMembers";
 
     try {
+      cohortMembers.createdBy = loginUser;
+      cohortMembers.updatedBy = loginUser;
       // Create a new CohortMembers entity and populate it with cohortMembers data
       const savedCohortMember = await this.cohortMembersRepository.save(
         cohortMembers
@@ -289,13 +291,15 @@ export class PostgresCohortMembersService {
 
   public async updateCohortMembers(
     cohortMembershipId: string,
-    request: any,
+    loginUser: any,
     cohortMembersUpdateDto: CohortMembersUpdateDto,
     response: any
   ) {
     const apiId = "api.cohortMember.updateCohortMembers";
 
     try {
+      cohortMembersUpdateDto.updatedBy = loginUser;
+
       const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
         where: { cohortMembershipId: cohortMembershipId },
       });

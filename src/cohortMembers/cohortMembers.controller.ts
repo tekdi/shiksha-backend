@@ -61,10 +61,11 @@ export class CohortMembersController {
   })
   public async createCohortMembers(
     @Headers() headers,
-    @Req() request: Request,
+    @Req() request,
     @Body() cohortMembersDto: CohortMembersDto,
     @Res() response: Response
   ) {
+    const loginUser = request.user.userId;
     let tenantid = headers["tenantid"];
     const payload = {
       tenantId: tenantid,
@@ -73,7 +74,7 @@ export class CohortMembersController {
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .createCohortMembers(request, cohortMembersDto, response);
+      .createCohortMembers(loginUser, cohortMembersDto, response);
     return response.status(result.statusCode).json(result);
   }
 
@@ -144,15 +145,17 @@ export class CohortMembersController {
   // @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohortMembers(
     @Param("id") cohortMembersId: string,
-    @Req() request: Request,
+    @Req() request,
     @Body() cohortMemberUpdateDto: CohortMembersUpdateDto,
     @Res() response: Response
   ) {
+    const loginUser = request.user.userId;
+
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .updateCohortMembers(
         cohortMembersId,
-        request,
+        loginUser,
         cohortMemberUpdateDto,
         response
       );

@@ -15,11 +15,7 @@ export class PrivilegeDto {
   @IsNotEmpty()
   privilegeName: string;
 
-  @ApiProperty({
-    type: String,
-    description: "label",
-    default: "",
-  })
+
   @Expose()
   label: string;
 

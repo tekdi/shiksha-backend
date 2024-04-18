@@ -37,7 +37,6 @@ import { diskStorage } from "multer";
 import { Response, response } from "express";
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
-import { CohortService } from "./cohort.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { QueryParamsDto } from "./dto/query-params.dto";
 
@@ -45,7 +44,8 @@ import { QueryParamsDto } from "./dto/query-params.dto";
 @Controller("cohort")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
-  constructor(private readonly cohortService: CohortService,private readonly cohortAdapter:CohortAdapter) {}
+  constructor(private readonly cohortAdapter:CohortAdapter) {}
+
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -88,46 +88,6 @@ export class CohortController {
     );
     return response.status(result.statusCode).json(result);
   }
-  
-  @Get("cohortDetails?")
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Cohort details" })
-  @ApiBadRequestResponse({description: "Bad request."})
-  @ApiInternalServerErrorResponse({description: "Internal Server Error."})
-
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getCohortDetails(
-    @Headers() headers,
-    @Query() queryParams: QueryParamsDto,
-    @Req() request: Request,
-    @Res() response: Response
-  ) {
-    if(!Object.keys(queryParams).length){
-      return response.status(400).json({
-        message:"Please enter Query Params"
-      })
-    }
-    queryParams.name = queryParams.name.toLocaleLowerCase();
-    let data;
-    let tenantId = request.headers['tenantId']
-    if (queryParams?.name=== 'user') {
-      data=queryParams
-      return this.cohortService.getCohortsDetails(data,request,response)
-    } else if (queryParams?.name === 'cohort') {
-      data=queryParams
-      return this.cohortService.getCohortsDetails(data,request,response)
-    } else {
-      return response.status(400).json({
-        message:"Invaid Parameters.",
-        data:`Valid format should be name="cohortoruser" and id=value`
-      })
-    }
-  }
 
   // search
   @Post("/search")
@@ -151,7 +111,7 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.cohortService.searchCohort(
+    const result = await this.cohortAdapter.buildCohortAdapter().searchCohort(
       tenantid,
       request,
       cohortSearchDto
@@ -189,13 +149,14 @@ export class CohortController {
     };
     Object.assign(cohortCreateDto, imgresponse);
 
-    const result = await this.cohortService.updateCohort(
+    const result = await this.cohortAdapter.buildCohortAdapter().updateCohort(
       cohortId,
       request,
       cohortCreateDto
     );
     return response.status(result.statusCode).json(result);
   }
+
 
   //delete cohort
   @Delete("/:id")
@@ -205,10 +166,10 @@ export class CohortController {
   @ApiInternalServerErrorResponse({description: "Internal Server Error."})
   public async updateCohortStatus(
     @Param("id") cohortId: string,
+    @Req() request: Request,
     @Res() response: Response
   ) {
-
-    const result = await this.cohortService.updateCohortStatus(cohortId);
+    const result = await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId);
     return response.status(result.statusCode).json(result);
   }
 }

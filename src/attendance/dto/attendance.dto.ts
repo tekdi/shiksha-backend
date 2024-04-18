@@ -6,6 +6,7 @@ import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-entity';
 import { addHours, format, isAfter, isBefore, isValid } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { Cohort } from 'src/cohort/entities/cohort.entity';
 
 //for student valid enum are[present,absent]
 //for teacher valid enum are[present,on-leave,half-day]
@@ -128,14 +129,26 @@ export class AttendanceDto {
   @Expose()
   contextType: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: String,
+    description: "The contextId of the attendance",
+    default: "",
+  })
+  @ApiProperty({
     type: String,
     description: "The contextId of the attendance",
     default: "",
   })
   @IsNotEmpty()
+  @IsUUID()
   @Expose()
+  @IsDefined()
   contextId: string;
+
+  @ManyToOne(() => Cohort, { nullable: true }) // Define the ManyToOne relationship with Cohort entity
+  @JoinColumn({ name: "contextId", referencedColumnName: "cohortId" }) // Map contextId to cohortId column in Cohort table
+  cohort: Cohort; 
+
 
   @Expose()
   createdAt: string;
@@ -152,6 +165,7 @@ export class AttendanceDto {
   constructor(obj: any) {
     Object.assign(this, obj);
   }
+  
 }
 
 

@@ -7,6 +7,8 @@ import {
   ApiBasicAuth,
   ApiConsumes,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -26,6 +28,7 @@ import {
   ValidationPipe,
   Res,
   UseGuards,
+  HttpStatus,
 } from "@nestjs/common";
 import { AttendanceDto, BulkAttendanceDTO } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -84,7 +87,6 @@ export class AttendanceController {
     })
   )
   @ApiBody({ type: AttendanceDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
@@ -92,7 +94,7 @@ export class AttendanceController {
   @UsePipes(ValidationPipe)
   public async createAttendace(
     @Headers() headers,
-    @Req() request: Request,
+    @Req() request,
     @Body() attendanceDto: AttendanceDto,
     @Res() response: Response,
     @UploadedFile() image
@@ -100,7 +102,7 @@ export class AttendanceController {
     attendanceDto.tenantId = headers["tenantid"];
     attendanceDto.image = image?.filename;
     const result = await this.attendaceAdapter.buildAttenceAdapter().updateAttendanceRecord(
-      request,
+      request.user.userId,
       attendanceDto
     );
     return response.status(result.statusCode).json(result);
@@ -146,9 +148,10 @@ export class AttendanceController {
 
   @Post("/search")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiOkResponse({ description: "Attendance List" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiBody({ type: AttendanceSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(ValidationPipe)
   @SerializeOptions({
@@ -165,7 +168,7 @@ export class AttendanceController {
   ) {
     let tenantid = headers["tenantid"];
 
-    const result = this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
+    const result = await this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
       tenantid,
       request,
       studentSearchDto

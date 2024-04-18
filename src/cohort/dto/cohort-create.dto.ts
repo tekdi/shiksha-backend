@@ -10,11 +10,12 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { FieldValuesCreateDto } from "src/fields/dto/field-values-create.dto";
 
 export class CohortCreateDto {
-  //generated fields
-  @Expose()
-  tenantId: string;
   @Expose()
   cohortId: string;
+  
+  @Expose()
+  tenantId: string;
+
   @Expose()
   createdAt: string;
   @Expose()
@@ -81,7 +82,7 @@ export class CohortCreateDto {
     default: false,
   })
   @Expose()
-  attendanceCaptureImage: Boolean;
+  attendanceCaptureImage: boolean;
 
   //image
   @Expose()
@@ -98,16 +99,16 @@ export class CohortCreateDto {
   metadata: string;
 
   //createdBy
-  @Expose()
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The cohort is createdBy",
     default: "",
   })
+  @Expose()
   createdBy: string;
 
   //updatedBy
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The cohort is updatedBy",
     default: "",
@@ -116,14 +117,14 @@ export class CohortCreateDto {
   updatedBy: string;
 
   //fieldValues
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The fieldValues Object",
   })
   @Expose()
   fieldValues: string;
 
-  constructor(partial: Partial<CohortCreateDto>) {
-    Object.assign(this, partial);
+  constructor(obj: any) {
+    Object.assign(this, obj);
   }
 }

@@ -40,7 +40,7 @@ import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
 @Controller("cohort")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter:CohortAdapter) {}
 
@@ -58,6 +58,7 @@ export class CohortController {
       fileFilter: imageFileFilter,
     })
   )
+  @UsePipes(new ValidationPipe())
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiHeader({
@@ -106,7 +107,6 @@ export class CohortController {
   @ApiCreatedResponse({ description: "Cohort list." })
   @ApiBody({ type: CohortSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -145,7 +145,6 @@ export class CohortController {
   )
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohort(
     @Param("id") cohortId: string,
     @Req() request: Request,
@@ -177,7 +176,7 @@ export class CohortController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId);
+    const result = await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId,request);
     return response.status(result.statusCode).json(result);
   }
 }

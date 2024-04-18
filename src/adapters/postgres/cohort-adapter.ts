@@ -22,6 +22,9 @@ import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { v4 as uuidv4 } from 'uuid';
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
+import { isUUID } from "class-validator";
+
+
 
 @Injectable()
 export class PostgresCohortService {
@@ -76,38 +79,21 @@ export class PostgresCohortService {
   }
 
   public async getCohortsDetails(cohortId: string) {
-    let apiId = "api.concept.getCohortDetails";
     try {
-
-      const result = {
-        cohortData: {
-        }
-      };
-
-      let customFieldsArray = [];
-
-      const [filledValues, cohortDetails, customFields] = await Promise.all([
-        this.findFilledValues(cohortId),
-        this.findCohortDetails(cohortId),
-        this.findCustomFields()
-      ]);
-      
-
-      result.cohortData = cohortDetails;
-      const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-      for (let data of customFields) {
-        const fieldValue = filledValuesMap.get(data.fieldId);
-        const customField = {
-          fieldId: data.fieldId,
-          label: data.label,
-          value: fieldValue || '',
-          options: data?.fieldParams?.['options'] || {},
-          type: data.type || ''
-        };
-        customFieldsArray.push(customField);
+      if (!isUUID(cohortId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter valid (UUID)",
+        });
       }
-      result.cohortData['customFields'] = customFieldsArray;
-      
+      const result = await this.getCohortDataWithCustomfield(cohortId);
+      console.log(result);
+      // if(!result.length){
+      //   return new ErrorResponseTypeOrm({
+      //     statusCode: HttpStatus.NOT_FOUND,
+      //     errorMessage: "CohortId not found",
+      //   });
+      // }
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: "Ok.",
@@ -121,6 +107,39 @@ export class PostgresCohortService {
       });
     }
   }
+
+  public async getCohortDataWithCustomfield(cohortId: string) {
+    const result = {
+      cohortData: {
+      }
+    };
+
+    let customFieldsArray = [];
+
+    const [filledValues, cohortDetails, customFields] = await Promise.all([
+      this.findFilledValues(cohortId),
+      this.findCohortDetails(cohortId),
+      this.findCustomFields()
+    ]);
+
+    
+    result.cohortData = cohortDetails;
+    const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+    for (let data of customFields) {
+      const fieldValue = filledValuesMap.get(data.fieldId);
+      const customField = {
+        fieldId: data.fieldId,
+        label: data.label,
+        value: fieldValue || '',
+        options: data?.fieldParams?.['options'] || {},
+        type: data.type || ''
+      };
+      customFieldsArray.push(customField);
+    }
+    result.cohortData['customFields'] = customFieldsArray;
+    return result
+  }
+
 
   async findFilledValues(cohortId: string) {
     let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
@@ -137,7 +156,7 @@ export class PostgresCohortService {
     })
     return cohortDetails;
   }
-  
+
   async findCustomFields() {
     let customFields = await this.fieldsRepository.find({
       where: {
@@ -171,20 +190,15 @@ export class PostgresCohortService {
     ]);
     return result;
   }
+
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto) {
     try {
-      const cohortData: any = {};
-      cohortCreateDto.cohortId = uuidv4();
-      Object.keys(cohortCreateDto).forEach((e) => {
-        if (cohortCreateDto[e] && cohortCreateDto[e] != "" && e != "fieldValues") {
-          if (Array.isArray(cohortCreateDto[e])) {
-            cohortData[e] = JSON.stringify(cohortCreateDto[e]);
-          } else {
-            cohortData[e] = cohortCreateDto[e];
-          }
-        }
-      });
-      const response = await this.cohortRepository.save(cohortData);
+      // console.log(request.user.userId)
+      // cohortCreateDto.createdBy =uuidv4(request.user.userId);   
+      console.log(cohortCreateDto);
+      
+      const response = await this.cohortRepository.save(cohortCreateDto);
+
       let cohortId = response?.cohortId;
 
       let field_value_array = cohortCreateDto.fieldValues.split("|");
@@ -229,69 +243,83 @@ export class PostgresCohortService {
     cohortUpdateDto: CohortCreateDto
   ) {
     try {
+      if (!isUUID(cohortId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter valid (UUID)",
+        });
+      }
+      const checkData = await this.checkAuthAndValidData(cohortId);
+      if (checkData) {
 
-      const cohortUpdateData: any = {};
+        // const cohortUpdateData: any = {};
 
-      Object.keys(cohortUpdateDto).forEach((e) => {
-        if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
-        ) {
-          if (Array.isArray(cohortUpdateDto[e])) {
-            cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
-          } else {
-            cohortUpdateData[e] = cohortUpdateDto[e];
-          }
-        }
-      });
+        // Object.keys(cohortUpdateDto).forEach((e) => {
+        //   if (cohortUpdateDto[e] && cohortUpdateDto[e] != "" && e != "fieldValues"
+        //   ) {
+        //     if (Array.isArray(cohortUpdateDto[e])) {
+        //       cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
+        //     } else {
+        //       cohortUpdateData[e] = cohortUpdateDto[e];
+        //     }
+        //   }
+        // });
+        cohortUpdateDto.updatedBy =  request.user.userId; 
+        const response = await this.cohortRepository.update(cohortId, cohortUpdateDto);
 
-      const response = await this.cohortRepository.update(cohortId, cohortUpdateData);
+        if (cohortUpdateDto.fieldValues) {
+          let field_value_array = cohortUpdateDto.fieldValues.split("|");
+          if (field_value_array.length > 0) {
+            let field_values = [];
+            for (let i = 0; i < field_value_array.length; i++) {
 
-      if (cohortUpdateDto.fieldValues) {
-        let field_value_array = cohortUpdateDto.fieldValues.split("|");
-        if (field_value_array.length > 0) {
-          let field_values = [];
-          for (let i = 0; i < field_value_array.length; i++) {
+              let fieldValues = field_value_array[i].split(":");
+              let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
+              try {
+                const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+                const rowid = fieldVauesRowId.fieldValuesId;
 
-            let fieldValues = field_value_array[i].split(":");
-            let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
-            try {
-              const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
-              const rowid = fieldVauesRowId.fieldValuesId;
-
-              let fieldValueDto: FieldValuesDto = {
-                fieldValuesId: rowid,
-                value: fieldValues[1] ? fieldValues[1].trim() : "",
-                itemId: cohortId,
-                fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-                createdBy: cohortUpdateDto?.createdBy,
-                updatedBy: cohortUpdateDto?.updatedBy,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              };
-              await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
-            } catch {
-              let fieldValueDto: FieldValuesDto = {
-                fieldValuesId: null,
-                value: fieldValues[1] ? fieldValues[1].trim() : "",
-                itemId: cohortId,
-                fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-                createdBy: cohortUpdateDto?.createdBy,
-                updatedBy: cohortUpdateDto?.updatedBy,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              };
-              await this.fieldsService.createFieldValues(request, fieldValueDto);
+                let fieldValueDto: FieldValuesDto = {
+                  fieldValuesId: rowid,
+                  value: fieldValues[1] ? fieldValues[1].trim() : "",
+                  itemId: cohortId,
+                  fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+                  createdBy: cohortUpdateDto?.createdBy,
+                  updatedBy: cohortUpdateDto?.updatedBy,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
+              } catch {
+                let fieldValueDto: FieldValuesDto = {
+                  fieldValuesId: null,
+                  value: fieldValues[1] ? fieldValues[1].trim() : "",
+                  itemId: cohortId,
+                  fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+                  createdBy: cohortUpdateDto?.createdBy,
+                  updatedBy: cohortUpdateDto?.updatedBy,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await this.fieldsService.createFieldValues(request, fieldValueDto);
+              }
             }
           }
         }
-      }
 
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok.",
-        data: {
-          rowCount: response.affected,
-        }
-      });
+        return new SuccessResponse({
+          statusCode: HttpStatus.OK,
+          message: "Ok.",
+          data: {
+            rowCount: response.affected,
+          }
+        });
+      }else {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "User not found",
+        });
+      }
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -324,19 +352,43 @@ export class PostgresCohortService {
           whereClause[key] = value;
         });
       }
-      const [results, totalCount] = await this.cohortRepository.findAndCount({
-        where: whereClause,
-        skip: offset,
-        take: parseInt(limit),
-      });
+      let results = {
+        cohortDetails: [],
+      };
 
-      const mappedResponse = await this.mappedResponse(results);
+      if (whereClause['userId'] || whereClause['cohortId']) {
+        const [cohortData] = await this.cohortMembersRepository.findAndCount({
+          where: whereClause,
+          skip: offset,
+          take: parseInt(limit),
+        });
+        if (whereClause['userId']) {
+          for (let data of cohortData) {
+            let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
+            results.cohortDetails.push(cohortDetails);
+          }
+        } else {
+          let cohortDetails = await this.getCohortDataWithCustomfield(whereClause['cohortId']);
+          results.cohortDetails.push(cohortDetails);
+        }
+      } else {
+        const [cohortData] = await this.cohortRepository.findAndCount({
+          where: whereClause,
+          skip: offset,
+          take: parseInt(limit),
+        });
+        for (let data of cohortData) {
+          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
+          results.cohortDetails.push(cohortDetails);
+        }
+      }
+
+
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: 'Ok.',
-        totalCount,
-        data: mappedResponse,
+        data: results,
       });
 
     } catch (e) {
@@ -372,22 +424,55 @@ export class PostgresCohortService {
   }
 
   public async updateCohortStatus(
-    cohortId: string
+    cohortId: string,
+    request: any
   ) {
     try {
-      let query = `UPDATE public."Cohort"
-      SET "status" = false
-      WHERE "cohortId" = $1`;
-      const results = await this.cohortRepository.query(query, [cohortId]);
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Cohort Deleted Successfully.",
-      });
+      if (!isUUID(cohortId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter valid (UUID)",
+        });
+      }
+      const checkData = await this.checkAuthAndValidData(cohortId);
+      const updatedBy =  request.user.userId; 
+      if (checkData === true) {
+        let query = `UPDATE public."Cohort"
+        SET "status" = false,
+        "updatedBy" = '${updatedBy}'
+        WHERE "cohortId" = $1`;
+        
+        const results = await this.cohortRepository.query(query, [cohortId]);
+        return new SuccessResponse({
+          statusCode: HttpStatus.OK,
+          message: "Cohort Deleted Successfully.",
+        });
+      } else {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "User not found",
+        });
+      }
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
       });
     }
+  }
+
+  public async checkAuthAndValidData(id: any) {
+
+    const existData = await this.cohortRepository.find({
+      where: {
+        cohortId: id
+      }
+    })
+    if (existData.length !== 0) {
+      return true;
+    } else {
+      return false;
+    }
+
   }
 }

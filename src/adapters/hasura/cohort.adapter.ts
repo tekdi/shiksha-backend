@@ -261,7 +261,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
   }
 
   public async searchCohort(tenantId: string,request: any,cohortSearchDto: CohortSearchDto) {}
-  public async updateCohortStatus(cohortId: string) {}
+  public async updateCohortStatus(cohortId: string, request: any) {}
   public async getCohortsDetails(cohortId: string) {}
   public async updateCohort(
     cohortId: string,

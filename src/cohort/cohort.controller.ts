@@ -43,6 +43,7 @@ import { QueryParamsDto } from "./dto/query-params.dto";
 @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter:CohortAdapter) {}
+
   //create cohort
   @Post()
   @ApiConsumes("multipart/form-data")
@@ -59,7 +60,6 @@ export class CohortController {
   )
   @ApiBody({ type: CohortCreateDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -81,6 +81,23 @@ export class CohortController {
       cohortCreateDto
     );
     return response.status(result.statusCode).json(result);
+  }
+
+  //Get Cohort Details
+  @Get("/:id")
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Cohort has been deleted successfully." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  public async getCohortsDetails(
+    @Param("id") cohortId: string,
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
+
+    const result = await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(cohortId);
+    return response.status(result.statusCode).json(result);
+    // return this.cohortAdapter.buildCohortAdapter.getCohortsDetails(data,request,response)
+    
   }
 
   // search

@@ -7,6 +7,8 @@ import {
   ApiBasicAuth,
   ApiConsumes,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -146,9 +148,10 @@ export class AttendanceController {
 
   @Post("/search")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiOkResponse({ description: "Attendance List" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiBody({ type: AttendanceSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(ValidationPipe)
   @SerializeOptions({

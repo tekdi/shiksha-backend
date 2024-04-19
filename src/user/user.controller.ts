@@ -13,6 +13,7 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
+  HttpStatus,
 } from "@nestjs/common";
 
 import { Request } from "@nestjs/common";
@@ -24,8 +25,10 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiQuery,
-  ApiConsumes,
   ApiHeader,
+  ApiNotFoundResponse,
+  ApiInternalServerErrorResponse,
+  ApiBadRequestResponse,
 } from "@nestjs/swagger";
 
 import { UserDto } from "./dto/user.dto";
@@ -35,83 +38,43 @@ import { UserCreateDto } from "./dto/user-create.dto";
 import { UserUpdateDTO } from "./dto/user-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
+import { isUUID } from "class-validator";
+import { SuccessResponse } from "src/success-response";
 @ApiTags("User")
-@Controller("user")
+@Controller("users")
 export class UserController {
   constructor(
     private userAdapter: UserAdapter,
   ) {}
 
-  /**
-   * Method to get The User Details and Custome Fields Data.
-   *
-   * @param   userId    $data     User Id of User
-   *
-   * @return  UserData Object containing all teh detals
-   *
-   * @since   1.6
-   */
-  @Get()
+  @Get('/:userId')
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "User detail." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiOkResponse({ description: "User detais Fetched Succcessfully" })
+  @ApiNotFoundResponse({ description: "User Not Found" })
+  @ApiInternalServerErrorResponse({description:"Internal Server Error" })
+  @ApiBadRequestResponse({description:"Bad Request"})
   @SerializeOptions({ strategy: "excludeAll", })
   @ApiHeader({ name: "tenantid", })
-  @ApiQuery({ name: 'userid', description: 'The user ID (optional)', required: false, })
-  @ApiQuery({ name: 'cohortid', description: 'The cohort ID (optional)', required: false, })
-  @ApiQuery({ name: 'role', description: 'The role (optional)', required: false, })
-  @ApiQuery({ name: 'fieldvalue', description: 'The field Value (optional)', required: false })
+  @ApiQuery({ name: 'fieldvalue', description: 'Send True to Fetch Custom Field of User', required: false })
   public async getUser(
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
-    @Query("userid") userId: string | null = null,
-    @Query("cohortid") cohortId: string | null = null,
-    @Query("role") role: string | null = null,
+    @Param("userId") userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
     // Context and ContextType can be taken from .env later
-    let userData: any = {
+    let userData = {
       context: "USERS",
-      userId: userId && typeof userId === 'string' && userId !== ',' && userId !== '{userid}' ? userId : null,
-      cohortId: cohortId && typeof cohortId === 'string' && cohortId !== ',' && cohortId !== '{cohortid}' ? cohortId : null,
-      contextType: role && typeof role === 'string' && role !== ',' && role !== '{role}' ? role : null,
-      fieldValue: fieldvalue && typeof fieldvalue === 'string' && fieldvalue !== ',' && fieldvalue !== '{fieldvalue}' ? fieldvalue : null
-    };
+      userId: userId,
+      fieldValue: fieldvalue
+    }
     let result;
-    if (userData.userId !== null) {
-      result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(
-        userData, response);
-    }
-    else if (userData.cohortId !== null) {
-      result = await this.userAdapter.buildUserAdapter().getUsersDetailsByCohortId(
-        userData, response);
-    }
-    if (userData.userId == null && userData.cohortId == null) {
-      return response.status(400).json({ 
-        statusCode: 400,
-        error: "Please entire userId or cohortId in query parameters" 
-      });
-    }
-    
+    result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(userData, response);
     return response.status(result.statusCode).json(result);
   }
 
-  // @Get()
-  // @ApiBasicAuth("access-token")
-  // @ApiOkResponse({ description: "User detail." })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async getUserByAuth(@Headers() headers, @Req() request: Request) {
-  //   const tenantId = headers["tenantid"];
-  //   return this.userAdapter.buildUserAdapter().getUserByAuth(tenantId, request);
-  // }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -119,7 +82,8 @@ export class UserController {
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User has been created successfully." })
   @ApiBody({ type: UserCreateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiForbiddenResponse({ description: "User Already Exists"})
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiHeader({
     name: "tenantid",
   })
@@ -137,6 +101,7 @@ export class UserController {
   @Patch("/:userid")
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
+  @ApiBody({ type: UserUpdateDTO })
   @ApiCreatedResponse({ description: "User has been updated successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiHeader({
@@ -155,28 +120,26 @@ export class UserController {
     return response.status(result.statusCode).json(result);
   }
 
-  // @Post("/search")
-  // @ApiBasicAuth("access-token")
-  // @ApiCreatedResponse({ description: "User list." })
-  // @ApiBody({ type: UserSearchDto })
-  // @ApiForbiddenResponse({ description: "Forbidden" })
-  // @SerializeOptions({
-  //   strategy: "excludeAll",
-  // })
-  // @ApiHeader({
-  //   name: "tenantid",
-  // })
-  // public async searchUser(
-  //   @Headers() headers,
-  //   @Req() request: Request,
-  //   @Res() response: Response,
-  //   @Body() userSearchDto: UserSearchDto
-  // ) {
-  //   const tenantId = headers["tenantid"];
-  //   return await this.userAdapter
-  //     .buildUserAdapter()
-  //     .searchUser(tenantId, request, response, userSearchDto);
-  // }
+  @Post("/search")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "User list." })
+  @ApiBody({ type: UserSearchDto })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async searchUser(
+    @Headers() headers,
+    @Req() request: Request,
+    @Res() response: Response,
+    @Body() userSearchDto: UserSearchDto
+  ) {
+    const tenantId = headers["tenantid"];
+    const result = await this.userAdapter.buildUserAdapter().searchUser(tenantId,request,response,userSearchDto);
+    return response.status(result.statusCode).json(result);
+  }
 
   @Post("/reset-password")
   @ApiBasicAuth("access-token")
@@ -195,6 +158,4 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
-
-
 }

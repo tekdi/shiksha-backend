@@ -89,12 +89,6 @@ export class PostgresAttendanceService {
                 WHERE ${whereClause};
             `;
             const results = await this.attendanceRepository.query(query, queryParams);
-            if(!results.length){
-                return new SuccessResponse({
-                    statusCode: HttpStatus.NOT_FOUND,
-                    message: 'No data Found For Entered Filter',
-                }); 
-            }
             const mappedResponse = await this.mappedResponse(results);
     
             return new SuccessResponse({

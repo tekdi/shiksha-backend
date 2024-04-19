@@ -4,7 +4,6 @@ import { isBefore, isSameDay } from "date-fns";
 import { UserDto } from "src/user/dto/user.dto";
 import { AttendanceDto } from "./attendance.dto";
 import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
-import { UUID } from "crypto";
 import { Type } from "class-transformer";
 
 

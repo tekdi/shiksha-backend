@@ -116,142 +116,163 @@ export class PostgresAttendanceService {
         }
     }
 
-    async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
-        let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
-        try {
-            if (report === true) {
-                let nameFilter = '';
-                let userFilter = '';
 
+    async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
+        let { contextId, limit, offset, filters } = attendanceStatsDto;
+        try {
+            
+            let nameFilter = '';
+            let userFilter = '';
+            let dateFilter = '';
+            let queryParams: any[] = [contextId];
+            let subqueryParams: any[] = [contextId]; // Initialize query parameters array
+            let paramIndex = 1; // Initialize parameter index
+    
             if (filters && filters.search) {
-                nameFilter = `AND u."name" ILIKE '%${filters.search.trim()}%'`;
+                nameFilter = `AND u."name" ILIKE $${++paramIndex}`; // Increment paramIndex
+                queryParams.push(`%${filters.search.trim()}%`);
+                subqueryParams.push(`%${filters.search.trim()}%`);
             }
             if (filters && filters.userId) {
-                userFilter = ` AND u."userId"='${filters.userId.trim()}'`;
+                userFilter = ` AND u."userId" = $${++paramIndex}`; // Increment paramIndex
+                queryParams.push(filters.userId.trim());
+                subqueryParams.push(filters.userId.trim());
+
+            }
+            if (filters && filters.fromDate && filters.toDate) {
+                dateFilter = `WHERE aa."attendanceDate" >= $${++paramIndex} AND aa."attendanceDate" <= $${++paramIndex}`;   
+                queryParams.push(filters.fromDate);
+                queryParams.push(filters.toDate);
+                subqueryParams.push(filters.fromDate);
+                subqueryParams.push(filters.toDate);
             }
 
-                let query = `
-                SELECT u."userId",u."name",
-                CASE 
-                WHEN COUNT(*) = 0 THEN NULL
-                ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),0)
-                END AS attendance_percentage
-                FROM public."CohortMembers" AS cm 
-                INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
-                LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
-                WHERE cm."cohortId" = $1 AND cm."role" = 'student'
-                ${userFilter}
-                ${nameFilter}
-                GROUP BY u."userId"
-                 `;
-
-                if (filters) {
-                    if (filters.nameOrder && filters.nameOrder==="asc" || filters.nameOrder==="desc") {
-                        query += ` ORDER BY "name" ${filters.nameOrder}`
-                        
-                    }
-                    else if (filters.percentageOrder && filters.percentageOrder==="asc" || filters.percentageOrder==="desc") {
-                        query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`
-                    }
-
-                }
-                query += `
-                LIMIT $2
-                OFFSET $3`
-                const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
-
-                if((!filters) || (!filters?.userId))
-                { 
-                  // We dont need average for single user
-                let countquery = `SELECT ROUND(AVG(attendance_percentage)) AS average_attendance_percentage
-                FROM (
-                    SELECT u."userId", u."name",
-                        CASE 
-                            WHEN COUNT(*) = 0 THEN NULL
-                            ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*))
-                        END AS attendance_percentage
-                    FROM public."CohortMembers" AS cm 
-                    INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
-                    LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
-                    WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+    
+            let query = `
+                SELECT 
+                    u."userId",
+                    u."name",
+                    CASE 
+                        WHEN aa_stats."total_attendance" = 0 THEN '-'
+                        ELSE ROUND((aa_stats."present_count" * 100.0) / aa_stats."total_attendance", 0)::text
+                    END AS attendance_percentage
+                FROM 
+                    public."Users" AS u  
+                INNER JOIN 
+                    public."CohortMembers" AS cm ON cm."userId" = u."userId"
+                LEFT JOIN 
+                    (
+                        SELECT 
+                            aa."userId",
+                            COUNT(*) AS "total_attendance",
+                            COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) AS "present_count"
+                        FROM 
+                            public."Attendance" AS aa
+                        ${dateFilter} 
+                        GROUP BY 
+                            aa."userId"
+                    ) AS aa_stats ON cm."userId" = aa_stats."userId"
+                WHERE 
+                    cm."cohortId" = $1 
+                    AND cm."role" = 'student'
+                    ${nameFilter}
                     ${userFilter}
-                    GROUP BY u."userId"
-                ) AS subquery;
-                `
+                GROUP BY 
+                    u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
+            `;
+    
+            if (filters) {
+                if (filters.nameOrder && (filters.nameOrder === "asc" || filters.nameOrder === "desc")) {
+                    query += ` ORDER BY "name" ${filters.nameOrder}`;
+                } else if (filters.percentageOrder && (filters.percentageOrder === "asc" || filters.percentageOrder === "desc")) {
+                    query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`;
+                }
+            }
+            query += `
+                LIMIT $${++paramIndex}
+                OFFSET $${++paramIndex}`;
+            
+            queryParams.push(limit);
+            queryParams.push(offset);
+    
 
-              const average=await this.attendanceRepository.query(countquery,[contextId]) 
-               const report = await this.mapResponseforReport(result);
+    
+            const result = await this.attendanceRepository.query(query, queryParams);
+    
+            if (!filters || !filters?.userId) {
+                // We don't need average for single user
+                const countquery = `
+                    SELECT ROUND(AVG(attendance_percentage::NUMERIC), 2) AS average_attendance_percentage
+                    FROM (
+                        SELECT 
+                            u."userId",
+                            u."name",
+                            CASE 
+                                WHEN aa_stats."total_attendance" = 0 THEN '-'
+                                ELSE ROUND((aa_stats."present_count" * 100.0) / aa_stats."total_attendance", 0)::text
+                            END AS attendance_percentage
+                        FROM 
+                            public."Users" AS u  
+                        INNER JOIN 
+                            public."CohortMembers" AS cm ON cm."userId" = u."userId"
+                        LEFT JOIN 
+                            (
+                                SELECT 
+                                    aa."userId",
+                                    COUNT(*) AS "total_attendance",
+                                    COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) AS "present_count"
+                                FROM 
+                                    public."Attendance" AS aa
+                                ${dateFilter} 
+                                GROUP BY 
+                                    aa."userId"
+                            ) AS aa_stats ON cm."userId" = aa_stats."userId"
+                        WHERE 
+                            cm."cohortId" = $1 
+                            AND cm."role" = 'student'
+                            ${nameFilter}
+                            ${userFilter}
+                        GROUP BY 
+                            u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
+                    ) AS subquery`;
+    
+
+                const average = await this.attendanceRepository.query(countquery, subqueryParams);
+                const report = await this.mapResponseforReport(result);
                 const response = {
                     report,
-                    average:average[0]
-                }
+                    average: average[0]
+                };
                 return new SuccessResponse({
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
-                    data: response,
-                    
+                    data: response
                 });
-            }
-            else
-            {
-               const response = await this.mapResponseforReport(result);
+            } else {
+
+                const response = await this.mapResponseforReport(result);
                 return new SuccessResponse({
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
-                    data: response,
-                    
+                    data: response
                 });
             }
 
-
-            }
-            else if (report === false) {
-                if (attendanceDate) {
-                    const query = `
-                SELECT *
-                FROM public."Users" AS u
-                INNER JOIN public."CohortMembers" AS cm ON cm."userId" = u."userId" AND cm."role"='student'
-                LEFT JOIN public."Attendance" AS aa ON aa."userId" = cm."userId" AND (aa."attendanceDate" =$1 OR aa."attendanceDate" IS NULL)
-                where cm."cohortId" = $2
-                LIMIT $3
-                OFFSET $4
-                `;
-
-
-
-                    const result = await this.attendanceRepository.query(query, [attendanceDate, contextId, limit, offset]);
-                    const report = await this.mapAttendanceRecord(result);
-                   
-                    
-
-
-                    return new SuccessResponse({
-                        statusCode: 200,
-                        message: "Ok.",
-                        data: report
-                    });
-                }
-
-                else {
-
-                    return new ErrorResponseTypeOrm({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        errorMessage: "Please provide valid attendance date",
-                    });
-
-                }
-            }
-        }
-        catch (error) {
-
+            
+        } catch (error) {
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: error,
+                errorMessage: error
             });
-
-
         }
     }
+    
+    
+    
+    
+    
+
+    
 
     public async mappedResponse(result: any) {
         const attendanceResponse = result.map((item: any) => {

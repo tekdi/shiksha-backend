@@ -1,33 +1,32 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, Req, Res, SerializeOptions } from '@nestjs/common';
-import { AssignRoleAdapter } from './assign-role.apater';
-import { CreateAssignRoleDto } from './dto/create-assign-role.dto';
-import { Response, Request } from "express";
+import { AssignPrivilegeAdapter } from './assign-privilege.apater';
+import { CreatePrivilegeRoleDto } from './dto/create-assign-privilege.dto';
+import { Response, Request} from "express";
 import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 
-
-@Controller('assignrole')
 @ApiTags('rbac')
-export class AssignRoleController {
-  constructor(private readonly assignRoleAdpater: AssignRoleAdapter) {}
+@Controller('assignprivilege')
+export class AssignPrivilegeController {
+  constructor(private readonly assignPrivilegeAdpater: AssignPrivilegeAdapter) {}
 
   @Post()
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role has been Assigned successfully." })
-  @ApiBody({ type: CreateAssignRoleDto })
+  @ApiCreatedResponse({ description: "Privilege has been Assigned successfully." })
+  @ApiBody({ type: CreatePrivilegeRoleDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiHeader({ name: "tenantid" })
   public async create(@Req() request: Request,
-  @Body() createAssignRoleDto:CreateAssignRoleDto ,
+  @Body() createAssignPrivilegeDto:CreatePrivilegeRoleDto ,
   @Res() response: Response) {
-    const result = await this.assignRoleAdpater.buildassignroleAdapter().createAssignRole(request,createAssignRoleDto);
+    const result = await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().createPrivilegeRole(request,createAssignPrivilegeDto);
     return response.status(result.statusCode).json(result);
   }
 
   @Get("/:id")
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Role Detail." })
+  @ApiOkResponse({ description: "Privilege Details." })
   @ApiHeader({ name: "tenantid" })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({strategy: "excludeAll",})
@@ -36,19 +35,19 @@ export class AssignRoleController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.assignRoleAdpater.buildassignroleAdapter().getAssignedRole(userId, request);
+    const result = await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().getPrivilegeRole(userId, request);
     return response.status(result.statusCode).json(result);
   }
 
   @Delete("/:id")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Assigend Role deleted successfully." })
+  @ApiCreatedResponse({ description: "Assigend Privililege has been deleted successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  public async deleteRole(
+  public async deletePrivilegeRole(
     @Param("id") userId: string,
     @Res() response: Response
   ) {
-    const result = await this.assignRoleAdpater.buildassignroleAdapter().deleteAssignedRole(userId);
+    const result = await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().deletePrivilegeRole(userId);
     return response.status(result.statusCode).json(result);
   }
   

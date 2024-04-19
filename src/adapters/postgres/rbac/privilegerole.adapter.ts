@@ -1,34 +1,33 @@
-import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
-import { CreateAssignRoleDto } from 'src/rbac/assign-role/dto/create-assign-role.dto';
-import { UserRoleMapping } from 'src/rbac/assign-role/entities/assign-role.entity';
-import { IsAlpha, IsUUID, isUUID } from 'class-validator';
-import { executionAsyncResource } from 'async_hooks';
+import { CreatePrivilegeRoleDto } from 'src/rbac/assign-privilege/dto/create-assign-privilege.dto';
+import { RolePrivilegeMapping } from 'src/rbac/assign-privilege/entities/assign-privilege.entity';
+import { isUUID } from 'class-validator';
 
 @Injectable()
-export class PostgresAssignroleService {
+export class PostgresAssignPrivilegeService {
    constructor(
-    @InjectRepository(UserRoleMapping)
-    private userRoleMappingRepository: Repository<UserRoleMapping>
+    @InjectRepository(RolePrivilegeMapping)
+    private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>
    ){}
-   public async createAssignRole(request: Request,createAssignRoleDto:CreateAssignRoleDto){
+   public async createPrivilegeRole(request: Request,createPrivilegeRoleDto:CreatePrivilegeRoleDto){
     try {
-        let findExistingRole = await this.userRoleMappingRepository.findOne({
+        let findExistingPrivilege = await this.rolePrivilegeMappingRepository.findOne({
             where:{
-                userId:createAssignRoleDto?.userId,
-                roleId:createAssignRoleDto?.roleId
+                privilegeId:createPrivilegeRoleDto?.privilegeId,
+                roleId:createPrivilegeRoleDto?.roleId
             }
         })
-        if(findExistingRole){
+        if(findExistingPrivilege){
             return new SuccessResponse({
                 statusCode: HttpStatus.FORBIDDEN,
-                message: "Role Already Assigned to This User.",
+                message: "Privilege Already Assigned to This Role.",
             });
         }
-        let data = await this.userRoleMappingRepository.save(createAssignRoleDto)
+        let data = await this.rolePrivilegeMappingRepository.save(createPrivilegeRoleDto)
         return new SuccessResponse({
             statusCode: HttpStatus.CREATED,
             message: "Ok.",
@@ -38,7 +37,7 @@ export class PostgresAssignroleService {
         if(error.code === '23503'){
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.NOT_FOUND,
-                errorMessage: `User Id or Role Id Doesn't Exist in Database `
+                errorMessage: `Privilege Id or Role Id Doesn't Exist in Database `
             }); 
         }
         return new ErrorResponseTypeOrm({
@@ -48,7 +47,7 @@ export class PostgresAssignroleService {
     }
    }
 
-   public async getAssignedRole(userId:string,request: Request){
+   public async getPrivilegeRole(userId:string,request: Request){
     try {
         if (!isUUID(userId)) {
             return new SuccessResponse({
@@ -78,7 +77,7 @@ export class PostgresAssignroleService {
     
    } 
 
-   public async deleteAssignedRole(userId){
+   public async deletePrivilegeRole(userId){
     try {
         let result = await this.checkExistingRole(userId);
         if(!result){
@@ -88,7 +87,7 @@ export class PostgresAssignroleService {
                 data: result,
             });
         }
-        let response =  await this.userRoleMappingRepository.delete(userId)
+        let response =  await this.rolePrivilegeMappingRepository.delete(userId)
         return new SuccessResponse({
             statusCode: HttpStatus.OK,
             message: 'Role deleted successfully.',
@@ -104,16 +103,9 @@ export class PostgresAssignroleService {
     }
    }
 
-//    async checkAndAddUserRole(data){
-//     let existingUser = await this.checkExistingRole(data.userId) ;
-//     if(existingUser){
-//         let update  = 
-//     }
-//    }
-
-   async checkExistingRole(userId){
-   const result= await this.userRoleMappingRepository.findOne({
-        where: { userId },
+   async checkExistingRole(privilegeId){
+    const result= await this.rolePrivilegeMappingRepository.findOne({
+        where: { privilegeId},
         relations:['user']
     })
     return result;

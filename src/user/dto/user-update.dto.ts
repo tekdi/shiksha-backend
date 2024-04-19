@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 class UserDataDTO {
 
@@ -67,7 +67,7 @@ export class UserUpdateDTO {
     @IsString()
     userId: string;
 
-    
+    @Expose()
     @ValidateNested()
     @Type(() => UserDataDTO)
     userData: UserDataDTO;

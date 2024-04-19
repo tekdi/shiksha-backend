@@ -68,7 +68,7 @@ async function createUserInKeyCloak(query, token) {
     lastName: lname,
     enabled: "true",
     username: query.username,
-    groups: [getUserGroup(query.role)],
+    // groups: [getUserGroup(query.role)],
     credentials: [
       {
         temporary: "false",
@@ -87,20 +87,25 @@ async function createUserInKeyCloak(query, token) {
     },
     data: data,
   };
-
   let userResponse;
+  // try {
+  //   userResponse = await axios(config);
+  // } catch (e) {
+  //   console.log(e.response, "Keycloak Creation error");
+  //   return e;
+  // }
+
+  // const userString = userResponse.headers.location;
+  // const index = userString.lastIndexOf("/");
+  // const userId = userString.substring(index + 1);
+
+  // return userId;
   try {
-    userResponse = await axios(config);
-  } catch (e) {
-    console.log(e.response, "Keycloak Creation error");
-    return e;
+    const userResponse = await axios(config);
+    return userResponse.headers.location.split("/").pop();
+  } catch (error) {
+    return "Error creating user: " + error.response.data.error;
   }
-
-  const userString = userResponse.headers.location;
-  const index = userString.lastIndexOf("/");
-  const userId = userString.substring(index + 1);
-
-  return userId;
 }
 
 async function checkIfEmailExistsInKeycloak(email, token) {

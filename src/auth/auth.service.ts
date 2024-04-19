@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
+import { HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { UserAdapter } from "src/user/useradapter";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
@@ -24,21 +24,31 @@ export class AuthService {
 
   async login(authDto) {
     const { username, password } = authDto;
-    const {
-      access_token,
-      expires_in,
-      refresh_token,
-      refresh_expires_in,
-      token_type,
-    } = await this.keycloakService.login(username, password).catch(() => {throw new UnauthorizedException();});
-    return {
-      access_token,
-      refresh_token,
-      expires_in,
-      refresh_expires_in,
-      token_type,
-    };
+    try {
+      const {
+        access_token,
+        expires_in,
+        refresh_token,
+        refresh_expires_in,
+        token_type
+      } = await this.keycloakService.login(username, password);
+      
+      return {
+        access_token,
+        refresh_token,
+        expires_in,
+        refresh_expires_in,
+        token_type
+      };
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        throw new NotFoundException("Invalid username or password");
+      } else {
+        throw error; 
+      }
+    }
   }
+  
 
 
   public async getUserByAuth(request: any, response) {
@@ -46,7 +56,7 @@ export class AuthService {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       const username = decoded.preferred_username;
-      let data = await this.useradapter.buildUserAdapter().findUserDetails(null, username);
+      let data = await this.useradapter.buildUserAdapter().findUserDetails(null, username); 
       return response
         .status(HttpStatus.OK)
         .send(APIResponse.success(apiId, data, "OK"));

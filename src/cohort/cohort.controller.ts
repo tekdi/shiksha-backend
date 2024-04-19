@@ -41,7 +41,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
-@Controller("cohort")
+@Controller("cohorts")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter:CohortAdapter) {}

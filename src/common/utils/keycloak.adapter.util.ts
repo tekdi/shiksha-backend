@@ -68,7 +68,7 @@ async function createUserInKeyCloak(query, token) {
     lastName: lname,
     enabled: "true",
     username: query.username,
-    groups: [getUserGroup(query.role)],
+    // groups: [getUserGroup(query.role)],
     credentials: [
       {
         temporary: "false",

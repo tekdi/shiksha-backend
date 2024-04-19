@@ -43,7 +43,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 @ApiTags("Attendance")
 @Controller("attendance")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class AttendanceController {
   constructor(
     private attendaceAdapter: AttendaceAdapter,

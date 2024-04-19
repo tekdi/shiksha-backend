@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNumberString } from "class-validator";
+import { CohortDto } from "./cohort.dto";
 
 
 export class CohortSearchDto {
@@ -17,7 +18,7 @@ export class CohortSearchDto {
   page: number;
 
   @ApiProperty({
-    type: Object,
+    type: CohortDto,
     description: "Filters",
   })
   @ApiPropertyOptional()

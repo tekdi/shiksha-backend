@@ -46,7 +46,6 @@ export class PostgresUserService {
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'No Data Found For User',});
       }
-      console.log("Hi");
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: 'Ok.',
@@ -330,14 +329,12 @@ export class PostgresUserService {
     // It is considered that if user is not present in keycloak it is not present in database as well
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
-      const userId = decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
       let cohortId = userCreateDto.cohortId;
       delete userCreateDto?.cohortId;
-      userCreateDto.createdBy = userId
-      userCreateDto.updatedBy = userId;
+      userCreateDto.createdBy = decoded?.sub
+      userCreateDto.updatedBy = decoded?.sub
 
       userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
-
       const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
@@ -364,6 +361,7 @@ export class PostgresUserService {
       );
       userCreateDto.userId = resKeycloak;
       let result = await this.createUserInDatabase(request, userCreateDto, cohortId);
+      
       let field_value_array = userCreateDto.fieldValues?.split("|");
       let fieldData = {};
       if (result && field_value_array?.length > 0) {
@@ -415,15 +413,15 @@ export class PostgresUserService {
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.role = userCreateDto?.role
-    user.mobile = Number(userCreateDto?.mobile),
-      user.tenantId = userCreateDto?.tenantId
+    user.mobile = Number(userCreateDto?.mobile) || null,
+    user.tenantId = userCreateDto?.tenantId
     user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-      user.state = userCreateDto?.state,
-      user.district = userCreateDto?.district,
-      user.address = userCreateDto?.address,
-      user.pincode = userCreateDto?.pincode
+    user.state = userCreateDto?.state,
+    user.district = userCreateDto?.district,
+    user.address = userCreateDto?.address,
+    user.pincode = userCreateDto?.pincode
 
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
@@ -449,7 +447,6 @@ export class PostgresUserService {
       let result = await this.cohortMemberRepository.insert(cohortData);
       return result;;
     } catch (error) {
-      console.log(error);
       throw new Error(error)
     }
   }
@@ -509,7 +506,6 @@ export class PostgresUserService {
         });
       }
     } catch (e) {
-      console.error(e);
       return e;
     }
   }

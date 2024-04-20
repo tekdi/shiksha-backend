@@ -41,13 +41,8 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
-<<<<<<< HEAD
-@Controller("cohort")
-// @UseGuards(JwtAuthGuard)
-=======
 @Controller("cohorts")
 @UseGuards(JwtAuthGuard)
->>>>>>> d1d6d54835c63dc708d2bba86ca42acd973570db
 export class CohortController {
   constructor(private readonly cohortAdapter:CohortAdapter) {}
 
@@ -99,14 +94,10 @@ export class CohortController {
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiBody({ type: CohortSearchDto })
-<<<<<<< HEAD
-  @ApiForbiddenResponse({ description: "Forbidden" })
-=======
   @ApiOkResponse({ description: "Cohort list" })
   @ApiBadRequestResponse({description: "Bad request."})
   @ApiInternalServerErrorResponse({description: "Internal Server Error."})
   // @UseInterceptors(ClassSerializerInterceptor)
->>>>>>> d1d6d54835c63dc708d2bba86ca42acd973570db
   @UsePipes(ValidationPipe)
   @SerializeOptions({
     strategy: "excludeAll",
@@ -143,14 +134,10 @@ export class CohortController {
     })
   )
   @ApiBody({ type: CohortCreateDto })
-<<<<<<< HEAD
-  @ApiForbiddenResponse({ description: "Forbidden" })
-=======
   @ApiOkResponse({ description: "Cohort has been updated successfully" })
   @ApiBadRequestResponse({description: "Bad request."})
   @ApiInternalServerErrorResponse({description: "Internal Server Error."})
 
->>>>>>> d1d6d54835c63dc708d2bba86ca42acd973570db
   public async updateCohort(
     @Param("id") cohortId: string,
     @Req() request: Request,

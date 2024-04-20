@@ -7,6 +7,8 @@ import {
   ApiHeader,
   ApiOkResponse,
   ApiQuery,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -16,8 +18,6 @@ import {
   Put,
   Delete,
   Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
   Headers,
@@ -54,8 +54,6 @@ export class CohortMembersController {
     description: "Cohort Members has been created successfully.",
   })
   @ApiBody({ type: CohortMembersDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
@@ -79,21 +77,21 @@ export class CohortMembersController {
   }
 
   //get cohort members
-  @Get("/:userId")
-  @UseInterceptors(ClassSerializerInterceptor)
+  @Get("/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   @SerializeOptions({ strategy: "excludeAll" })
   @ApiHeader({ name: "tenantid" })
   @ApiQuery({
     name: "fieldvalue",
-    description: "The field Value (optional)",
+    description: "Send True to Fetch Custom Field of User",
     required: false,
   })
   public async getCohortMembers(
     @Headers() headers,
-    @Param("userId") userId: string,
+    @Param("cohortId") cohortId: string,
     @Req() request: Request,
     @Res() response: Response,
     @Query("fieldvalue") fieldvalue: string | null = null
@@ -102,18 +100,18 @@ export class CohortMembersController {
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .getCohortMembers(userId, fieldvalue);
+      .getCohortMembers(cohortId, fieldvalue);
 
     return response.status(result.statusCode).json(result);
   }
 
-  search;
+  // search;
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members list." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -140,9 +138,9 @@ export class CohortMembersController {
   @ApiCreatedResponse({
     description: "Cohort Members has been updated successfully.",
   })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersUpdateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohortMembers(
     @Param("id") cohortMembersId: string,
     @Req() request,
@@ -164,10 +162,9 @@ export class CohortMembersController {
 
   //delete
   @Delete("/:id")
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort member deleted successfully" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiNotFoundResponse({ description: "Data not found" })
   @SerializeOptions({
     strategy: "excludeAll",
   })

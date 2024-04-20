@@ -16,7 +16,9 @@ import { User } from "src/user/entities/user-entity";
 import { CohortMembersUpdateDto } from "src/cohortMembers/dto/cohortMember-update.dto";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import { Fields } from "src/fields/entities/fields.entity";
-
+import { UUID } from "typeorm/driver/mongodb/bson.typings";
+import { isUUID } from "class-validator";
+import { Cohort } from "src/cohort/entities/cohort.entity";
 @Injectable()
 export class PostgresCohortMembersService {
   constructor(
@@ -25,64 +27,40 @@ export class PostgresCohortMembersService {
     @InjectRepository(Fields)
     private fieldsRepository: Repository<Fields>,
     @InjectRepository(User)
-    private usersRepository: Repository<User>
+    private usersRepository: Repository<User>,
+    @InjectRepository(Cohort)
+    private cohortRepository: Repository<Cohort>
   ) {}
 
-  async getCohortMembers(
-    userId: any,
-
-    fieldvalue: any
-  ) {
+  async getCohortMembers(cohortId: any, fieldvalue: any) {
     try {
-      if (fieldvalue === "false") {
-        const result = {
-          userData: {},
+      if (!isUUID(cohortId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter valid (UUID)",
+        });
+      }
+      const userDetails = await this.findcohortData(cohortId);
+      if (userDetails === true) {
+        let results = {
+          userDetails: [],
         };
 
-        let customFieldsArray = [];
-
-        const [userDetails] = await Promise.all([this.findUserDetails(userId)]);
-        result.userData = userDetails;
+        let cohortDetails = await this.getUserDetails(
+          cohortId,
+          "cohortId",
+          fieldvalue
+        );
+        results.userDetails.push(cohortDetails);
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: "Ok.",
-          data: result,
+          data: results,
         });
       } else {
-        const result = {
-          userData: {},
-        };
-
-        let customFieldsArray = [];
-
-        const [filledValues, userDetails] = await Promise.all([
-          this.findFilledValues(userId),
-          this.findUserDetails(userId),
-        ]);
-
-        const customFields = await this.findCustomFields(userDetails.role);
-
-        result.userData = userDetails;
-        const filledValuesMap = new Map(
-          filledValues.map((item) => [item.fieldId, item.value])
-        );
-        for (let data of customFields) {
-          const fieldValue = filledValuesMap.get(data.fieldId);
-          const customField = {
-            fieldId: data.fieldId,
-            label: data.label,
-            value: fieldValue || "",
-            options: data?.fieldParams?.["options"] || {},
-            type: data.type || "",
-          };
-          customFieldsArray.push(customField);
-        }
-        result.userData["customFields"] = customFieldsArray;
-
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: "Ok.",
-          data: result,
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "Cohort Member not exist",
         });
       }
     } catch (e) {
@@ -92,27 +70,54 @@ export class PostgresCohortMembersService {
       });
     }
   }
+  async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {
+    let results = {
+      userDetails: [],
+    };
 
+    let getUserDetails = await this.findUserName(searchId, searchKey);
+
+    for (let data of getUserDetails) {
+      let userDetails = {
+        userId: data?.userId,
+        userName: data?.userName,
+        name: data?.name,
+        role: data?.role,
+        district: data?.district,
+        state: data?.state,
+        mobile: data?.mobile,
+        customField: [],
+      };
+
+      if (fieldShowHide === "false") {
+        results.userDetails.push(userDetails);
+      } else {
+        const fieldValues = await this.getFieldandFieldValues(data.userId);
+        userDetails.customField.push(fieldValues);
+        results.userDetails.push(userDetails);
+      }
+    }
+
+    return results;
+  }
   async findFilledValues(userId: string) {
-    let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
+    let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U
     LEFT JOIN public."FieldValues" F
     ON U."userId" = F."itemId" where U."userId" =$1`;
     let result = await this.usersRepository.query(query, [userId]);
     return result;
   }
-
-  async findUserDetails(userId, username?: any) {
-    let whereClause: any = { userId: userId };
-    if (username && userId === null) {
-      delete whereClause.userId;
-      whereClause.username = username;
-    }
-    let userDetails = await this.usersRepository.findOne({
+  async findcohortData(cohortId: any) {
+    let whereClause: any = { cohortId: cohortId };
+    let userDetails = await this.cohortMembersRepository.find({
       where: whereClause,
     });
-    return userDetails;
+    if (userDetails.length !== 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
-
   async findCustomFields(role) {
     let customFields = await this.fieldsRepository.find({
       where: {
@@ -123,23 +128,30 @@ export class PostgresCohortMembersService {
     return customFields;
   }
 
-  async findUsertDetails(userId: string) {
-    let whereClause: any = { userId: userId };
-    let userDetails = await this.usersRepository.findOne({
-      where: whereClause,
-    });
-    return userDetails;
-  }
-  async searchFindCustomFields() {
-    let customFields = await this.fieldsRepository.find({
-      where: {
-        context: "COHORT",
-        contextType: "COHORT",
-      },
-    });
-    return customFields;
+  async getFieldandFieldValues(userId: string) {
+    let query = `SELECT Fv."fieldId",F."label" AS FieldName,Fv."value" as FieldValues
+    FROM public."FieldValues" Fv
+    LEFT JOIN public."Fields" F
+    ON F."fieldId" = Fv."fieldId"
+    where Fv."itemId" =$1 `;
+    let result = await this.usersRepository.query(query, [userId]);
+    return result;
   }
 
+  async findUserName(searchData: string, searchKey: any) {
+    let whereCase;
+    if (searchKey == "cohortId") {
+      whereCase = `where CM."cohortId" =$1`;
+    } else {
+      whereCase = `where CM."userId" =$1`;
+    }
+    let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+    LEFT JOIN public."Users" U
+    ON CM."userId" = U."userId" ${whereCase}`;
+
+    let result = await this.usersRepository.query(query, [searchData]);
+    return result;
+  }
   public async searchCohortMembers(
     cohortMembersSearchDto: CohortMembersSearchDto
   ) {
@@ -159,6 +171,44 @@ export class PostgresCohortMembersService {
         });
       }
 
+      // Validate cohortId and userId format
+      if (whereClause["cohortId"] && !isUUID(whereClause["cohortId"])) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter a valid UUID for cohortId",
+        });
+      }
+      if (whereClause["userId"] && !isUUID(whereClause["userId"])) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter a valid UUID for userId",
+        });
+      }
+      // Check if cohortId exists
+      if (whereClause["cohortId"]) {
+        const cohortExists = await this.cohortMembersRepository.findOne({
+          where: { cohortId: whereClause["cohortId"] },
+        });
+        if (!cohortExists) {
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.NOT_FOUND,
+            errorMessage: "Cohort Member with specified cohortId not found",
+          });
+        }
+      }
+
+      // Check if userId exists
+      if (whereClause["userId"]) {
+        const userExists = await this.cohortMembersRepository.findOne({
+          where: { userId: whereClause["userId"] },
+        });
+        if (!userExists) {
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.NOT_FOUND,
+            errorMessage: "Cohort Member with specified userId not found",
+          });
+        }
+      }
       const [userData] = await this.cohortMembersRepository.findAndCount({
         where: whereClause,
         skip: offset,
@@ -167,22 +217,19 @@ export class PostgresCohortMembersService {
       let results = {
         userDetails: [],
       };
-
       if (whereClause["cohortId"]) {
-        let req = 1;
-        let cohortDetails = await this.getUsersDetailsByCohortId(
+        let cohortDetails = await this.getUserDetails(
           whereClause["cohortId"],
-          req
+          "cohortId",
+          "true"
         );
         results.userDetails.push(cohortDetails);
       }
-
       if (whereClause["userId"]) {
-        let fieldvalue = 1;
-
-        let cohortDetails = await this.getCohortMembers(
+        let cohortDetails = await this.getUserDetails(
           whereClause["userId"],
-          fieldvalue
+          "userId",
+          "true"
         );
         results.userDetails.push(cohortDetails);
       }
@@ -198,67 +245,6 @@ export class PostgresCohortMembersService {
         errorMessage: e,
       });
     }
-  }
-
-  async getUsersDetailsByCohortId(cohortId: any, response: any) {
-    let apiId = "api.users.getAllUsersDetails";
-    try {
-      let getUserDetails = await this.findUserName(cohortId);
-
-      let result = {
-        userDetails: [],
-      };
-
-      for (let data of getUserDetails) {
-        let userDetails = {
-          userId: data.userId,
-          userName: data.userName,
-          name: data.name,
-          role: data.role,
-          district: data.district,
-          state: data.state,
-          mobile: data.mobile,
-          customField: [],
-        };
-        const fieldValues = await this.getFieldandFieldValues(data.userId);
-
-        userDetails.customField.push(fieldValues);
-
-        result.userDetails.push(userDetails);
-      }
-
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok.",
-        data: result,
-      });
-    } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
-    }
-  }
-
-  async findUserName(cohortId: string) {
-    let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
-    LEFT JOIN public."Users" U 
-    ON CM."userId" = U."userId"
-    where CM."cohortId" =$1 `;
-
-    let result = await this.usersRepository.query(query, [cohortId]);
-
-    return result;
-  }
-
-  async getFieldandFieldValues(userId: string) {
-    let query = `SELECT Fv."fieldId",F."label" AS FieldName,Fv."value" as FieldValues 
-    FROM public."FieldValues" Fv   
-    LEFT JOIN public."Fields" F
-    ON F."fieldId" = Fv."fieldId"
-    where Fv."itemId" =$1 `;
-    let result = await this.usersRepository.query(query, [userId]);
-    return result;
   }
 
   public async createCohortMembers(
@@ -289,6 +275,42 @@ export class PostgresCohortMembersService {
     }
   }
 
+  // public async updateCohortMembers(
+  //   cohortMembershipId: string,
+  //   loginUser: any,
+  //   cohortMembersUpdateDto: CohortMembersUpdateDto,
+  //   response: any
+  // ) {
+  //   const apiId = "api.cohortMember.updateCohortMembers";
+
+  //   try {
+  //     cohortMembersUpdateDto.updatedBy = loginUser;
+
+  //     const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
+  //       where: { cohortMembershipId: cohortMembershipId },
+  //     });
+
+  //     if (!cohortMemberToUpdate) {
+  //       throw new Error("Cohort member not found");
+  //     }
+  //     Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
+
+  //     const updatedCohortMember = await this.cohortMembersRepository.save(
+  //       cohortMemberToUpdate
+  //     );
+
+  //     return new SuccessResponse({
+  //       statusCode: HttpStatus.OK,
+  //       message: "Cohort Member Updated successfully.",
+  //       data: updatedCohortMember,
+  //     });
+  //   } catch (e) {
+  //     return new ErrorResponseTypeOrm({
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
   public async updateCohortMembers(
     cohortMembershipId: string,
     loginUser: any,
@@ -299,16 +321,30 @@ export class PostgresCohortMembersService {
 
     try {
       cohortMembersUpdateDto.updatedBy = loginUser;
+      if (!isUUID(cohortMembershipId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter a valid UUID for cohortMemberId",
+        });
+      }
 
+      // Find the cohort member to update
       const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
         where: { cohortMembershipId: cohortMembershipId },
       });
 
+      // If cohort member not found, return error
       if (!cohortMemberToUpdate) {
-        throw new Error("Cohort member not found");
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "Cohort member not found",
+        });
       }
+
+      // Update cohort member with provided data
       Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
 
+      // Save updated cohort member
       const updatedCohortMember = await this.cohortMembersRepository.save(
         cohortMemberToUpdate
       );

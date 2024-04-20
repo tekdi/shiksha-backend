@@ -6,6 +6,7 @@ import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 import { User } from 'src/user/entities/user-entity';
 import { addHours, format, isAfter, isBefore, isValid } from 'date-fns'; // Import isAfter function from date-fns
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { Cohort } from 'src/cohort/entities/cohort.entity';
 
 //for student valid enum are[present,absent]
 //for teacher valid enum are[present,on-leave,half-day]
@@ -128,14 +129,26 @@ export class AttendanceDto {
   @Expose()
   contextType: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: String,
+    description: "The contextId of the attendance",
+    default: "",
+  })
+  @ApiProperty({
     type: String,
     description: "The contextId of the attendance",
     default: "",
   })
   @IsNotEmpty()
+  @IsUUID()
   @Expose()
+  @IsDefined()
   contextId: string;
+
+  @ManyToOne(() => Cohort, { nullable: true }) // Define the ManyToOne relationship with Cohort entity
+  @JoinColumn({ name: "contextId", referencedColumnName: "cohortId" }) // Map contextId to cohortId column in Cohort table
+  cohort: Cohort; 
+
 
   @Expose()
   createdAt: string;
@@ -152,17 +165,25 @@ export class AttendanceDto {
   constructor(obj: any) {
     Object.assign(this, obj);
   }
+  
 }
 
 
 export class UserAttendanceDTO {
   @IsUUID()
   @IsNotEmpty()
+  @ApiProperty()
+  @IsUUID()
   userId: string;
 
-  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
+  @ApiProperty({
+    type: String,
+    description: "The attendance of the attendance",
+    default: "",
+  })
+  @Expose()
   @IsNotEmpty()
-   // Assuming these are the possible values for attendance
+  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
   attendance: string;
 }
 
@@ -170,7 +191,6 @@ export class BulkAttendanceDTO {
   @ApiProperty({
     type: String,
     description: "The date of the attendance in format yyyy-mm-dd",
-    default: new Date()
   })
   @IsNotEmpty()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
@@ -183,11 +203,15 @@ export class BulkAttendanceDTO {
   @IsUUID()
     @Expose()
     @IsNotEmpty()
+    @ApiProperty()
 
   contextId: string;
 
 
-  @ApiPropertyOptional()
+  @ApiProperty({
+    type: [UserAttendanceDTO], // Specify the type of userAttendance as an array of UserAttendanceDTO
+    description: 'List of user attendance details',
+  })
   @ValidateNested({ each: true })
  @Type(() => UserAttendanceDTO)
  // Adjust the max size according to your requirements

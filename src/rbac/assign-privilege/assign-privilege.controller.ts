@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, Req, Res, SerializeOptions } from '@nestjs/common';
 import { AssignPrivilegeAdapter } from './assign-privilege.apater';
 import { CreatePrivilegeRoleDto } from './dto/create-assign-privilege.dto';
-import { Response} from "express";
+import { Response, Request} from "express";
 import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 

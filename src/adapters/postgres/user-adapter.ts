@@ -17,6 +17,8 @@ import APIResponse from '../../utils/response';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
+import { isUUID } from 'class-validator';
+import { UserSearchDto } from 'src/user/dto/user-search.dto';
 
 
 @Injectable()
@@ -33,22 +35,88 @@ export class PostgresUserService {
     @InjectRepository(CohortMembers)
     private cohortMemberRepository: Repository<CohortMembers>
   ) { }
+  async  searchUser(tenantId: string,
+    request: any,
+    response: any,
+    userSearchDto: UserSearchDto){
+    try {
+      let findData = await this.findAllUserDetails(userSearchDto);
+      if(!findData){
+      return new SuccessResponse({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'No Data Found For User',});
+      }
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: 'Ok.',
+        data: findData,
+      });
+    } catch (e) {
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+      });
+    }
+  }
+
+  async findAllUserDetails(userSearchDto){
+    let { limit, page, filters } = userSearchDto;
+
+    let offset = 0;
+    if (page > 1) {
+      offset = parseInt(limit) * (page - 1);
+    }
+
+    if (limit.trim() === '') {
+      limit = '0';
+    }
+
+    const whereClause = {};
+    if (filters && Object.keys(filters).length > 0) {
+      Object.entries(filters).forEach(([key, value]) => {
+        whereClause[key] = value;
+      });
+    }
+    const results = await this.usersRepository.find({
+      where: whereClause,
+      skip: offset,
+      take: parseInt(limit),
+    });
+    return results;
+  }
+
 
   async getUsersDetailsById(userData: Record<string, string>, response: any) {
-    let apiId = 'api.users.getUsersDetails'
     try {
+      if (!isUUID(userData.userId)) {
+        return new SuccessResponse({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Please Enter Valid User ID',
+        });
+      }
       const result = {
         userData: {
         }
       };
-
       let customFieldsArray = [];
 
       const [filledValues, userDetails] = await Promise.all([
         this.findFilledValues(userData.userId),
         this.findUserDetails(userData.userId)
       ]);
-
+      if(!userDetails){
+        return new SuccessResponse({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User Not Found',
+        });
+      }
+      if(!userData.fieldValue){
+        return new SuccessResponse({
+          statusCode: HttpStatus.OK,
+          message: 'Ok.',
+          data: userDetails,
+        });
+      }
       const customFields = await this.findCustomFields(userData, userDetails.role)
 
       result.userData = userDetails;
@@ -261,14 +329,12 @@ export class PostgresUserService {
     // It is considered that if user is not present in keycloak it is not present in database as well
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
-      const userId = decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
       let cohortId = userCreateDto.cohortId;
       delete userCreateDto?.cohortId;
-      userCreateDto.createdBy = userId
-      userCreateDto.updatedBy = userId;
+      userCreateDto.createdBy = decoded?.sub
+      userCreateDto.updatedBy = decoded?.sub
 
       userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
-
       const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
@@ -295,6 +361,7 @@ export class PostgresUserService {
       );
       userCreateDto.userId = resKeycloak;
       let result = await this.createUserInDatabase(request, userCreateDto, cohortId);
+      
       let field_value_array = userCreateDto.fieldValues?.split("|");
       let fieldData = {};
       if (result && field_value_array?.length > 0) {
@@ -346,15 +413,15 @@ export class PostgresUserService {
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.role = userCreateDto?.role
-    user.mobile = Number(userCreateDto?.mobile),
-      user.tenantId = userCreateDto?.tenantId
+    user.mobile = Number(userCreateDto?.mobile) || null,
+    user.tenantId = userCreateDto?.tenantId
     user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-      user.state = userCreateDto?.state,
-      user.district = userCreateDto?.district,
-      user.address = userCreateDto?.address,
-      user.pincode = userCreateDto?.pincode
+    user.state = userCreateDto?.state,
+    user.district = userCreateDto?.district,
+    user.address = userCreateDto?.address,
+    user.pincode = userCreateDto?.pincode
 
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
@@ -380,7 +447,6 @@ export class PostgresUserService {
       let result = await this.cohortMemberRepository.insert(cohortData);
       return result;;
     } catch (error) {
-      console.log(error);
       throw new Error(error)
     }
   }
@@ -440,7 +506,6 @@ export class PostgresUserService {
         });
       }
     } catch (e) {
-      console.error(e);
       return e;
     }
   }

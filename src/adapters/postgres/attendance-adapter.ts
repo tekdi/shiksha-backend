@@ -1,27 +1,27 @@
 import { User } from '../../user/entities/user-entity';
-import { isAfter } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
-import { Client } from 'pg';
-import jwt_decode from "jwt-decode";
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "../../attendance/entities/attendance.entity";
-import { Repository } from "typeorm";
-import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {  Repository,Between } from "typeorm";
+import {  HttpStatus, Injectable } from "@nestjs/common";
 import { AttendanceSearchDto } from "../../attendance/dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto, BulkAttendanceDTO } from '../../attendance/dto/attendance.dto';
 import { AttendanceDateDto } from '../../attendance/dto/attendance-date.dto';
-import { Between } from 'typeorm';
 import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
-import { format } from 'date-fns'
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
+import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 const moment = require('moment');
 
 @Injectable()
 export class PostgresAttendanceService {
     constructor(private configService: ConfigService,
         @InjectRepository(AttendanceEntity)
-        private readonly attendanceRepository: Repository<AttendanceEntity>,
+        private attendanceRepository: Repository<AttendanceEntity>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
+        @InjectRepository(CohortMembers)
+        private cohortMembersRepository: Repository<CohortMembers>
     ) { }
 
 
@@ -33,192 +33,250 @@ export class PostgresAttendanceService {
     */
 
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
-
         try {
-
             let { limit, page, filters } = attendanceSearchDto;
             if (!limit) {
                 limit = '0';
             }
-
+    
             let offset = 0;
             if (page > 1) {
                 offset = parseInt(limit) * (page - 1);
             }
-            const whereClause = {};
+    
+            const UserKeys = this.userRepository.metadata.columns.map((column) => column.propertyName);
+            const AttendaceKeys = this.attendanceRepository.metadata.columns.map((column) => column.propertyName);
+            const CohortMembersKeys = this.cohortMembersRepository.metadata.columns.map((column) => column.propertyName);
+    
+            let whereClause = `u."tenantId" = $1`; // Default WHERE clause for filtering by tenantId
+            let queryParams = [tenantId]; // Parameters for the query
+            let attendanceList = '';
             if (filters && Object.keys(filters).length > 0) {
-                Object.entries(filters).forEach(([key, value]) => {
-                    whereClause[key] = value;
-                });
+                let index = 2; // Starting index for additional parameters
+                for (const [key, value] of Object.entries(filters)) {
+                    if (UserKeys.includes(key)) {
+                        whereClause += ` AND u."${key}" = $${index}`;
+                        queryParams.push(value);
+                    } else if (AttendaceKeys.includes(key)) {
+                        if (key === "attendanceDate") {
+                            attendanceList = ` AND (a."attendanceDate" = $${index} OR a."attendanceDate" IS NULL)`;
+                        }
+                        whereClause += ` AND a."${key}" = $${index}`;
+                        queryParams.push(value);
+                    } else if (CohortMembersKeys.includes(key)) {
+                        whereClause += ` AND cm."${key}" = $${index}`;
+                        queryParams.push(value);
+                    } else if (filters.fromDate && filters.toDate) {
+                        whereClause += ` AND a."attendanceDate" BETWEEN $${index} AND $${index + 1}`;
+                        queryParams.push(filters.fromDate);
+                        queryParams.push(filters.toDate);
+                        index += 1; // Increment index for toDate parameter
+                    } else {
+                        return new ErrorResponseTypeOrm({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            errorMessage: `${key} Invalid key`,
+                        });
+                    }
+                    index += 1; // Increment index for next parameter
+                }
             }
-            else {
-                whereClause['tenantId'] = tenantId;
-            }
-            const [results, totalCount] = await this.attendanceRepository.findAndCount({
-                where: whereClause,
-                take: parseInt(limit),
-                skip: offset,
-            });
+    
+            const query = `
+                SELECT u.*, cm.*, a.*     
+                FROM "Users" u
+                INNER JOIN "CohortMembers" cm ON cm."userId" = u."userId" 
+                LEFT JOIN "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
+                WHERE ${whereClause};
+            `;
+            const results = await this.attendanceRepository.query(query, queryParams);
             const mappedResponse = await this.mappedResponse(results);
-
+    
             return new SuccessResponse({
                 statusCode: HttpStatus.OK,
                 message: 'Ok.',
-                totalCount,
                 data: mappedResponse,
             });
         } catch (error) {
+            if (error.code=== "22P02"){
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: `Invalid value Entered For ${error.routine}`,
+                })
+            }
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: error,
             });
         }
     }
+
 
     async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
-        let { contextId, attendanceDate, report, limit, offset, filters } = attendanceStatsDto       
+        let { contextId, limit, offset, filters } = attendanceStatsDto;
         try {
-            if (report === true) {
-                let nameFilter = '';
-                let userFilter = '';
-
+            
+            let nameFilter = '';
+            let userFilter = '';
+            let dateFilter = '';
+            let queryParams: any[] = [contextId];
+            let subqueryParams: any[] = [contextId]; // Initialize query parameters array
+            let paramIndex = 1; // Initialize parameter index
+    
             if (filters && filters.search) {
-                nameFilter = `AND u."name" ILIKE '%${filters.search.trim()}%'`;
+                nameFilter = `AND u."name" ILIKE $${++paramIndex}`; // Increment paramIndex
+                queryParams.push(`%${filters.search.trim()}%`);
+                subqueryParams.push(`%${filters.search.trim()}%`);
             }
             if (filters && filters.userId) {
-                userFilter = ` AND u."userId"='${filters.userId.trim()}'`;
+                userFilter = ` AND u."userId" = $${++paramIndex}`; // Increment paramIndex
+                queryParams.push(filters.userId.trim());
+                subqueryParams.push(filters.userId.trim());
+
+            }
+            if (filters && filters.fromDate && filters.toDate) {
+                dateFilter = `WHERE aa."attendanceDate" >= $${++paramIndex} AND aa."attendanceDate" <= $${++paramIndex}`;   
+                queryParams.push(filters.fromDate);
+                queryParams.push(filters.toDate);
+                subqueryParams.push(filters.fromDate);
+                subqueryParams.push(filters.toDate);
             }
 
-                let query = `
-                SELECT u."userId",u."name",
-                CASE 
-                WHEN COUNT(*) = 0 THEN NULL
-                ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*),0)
-                END AS attendance_percentage
-                FROM public."CohortMembers" AS cm 
-                INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
-                LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
-                WHERE cm."cohortId" = $1 AND cm."role" = 'student'
-                ${userFilter}
-                ${nameFilter}
-                GROUP BY u."userId"
-                 `;
-
-                if (filters) {
-                    if (filters.nameOrder && filters.nameOrder==="asc" || filters.nameOrder==="desc") {
-                        query += ` ORDER BY "name" ${filters.nameOrder}`
-                        
-                    }
-                    else if (filters.percentageOrder && filters.percentageOrder==="asc" || filters.percentageOrder==="desc") {
-                        query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`
-                    }
-
-                }
-                query += `
-                LIMIT $2
-                OFFSET $3`
-                const result = await this.attendanceRepository.query(query, [contextId, limit, offset]);
-
-                if((!filters) || (!filters?.userId))
-                { 
-                  // We dont need average for single user
-                let countquery = `SELECT ROUND(AVG(attendance_percentage)) AS average_attendance_percentage
-                FROM (
-                    SELECT u."userId", u."name",
-                        CASE 
-                            WHEN COUNT(*) = 0 THEN NULL
-                            ELSE ROUND(COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) * 100.0 / COUNT(*))
-                        END AS attendance_percentage
-                    FROM public."CohortMembers" AS cm 
-                    INNER JOIN public."Users" AS u ON cm."userId" = u."userId"
-                    LEFT JOIN public."Attendance" AS aa ON cm."userId" = aa."userId"
-                    WHERE cm."cohortId" = $1 AND cm."role" = 'student'
+    
+            let query = `
+                SELECT 
+                    u."userId",
+                    u."name",
+                    CASE 
+                        WHEN aa_stats."total_attendance" = 0 THEN '-'
+                        ELSE ROUND((aa_stats."present_count" * 100.0) / aa_stats."total_attendance", 0)::text
+                    END AS attendance_percentage
+                FROM 
+                    public."Users" AS u  
+                INNER JOIN 
+                    public."CohortMembers" AS cm ON cm."userId" = u."userId"
+                LEFT JOIN 
+                    (
+                        SELECT 
+                            aa."userId",
+                            COUNT(*) AS "total_attendance",
+                            COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) AS "present_count"
+                        FROM 
+                            public."Attendance" AS aa
+                        ${dateFilter} 
+                        GROUP BY 
+                            aa."userId"
+                    ) AS aa_stats ON cm."userId" = aa_stats."userId"
+                WHERE 
+                    cm."cohortId" = $1 
+                    AND cm."role" = 'student'
+                    ${nameFilter}
                     ${userFilter}
-                    GROUP BY u."userId"
-                ) AS subquery;
-                `
+                GROUP BY 
+                    u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
+            `;
+    
+            if (filters) {
+                if (filters.nameOrder && (filters.nameOrder === "asc" || filters.nameOrder === "desc")) {
+                    query += ` ORDER BY "name" ${filters.nameOrder}`;
+                } else if (filters.percentageOrder && (filters.percentageOrder === "asc" || filters.percentageOrder === "desc")) {
+                    query += ` ORDER BY attendance_percentage ${filters.percentageOrder}`;
+                }
+            }
+            query += `
+                LIMIT $${++paramIndex}
+                OFFSET $${++paramIndex}`;
+            
+            queryParams.push(limit);
+            queryParams.push(offset);
+    
 
-              const average=await this.attendanceRepository.query(countquery,[contextId]) 
-               const report = await this.mapResponseforReport(result);
+    
+            const result = await this.attendanceRepository.query(query, queryParams);
+    
+            if (!filters || !filters?.userId) {
+                // We don't need average for single user
+                const countquery = `
+                    SELECT ROUND(AVG(attendance_percentage::NUMERIC), 2) AS average_attendance_percentage
+                    FROM (
+                        SELECT 
+                            u."userId",
+                            u."name",
+                            CASE 
+                                WHEN aa_stats."total_attendance" = 0 THEN '-'
+                                ELSE ROUND((aa_stats."present_count" * 100.0) / aa_stats."total_attendance", 0)::text
+                            END AS attendance_percentage
+                        FROM 
+                            public."Users" AS u  
+                        INNER JOIN 
+                            public."CohortMembers" AS cm ON cm."userId" = u."userId"
+                        LEFT JOIN 
+                            (
+                                SELECT 
+                                    aa."userId",
+                                    COUNT(*) AS "total_attendance",
+                                    COUNT(CASE WHEN aa."attendance" = 'present' THEN 1 END) AS "present_count"
+                                FROM 
+                                    public."Attendance" AS aa
+                                ${dateFilter} 
+                                GROUP BY 
+                                    aa."userId"
+                            ) AS aa_stats ON cm."userId" = aa_stats."userId"
+                        WHERE 
+                            cm."cohortId" = $1 
+                            AND cm."role" = 'student'
+                            ${nameFilter}
+                            ${userFilter}
+                        GROUP BY 
+                            u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
+                    ) AS subquery`;
+    
+
+                const average = await this.attendanceRepository.query(countquery, subqueryParams);
+                const report = await this.mapResponseforReport(result);
                 const response = {
                     report,
-                    average:average[0]
-                }
+                    average: average[0]
+                };
                 return new SuccessResponse({
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
-                    data: response,
-                    
+                    data: response
                 });
-            }
-            else
-            {
-               const response = await this.mapResponseforReport(result);
+            } else {
+
+                const response = await this.mapResponseforReport(result);
                 return new SuccessResponse({
                     statusCode: HttpStatus.OK,
                     message: "Ok.",
-                    data: response,
-                    
+                    data: response
                 });
             }
 
-                
-            }
-            else if (report === false) {
-                if (attendanceDate) {
-                    const query = `
-                SELECT *
-                FROM public."Users" AS u
-                INNER JOIN public."CohortMembers" AS cm ON cm."userId" = u."userId" AND cm."role"='student'
-                LEFT JOIN public."Attendance" AS aa ON aa."userId" = cm."userId" AND (aa."attendanceDate" =$1 OR aa."attendanceDate" IS NULL)
-                where cm."cohortId" = $2
-                LIMIT $3
-                OFFSET $4
-                `;
-
-
-
-                    const result = await this.attendanceRepository.query(query, [attendanceDate, contextId, limit, offset]);
-                    const report = await this.mapAttendanceRecord(result);
-                   
-                    
-
-
-                    return new SuccessResponse({
-                        statusCode: 200,
-                        message: "Ok.",
-                        data: report
-                    });
-                }
-
-                else {
-
-                    return new ErrorResponseTypeOrm({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        errorMessage: "Please provide valid attendance date",
-                    });
-
-                }
-            }
-        }
-        catch (error) {
-
+            
+        } catch (error) {
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: error,
+                errorMessage: error
             });
-
-
         }
     }
+    
+    
+    
+    
+    
+
+    
 
     public async mappedResponse(result: any) {
         const attendanceResponse = result.map((item: any) => {
-            const attendanceMapping = {
+
+            const dateObject = new Date(item.attendanceDate);
+            const formattedDate = moment(dateObject).format('YYYY-MM-DD');            const attendanceMapping = {
                 tenantId: item?.tenantId ? `${item.tenantId}` : "",
                 attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",
                 userId: item?.userId ? `${item.userId}` : "",
-                attendanceDate: item?.attendanceDate ? `${item.attendanceDate}` : "",
+                attendanceDate: item.attendanceDate ? formattedDate : null,
                 attendance: item?.attendance ? `${item.attendance}` : "",
                 remark: item?.remark ? `${item.remark}` : "",
                 latitude: item?.latitude ? item.latitude : 0,
@@ -233,7 +291,11 @@ export class PostgresAttendanceService {
                 updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
                 createdBy: item?.createdBy ? `${item.createdBy}` : "",
                 updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+                username:item?.username ? `${item.username}` : "",
+                role:item?.role ? `${item.role}` : "",
+
             };
+
 
             return new AttendanceDto(attendanceMapping);
         });
@@ -279,19 +341,25 @@ export class PostgresAttendanceService {
     */
 
     public async updateAttendanceRecord(
-        request: any,
+        loginUserId,
         attendanceDto: AttendanceDto
     ) {
 
 
         try {
-            const decoded: any = jwt_decode(request?.headers?.authorization);
 
-            const userId =
-                decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+            const Isvalid = await this.validateUserForCohort(attendanceDto.userId,attendanceDto.contextId)
+
+            if(!Isvalid){
+
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Invalid combination of contextId and userId",
+                }); 
+
+            }
+
             const attendanceToSearch = new AttendanceSearchDto({});
-
-
 
             attendanceToSearch.filters = {
                 attendanceDate: attendanceDto.attendanceDate,
@@ -301,7 +369,7 @@ export class PostgresAttendanceService {
 
             const attendanceFound: any = await this.searchAttendance(
                 attendanceDto.tenantId,
-                request,
+                loginUserId,
                 attendanceToSearch
             );
 
@@ -314,18 +382,19 @@ export class PostgresAttendanceService {
             }
 
             if (
-                attendanceFound.data.length > 0 &&
+                attendanceFound.data.length > 0 && attendanceFound.data[0].attendanceId != "" &&
                 attendanceFound.statusCode === 200 && attendanceFound instanceof SuccessResponse
             ) {
-
+                attendanceDto.updatedBy = loginUserId
               return   await this.updateAttendance(
                     attendanceFound.data[0].attendanceId,
-                    request,
+                    loginUserId,
                     attendanceDto
                 );
             } else {
-
-                return await this.createAttendance(request, attendanceDto);
+                attendanceDto.createdBy = loginUserId;
+                attendanceDto.updatedBy = loginUserId;
+                return await this.createAttendance(loginUserId, attendanceDto);
             }
         } catch (e) {
             return new ErrorResponseTypeOrm({
@@ -345,6 +414,7 @@ export class PostgresAttendanceService {
         attendanceDto: AttendanceDto
     ) {
         try {
+
 
             const attendanceRecord = await this.attendanceRepository.findOne({
                 where: { attendanceId },
@@ -371,12 +441,20 @@ export class PostgresAttendanceService {
                 data: updatedAttendanceRecord,
             });
         } catch (error) {
-            
+
+            if (error.code == '23503') {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Please provide valid contextId",
+                });
+            }
+            else{          
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     errorMessage: error,
 
-                });
+                })
+            }
             
         }
     }
@@ -403,12 +481,12 @@ export class PostgresAttendanceService {
             if (error.code == '23503') {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    errorMessage: "Please provide valid userID",
+                    errorMessage: "Please enter valid UserId and contextId",
                 });
             } else {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                    errorMessage: 'Internal Server Error',
+                    errorMessage: error,
                 });
             }
         }
@@ -533,6 +611,21 @@ export class PostgresAttendanceService {
             errors,
         };
     }
+
+
+
+    public async validateUserForCohort(userId,cohortId)
+        {
+            const attendanceRecord = await this.cohortMembersRepository.findOne({
+                where: { userId, cohortId } // Include cohortId in the where clause
+            });
+            if(attendanceRecord){
+                return true
+            }else{
+                return false
+            }
+            
+        }
 
 }
 

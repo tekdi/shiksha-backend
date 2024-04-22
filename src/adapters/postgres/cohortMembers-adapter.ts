@@ -275,42 +275,6 @@ export class PostgresCohortMembersService {
     }
   }
 
-  // public async updateCohortMembers(
-  //   cohortMembershipId: string,
-  //   loginUser: any,
-  //   cohortMembersUpdateDto: CohortMembersUpdateDto,
-  //   response: any
-  // ) {
-  //   const apiId = "api.cohortMember.updateCohortMembers";
-
-  //   try {
-  //     cohortMembersUpdateDto.updatedBy = loginUser;
-
-  //     const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
-  //       where: { cohortMembershipId: cohortMembershipId },
-  //     });
-
-  //     if (!cohortMemberToUpdate) {
-  //       throw new Error("Cohort member not found");
-  //     }
-  //     Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
-
-  //     const updatedCohortMember = await this.cohortMembersRepository.save(
-  //       cohortMemberToUpdate
-  //     );
-
-  //     return new SuccessResponse({
-  //       statusCode: HttpStatus.OK,
-  //       message: "Cohort Member Updated successfully.",
-  //       data: updatedCohortMember,
-  //     });
-  //   } catch (e) {
-  //     return new ErrorResponseTypeOrm({
-  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       errorMessage: e,
-  //     });
-  //   }
-  // }
   public async updateCohortMembers(
     cohortMembershipId: string,
     loginUser: any,

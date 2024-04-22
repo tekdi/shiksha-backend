@@ -1,5 +1,5 @@
 import { Exclude, Expose } from "class-transformer";
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CohortMembersDto {
   //generated fields
@@ -40,7 +40,7 @@ export class CohortMembersDto {
   role: string;
 
   //createdBy
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The createdBy of the cohort members",
     default: "",
@@ -49,7 +49,7 @@ export class CohortMembersDto {
   createdBy: string;
 
   //updatedBy
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The updatedBy of the cohort members",
     default: "",

@@ -6,14 +6,26 @@ import { HasuraModule } from "src/adapters/hasura/hasura.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { CohortMembers } from "./entities/cohort-member.entity";
 import { CohortMembersService } from "./cohortMember.service";
+import { PostgresModule } from "src/adapters/postgres/potsgres-module";
+import { PostgresCohortMembersService } from "src/adapters/postgres/cohortMembers-adapter";
+import { HasuraCohortMembersService } from "src/adapters/hasura/cohortMembers.adapter";
+import { Fields } from "src/fields/entities/fields.entity";
+import { User } from "src/user/entities/user-entity";
+import { Cohort } from "src/cohort/entities/cohort.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CohortMembers]),
+    TypeOrmModule.forFeature([CohortMembers, Fields, User, Cohort]),
     HttpModule,
     HasuraModule,
+    PostgresModule,
   ],
   controllers: [CohortMembersController],
-  providers: [CohortMembersAdapter, CohortMembersService],
+  providers: [
+    CohortMembersAdapter,
+    CohortMembersService,
+    PostgresCohortMembersService,
+    HasuraCohortMembersService,
+  ],
 })
 export class CohortMembersModule {}

@@ -310,41 +310,41 @@ export class PostgresCohortService {
             }
           });
         }
-        console.log("hii");
+
         const response = await this.cohortRepository.update(cohortId, cohortUpdateDto);
-        console.log("hii1");
-        // if (cohortUpdateDto.fieldValues) {
-        //   let field_value_array = cohortUpdateDto.fieldValues.split("|");
-        //   if (field_value_array.length > 0) {
-        //     let field_values = [];
-        //     for (let i = 0; i < field_value_array.length; i++) {
 
-        //       let fieldValues = field_value_array[i].split(":");
-        //       let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
-        //       try {
-        //         const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
-        //         const rowid = fieldVauesRowId.fieldValuesId;
+        if (cohortUpdateDto.fieldValues) {
+          let field_value_array = cohortUpdateDto.fieldValues.split("|");
+          if (field_value_array.length > 0) {
+            let field_values = [];
+            for (let i = 0; i < field_value_array.length; i++) {
 
-        //         let fieldValueUpdateDto: FieldValuesUpdateDto = {
-        //           fieldValuesId: rowid,
-        //           value: fieldValues[1] ? fieldValues[1].trim() : ""
-        //         };
-        //         await this.fieldsService.updateFieldValues(rowid, fieldValueUpdateDto);
-        //       } catch {
-        //         let fieldValueDto: FieldValuesDto = {
-        //           value: fieldValues[1] ? fieldValues[1].trim() : "",
-        //           itemId: cohortId,
-        //           fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-        //           createdBy: cohortUpdateDto?.createdBy,
-        //           updatedBy: cohortUpdateDto?.updatedBy,
-        //           createdAt: new Date().toISOString(),
-        //           updatedAt: new Date().toISOString(),
-        //         };
-        //         await this.fieldsService.createFieldValues(request, fieldValueDto);
-        //       }
-        //     }
-        //   }
-        // }
+              let fieldValues = field_value_array[i].split(":");
+              let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
+              try {
+                const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+                const rowid = fieldVauesRowId.fieldValuesId;
+
+                let fieldValueUpdateDto: FieldValuesUpdateDto = {
+                  fieldValuesId: rowid,
+                  value: fieldValues[1] ? fieldValues[1].trim() : ""
+                };
+                await this.fieldsService.updateFieldValues(rowid, fieldValueUpdateDto);
+              } catch {
+                let fieldValueDto: FieldValuesDto = {
+                  value: fieldValues[1] ? fieldValues[1].trim() : "",
+                  itemId: cohortId,
+                  fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+                  createdBy: cohortUpdateDto?.createdBy,
+                  updatedBy: cohortUpdateDto?.updatedBy,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await this.fieldsService.createFieldValues(request, fieldValueDto);
+              }
+            }
+          }
+        }
 
         return new SuccessResponse({
           statusCode: HttpStatus.OK,

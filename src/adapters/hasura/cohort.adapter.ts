@@ -12,6 +12,7 @@ import { UserDto } from "src/user/dto/user.dto";
 import { FieldsService } from "./services/fields.service";
 import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
+import { CohortUpdateDto } from "src/cohort/dto/cohort-update.dto";
 export const HasuraCohortToken = "HasuraCohort";
 @Injectable()
 export class HasuraCohortService implements IServicelocatorcohort {
@@ -263,104 +264,7 @@ export class HasuraCohortService implements IServicelocatorcohort {
   public async searchCohort(tenantId: string,request: any,cohortSearchDto: CohortSearchDto) {}
   public async updateCohortStatus(cohortId: string, request: any) {}
   public async getCohortsDetails(cohortId: string) {}
-  public async updateCohort(
-    cohortId: string,
-    request: any,
-    cohortUpdateDto: CohortCreateDto
-  ) {
-    var axios = require("axios");
-
-    let query = "";
-    Object.keys(cohortUpdateDto).forEach((e) => {
-      if (
-        cohortUpdateDto[e] &&
-        cohortUpdateDto[e] != "" &&
-        e != "fieldValues"
-      ) {
-        if (Array.isArray(cohortUpdateDto[e])) {
-          query += `${e}: "${JSON.stringify(cohortUpdateDto[e])}", `;
-        } else {
-          query += `${e}: "${cohortUpdateDto[e]}", `;
-        }
-      }
-    });
-
-    var data = {
-      query: `
-      mutation UpdateCohort($cohortId:uuid!) {
-        update_Cohort_by_pk(
-            pk_columns: {
-              cohortId: $cohortId
-            },
-            _set: {
-                ${query}
-            }
-        ) {
-            cohortId
-        }
-    }
-    `,
-      variables: {
-        cohortId: cohortId,
-      },
-    };
-
-    var config = {
-      method: "post",
-      url: process.env.REGISTRYHASURA,
-      headers: {
-        "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-        "Content-Type": "application/json",
-      },
-      data: data,
-    };
-
-    const response = await axios(config);
-
-    if (response?.data?.errors) {
-      return new ErrorResponse({
-        errorCode: response?.data?.errors[0]?.extensions?.code,
-        errorMessage: response?.data?.errors[0]?.message,
-      });
-    } else {
-      let result = response.data.update_Cohort_by_pk;
-      let fieldCreate = true;
-      let fieldError = [];
-      //update fields values
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
-      if (field_value_array.length > 0) {
-        for (let i = 0; i < field_value_array.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          //update values
-          let fieldValuesUpdate = new FieldValuesDto({
-            value: fieldValues[1] ? fieldValues[1] : "",
-          });
-
-          const response_field_values =
-            await this.fieldsService.updateFieldValues(
-              fieldValues[0] ? fieldValues[0] : "",
-              fieldValuesUpdate
-            );
-          if (response_field_values?.data?.errors) {
-            fieldCreate = false;
-            fieldError.push(response_field_values?.data);
-          }
-        }
-      }
-      if (fieldCreate) {
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "Ok.",
-          data: result,
-        });
-      } else {
-        return new ErrorResponse({
-          errorCode: "filed value update error",
-          errorMessage: JSON.stringify(fieldError),
-        });
-      }
-    }
-  }
+  public async updateCohort(cohortId: string,request: any,cohortUpdateDto: CohortUpdateDto) {}
 
   public async mappedResponse(result: any) {
     const cohortResponse = result.map((item: any) => {
@@ -413,64 +317,64 @@ export class HasuraCohortService implements IServicelocatorcohort {
     cohortSearchDto: CohortSearchDto
   ) {
     try{
-      var axios = require("axios");
+      // var axios = require("axios");
 
-      let offset = 0;
-      if (cohortSearchDto.page > 1) {
-        offset = parseInt(cohortSearchDto.limit) * (cohortSearchDto.page - 1);
-      }
+      // let offset = 0;
+      // if (cohortSearchDto.page > 1) {
+      //   offset = parseInt(cohortSearchDto.limit) * (cohortSearchDto.page - 1);
+      // }
 
-      let temp_filters = cohortSearchDto.filters;
-      //add tenantid
-      let filters = new Object(temp_filters);
-      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
+      // let temp_filters = cohortSearchDto.filters;
+      // //add tenantid
+      // let filters = new Object(temp_filters);
+      // filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
 
-      Object.keys(cohortSearchDto.filters).forEach((item) => {
-        Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            filters[item][`_${e}`] = filters[item][e];
-            delete filters[item][e];
-          }
-        });
-      });
-      var data = {
-        query: `query SearchCohort($filters:Cohort_bool_exp,$limit:Int, $offset:Int) {
-            Cohort(where:$filters, limit: $limit, offset: $offset,) {
-                tenantId
-                programId
-                cohortId
-                parentId
-                referenceId
-                name
-                type
-                status
-                image
-                metadata
-                createdAt
-                updatedAt
-                createdBy
-                updatedBy
-              }
-            }`,
-        variables: {
-          limit: parseInt(cohortSearchDto.limit),
-          offset: offset,
-          filters: cohortSearchDto.filters,
-        },
-      };
-      var config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
+      // Object.keys(cohortSearchDto.filters).forEach((item) => {
+      //   Object.keys(cohortSearchDto.filters[item]).forEach((e) => {
+      //     if (!e.startsWith("_")) {
+      //       filters[item][`_${e}`] = filters[item][e];
+      //       delete filters[item][e];
+      //     }
+      //   });
+      // });
+      // var data = {
+      //   query: `query SearchCohort($filters:Cohort_bool_exp,$limit:Int, $offset:Int) {
+      //       Cohort(where:$filters, limit: $limit, offset: $offset,) {
+      //           tenantId
+      //           programId
+      //           cohortId
+      //           parentId
+      //           referenceId
+      //           name
+      //           type
+      //           status
+      //           image
+      //           metadata
+      //           createdAt
+      //           updatedAt
+      //           createdBy
+      //           updatedBy
+      //         }
+      //       }`,
+      //   variables: {
+      //     limit: parseInt(cohortSearchDto.limit),
+      //     offset: offset,
+      //     filters: cohortSearchDto.filters,
+      //   },
+      // };
+      // var config = {
+      //   method: "post",
+      //   url: process.env.REGISTRYHASURA,
+      //   headers: {
+      //     Authorization: request.headers.authorization,
+      //     "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+      //     "Content-Type": "application/json",
+      //   },
+      //   data: data,
+      // };
 
-      const response = await axios(config);
-      return response;
+      // const response = await axios(config);
+      // return response;
 
     }catch (e) {
       console.error(e);

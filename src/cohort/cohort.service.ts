@@ -139,7 +139,6 @@ export class CohortService {
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
-            fieldValuesId: "", // Provide a value for fieldValuesId
             value: fieldValues[1] ? fieldValues[1].trim() : "",
             itemId: cohortId,
             fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
@@ -166,133 +165,133 @@ export class CohortService {
     }
   }
 
-  public async updateCohort(
-    cohortId: string,
-    request: any,
-    cohortUpdateDto: CohortCreateDto
-  ) {
-    try {
-      const cohortUpdateData: any = {};
+  // public async updateCohort(
+  //   cohortId: string,
+  //   request: any,
+  //   cohortUpdateDto: CohortCreateDto
+  // ) {
+  //   try {
+  //     const cohortUpdateData: any = {};
 
-      Object.keys(cohortUpdateDto).forEach((e) => {
-        if (
-          cohortUpdateDto[e] &&
-          cohortUpdateDto[e] != "" &&
-          e != "fieldValues"
-        ) {
-          if (Array.isArray(cohortUpdateDto[e])) {
-            cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
-          } else {
-            cohortUpdateData[e] = cohortUpdateDto[e];
-          }
-        }
-      });
+  //     Object.keys(cohortUpdateDto).forEach((e) => {
+  //       if (
+  //         cohortUpdateDto[e] &&
+  //         cohortUpdateDto[e] != "" &&
+  //         e != "fieldValues"
+  //       ) {
+  //         if (Array.isArray(cohortUpdateDto[e])) {
+  //           cohortUpdateData[e] = JSON.stringify(cohortUpdateDto[e]);
+  //         } else {
+  //           cohortUpdateData[e] = cohortUpdateDto[e];
+  //         }
+  //       }
+  //     });
 
-      const response = await this.cohortRepository.update(
-        cohortId,
-        cohortUpdateData
-      );
+  //     const response = await this.cohortRepository.update(
+  //       cohortId,
+  //       cohortUpdateData
+  //     );
 
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
+  //     let field_value_array = cohortUpdateDto.fieldValues.split("|");
 
-      if (field_value_array.length > 0) {
-        let field_values = [];
-        for (let i = 0; i < field_value_array.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
-          try {
-            const fieldVauesRowId = await this.fieldsService.searchFieldValueId(
-              cohortId,
-              fieldId
-            );
-            const rowid = fieldVauesRowId.fieldValuesId;
+  //     if (field_value_array.length > 0) {
+  //       let field_values = [];
+  //       for (let i = 0; i < field_value_array.length; i++) {
+  //         let fieldValues = field_value_array[i].split(":");
+  //         let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
+  //         try {
+  //           const fieldVauesRowId = await this.fieldsService.searchFieldValueId(
+  //             cohortId,
+  //             fieldId
+  //           );
+  //           const rowid = fieldVauesRowId.fieldValuesId;
 
-            let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: rowid,
-              value: fieldValues[1] ? fieldValues[1].trim() : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-              createdBy: cohortUpdateDto?.createdBy,
-              updatedBy: cohortUpdateDto?.updatedBy,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
-          } catch {
-            let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: null,
-              value: fieldValues[1] ? fieldValues[1].trim() : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-              createdBy: cohortUpdateDto?.createdBy,
-              updatedBy: cohortUpdateDto?.updatedBy,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await this.fieldsService.createFieldValues(request, fieldValueDto);
-          }
-        }
-      }
+  //           let fieldValueDto: FieldValuesDto = {
+  //             fieldValuesId: rowid,
+  //             value: fieldValues[1] ? fieldValues[1].trim() : "",
+  //             itemId: cohortId,
+  //             fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+  //             createdBy: cohortUpdateDto?.createdBy,
+  //             updatedBy: cohortUpdateDto?.updatedBy,
+  //             createdAt: new Date().toISOString(),
+  //             updatedAt: new Date().toISOString(),
+  //           };
+  //           await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
+  //         } catch {
+  //           let fieldValueDto: FieldValuesDto = {
+  //             fieldValuesId: null,
+  //             value: fieldValues[1] ? fieldValues[1].trim() : "",
+  //             itemId: cohortId,
+  //             fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+  //             createdBy: cohortUpdateDto?.createdBy,
+  //             updatedBy: cohortUpdateDto?.updatedBy,
+  //             createdAt: new Date().toISOString(),
+  //             updatedAt: new Date().toISOString(),
+  //           };
+  //           await this.fieldsService.createFieldValues(request, fieldValueDto);
+  //         }
+  //       }
+  //     }
 
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok.",
-        data: {
-          rowCount: response.affected,
-        },
-      });
-    } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
-    }
-  }
+  //     return new SuccessResponse({
+  //       statusCode: HttpStatus.OK,
+  //       message: "Ok.",
+  //       data: {
+  //         rowCount: response.affected,
+  //       },
+  //     });
+  //   } catch (e) {
+  //     return new ErrorResponseTypeOrm({
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
 
-  public async searchCohort(
-    tenantId: string,
-    request: any,
-    cohortSearchDto: CohortSearchDto
-  ) {
-    try {
-      let { limit, page, filters } = cohortSearchDto;
+  // public async searchCohort(
+  //   tenantId: string,
+  //   request: any,
+  //   cohortSearchDto: CohortSearchDto
+  // ) {
+  //   try {
+  //     let { limit, page, filters } = cohortSearchDto;
 
-      let offset = 0;
-      if (page > 1) {
-        offset = parseInt(limit) * (page - 1);
-      }
+  //     let offset = 0;
+  //     if (page > 1) {
+  //       offset = parseInt(limit) * (page - 1);
+  //     }
 
-      if (limit.trim() === "") {
-        limit = "0";
-      }
+  //     if (limit.trim() === "") {
+  //       limit = "0";
+  //     }
 
-      const whereClause = {};
-      if (filters && Object.keys(filters).length > 0) {
-        Object.entries(filters).forEach(([key, value]) => {
-          whereClause[key] = value;
-        });
-      }
-      const [results, totalCount] = await this.cohortRepository.findAndCount({
-        where: whereClause,
-        skip: offset,
-        take: parseInt(limit),
-      });
+  //     const whereClause = {};
+  //     if (filters && Object.keys(filters).length > 0) {
+  //       Object.entries(filters).forEach(([key, value]) => {
+  //         whereClause[key] = value;
+  //       });
+  //     }
+  //     const [results, totalCount] = await this.cohortRepository.findAndCount({
+  //       where: whereClause,
+  //       skip: offset,
+  //       take: parseInt(limit),
+  //     });
 
-      const mappedResponse = await this.mappedResponse(results);
+  //     const mappedResponse = await this.mappedResponse(results);
 
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok.",
-        totalCount,
-        data: mappedResponse,
-      });
-    } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
-    }
-  }
+  //     return new SuccessResponse({
+  //       statusCode: HttpStatus.OK,
+  //       message: "Ok.",
+  //       totalCount,
+  //       data: mappedResponse,
+  //     });
+  //   } catch (e) {
+  //     return new ErrorResponseTypeOrm({
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       errorMessage: e,
+  //     });
+  //   }
+  // }
 
   public async mappedResponse(result: any) {
     const cohortValueResponse = result.map((item: any) => {

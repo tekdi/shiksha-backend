@@ -116,7 +116,6 @@ export class PrivilegeController {
  
   @Delete("/:id")
   @ApiBasicAuth("access-token")
-  @ApiBody({ type:PrivilegeDto })
   @ApiOkResponse({ description: "Privilege Deleted" })
   @ApiBadRequestResponse({ description: "Bad Request" })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
@@ -124,10 +123,9 @@ export class PrivilegeController {
   public async deletePrivilege(
     @Param("id") privilegeId: string,
     @Req() request: Request,
-    @Body() privilegeDto: PrivilegeDto,
     @Res() response: Response
   ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().deletePrivilege(privilegeId, request, privilegeDto);
+    const result = await this.privilegeAdapter.buildPrivilegeAdapter().deletePrivilege(privilegeId, request);
     return response.status(result.statusCode).json(result);
   } 
 

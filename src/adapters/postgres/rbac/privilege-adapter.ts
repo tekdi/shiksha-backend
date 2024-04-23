@@ -158,7 +158,7 @@ public async getAllPrivilege(request){
 }
 
 
-    public async deletePrivilege(privilegeId, request, privilegeDto){
+    public async deletePrivilege(privilegeId, request){
 
         try {
 

@@ -1,5 +1,5 @@
 import { Privilege } from 'src/rbac/privilege/entities/privilege.entity';
-import { Role } from 'src/rbac/role/entities/rbac.entity';
+import { Role } from 'src/rbac/role/entities/role.entity';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn} from 'typeorm';
 
 @Entity({ name: 'Role_Privilege_Mapping' })

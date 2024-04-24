@@ -10,7 +10,7 @@ import { HasuraPrivilegeService } from 'src/adapters/hasura/rbac/privilege.adapt
 import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';
 import { PostgresPrivilegeService } from 'src/adapters/postgres/rbac/privilege-adapter';
 import { HasuraRoleService } from 'src/adapters/hasura/rbac/role.adapter';
-import { Role } from '../role/entities/rbac.entity';
+import { Role } from '../role/entities/role.entity';
 
 @Module({
   imports: [

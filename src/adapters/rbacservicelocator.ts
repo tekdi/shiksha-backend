@@ -1,5 +1,5 @@
 import { RoleSearchDto } from "../rbac/role/dto/role-search.dto";
-import { RoleDto } from "../rbac/role/dto/role.dto";
+import { CreateRolesDto, RoleDto } from "../rbac/role/dto/role.dto";
 
 export interface IServicelocatorRbac {
     getRole(
@@ -7,7 +7,7 @@ export interface IServicelocatorRbac {
         request?: any,
     );
     updateRole(id?: string, request?: any, userDto?: any);
-    createRole(request: any, roleDto: RoleDto);
+    createRole(request: any, createRolesDto: CreateRolesDto);
     searchRole(tenantid, request: any, roleSearchDto: RoleSearchDto);
     deleteRole(roleId);
 }

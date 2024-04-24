@@ -24,7 +24,7 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
-import { RoleDto } from "./dto/role.dto";
+import { CreateRolesDto, RoleDto } from "./dto/role.dto";
 import { RoleSearchDto } from "./dto/role-search.dto";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
@@ -58,15 +58,15 @@ export class RoleController {
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role has been created successfully." })
-  @ApiBody({ type: RoleDto })
+  @ApiBody({ type: CreateRolesDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiHeader({ name: "tenantid" })
   public async createRole(
     @Req() request: Request,
-    @Body() roleDto: RoleDto,
+    @Body() createRolesDto: CreateRolesDto,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().createRole(request, roleDto);
+    const result = await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto);
     return response.status(result.statusCode).json(result);
   }
 

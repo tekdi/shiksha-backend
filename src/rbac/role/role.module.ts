@@ -1,7 +1,7 @@
 import {Module } from '@nestjs/common';
 import { RoleController } from './role.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Role } from './entities/rbac.entity';
+import { Role } from './entities/role.entity';
 import { HasuraModule } from 'src/adapters/hasura/hasura.module';
 import { PostgresModule } from 'src/adapters/postgres/potsgres-module';
 import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';

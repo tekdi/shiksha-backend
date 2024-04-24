@@ -5,9 +5,9 @@ import {
   IsOptional
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { FieldValuesCreateDto } from "src/fields/dto/field-values-create.dto";
 
-export class CohortCreateDto {
+
+export class CohortUpdateDto {
   @Expose()
   cohortId: string;
   
@@ -24,7 +24,6 @@ export class CohortCreateDto {
   @ApiPropertyOptional({
     type: String,
     description: "The programId of the cohort",
-    default: "",
   })
   @Expose()
   programId: string;
@@ -33,7 +32,6 @@ export class CohortCreateDto {
   @ApiPropertyOptional({
     type: String,
     description: "The parentId of the cohort",
-    default: "",
   })
   @Expose()
   parentId: string;
@@ -43,23 +41,19 @@ export class CohortCreateDto {
   referenceId: string;
 
   //name
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The name of the cohort",
-    default: "",
   })
   @Expose()
-  @IsNotEmpty()
   name: string;
 
   //type
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The type of the cohort",
-    default: "",
   })
   @Expose()
-  @IsNotEmpty()
   type: string;
 
   //status
@@ -92,13 +86,11 @@ export class CohortCreateDto {
     type: String,
     description: "The fieldValues Object",
   })
-  @IsString()
-  @IsOptional()
   @Expose()
-  fieldValues?: string;
+  fieldValues: string;
 
 
-  constructor(obj?: Partial<CohortCreateDto>) {
+  constructor(obj?: Partial<CohortUpdateDto>) {
     if (obj) {
       Object.assign(this, obj);
     }

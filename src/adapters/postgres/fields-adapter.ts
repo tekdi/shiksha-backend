@@ -108,11 +108,8 @@ export class PostgresFieldsService {
             });
             
             if (checkFieldValueExist.length == 0) {
-                console.log("fieldValuesDto",fieldValuesDto);
                 
                 let result = await this.fieldsValuesRepository.save(fieldValuesDto);
-                console.log(result);
-                
                 return new SuccessResponse({
                     statusCode: HttpStatus.CREATED,
                     message: "Ok.",

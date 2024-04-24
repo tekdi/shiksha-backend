@@ -30,7 +30,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 @ApiTags("Fields")
 @Controller("fields")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class FieldsController {
   constructor(
     private fieldsAdapter: FieldsAdapter,

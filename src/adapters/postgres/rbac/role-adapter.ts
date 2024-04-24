@@ -15,12 +15,13 @@ export class PostgresRoleService {
     ) { }
     public async createRole(request: any, createRolesDto: CreateRolesDto) {
 
-       const tenant= await this.checkTenantID(createRolesDto.tenantId)
-       if(!tenant){
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorMessage: "Please enter valid tenantId",
-        });       }
+        const tenant = await this.checkTenantID(createRolesDto.tenantId)
+        if (!tenant) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.BAD_REQUEST,
+                errorMessage: "Please enter valid tenantId",
+            });
+        }
         const roles = [];
         const errors = []
         try {
@@ -54,7 +55,7 @@ export class PostgresRoleService {
 
                 // Save the role entity to the database
                 const response = await this.roleRepository.save(roleEntity);
-                roles.push(new RolesResponseDto(response)); 
+                roles.push(new RolesResponseDto(response));
             }
         } catch (e) {
             return new ErrorResponseTypeOrm({
@@ -171,11 +172,20 @@ export class PostgresRoleService {
 
 
     public async checkTenantID(tenantId) {
-        let query = `SELECT "tenantId" FROM public."Tenants"
+        try {
+            let query = `SELECT "tenantId" FROM public."Tenants"
         where "tenantId"= $1 `
-        let response = await this.roleRepository.query(query,[tenantId]);
-        if(response.length>0){
-            return true
+            let response = await this.roleRepository.query(query, [tenantId]);
+            if (response.length > 0) {
+                return true
+            }
+        }
+        catch (error) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: error,
+            });
+
         }
     }
 }

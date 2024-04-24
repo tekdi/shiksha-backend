@@ -5,6 +5,10 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiOkResponse,
+  ApiQuery,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -14,94 +18,100 @@ import {
   Put,
   Delete,
   Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   SerializeOptions,
   Req,
   Headers,
   Res,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
+  Query,
 } from "@nestjs/common";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
 import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersService } from "./cohortMember.service";
-import { Response } from "@nestjs/common";
+// import { Response } from "@nestjs/common";
 import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { Response } from "express";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
 @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
-  constructor(private readonly cohortMembersService: CohortMembersService) {}
+  constructor(
+    private readonly cohortMembersService: CohortMembersService,
+    private readonly cohortMemberAdapter: CohortMembersAdapter
+  ) {}
 
   //create cohort members
   @Post()
+  @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Cohort Members has been created successfully.",
   })
   @ApiBody({ type: CohortMembersDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
     name: "tenantid",
   })
   public async createCohortMembers(
     @Headers() headers,
-    @Req() request: Request,
+    @Req() request,
     @Body() cohortMembersDto: CohortMembersDto,
     @Res() response: Response
   ) {
+    const loginUser = request.user.userId;
     let tenantid = headers["tenantid"];
     const payload = {
       tenantId: tenantid,
     };
     Object.assign(cohortMembersDto, payload);
 
-    return this.cohortMembersService.createCohortMembers(
-      request,
-      cohortMembersDto,
-      response
-    );
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .createCohortMembers(loginUser, cohortMembersDto, response);
+    return response.status(result.statusCode).json(result);
   }
 
   //get cohort members
-  @Get("/:id")
-  @UseInterceptors(ClassSerializerInterceptor)
+  @Get("/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members detail" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @ApiHeader({
-    name: "tenantid",
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
+  @SerializeOptions({ strategy: "excludeAll" })
+  @ApiHeader({ name: "tenantid" })
+  @ApiQuery({
+    name: "fieldvalue",
+    description: "Send True to Fetch Custom Field of User",
+    required: false,
   })
   public async getCohortMembers(
     @Headers() headers,
-    @Param("id") cohortMembersId: string,
+    @Param("cohortId") cohortId: string,
     @Req() request: Request,
-    @Res() response: Response
+    @Res() response: Response,
+    @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersService.getCohortMembers(
-      tenantid,
-      cohortMembersId,
-      response,
-      request
-    );
+
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .getCohortMembers(cohortId, fieldvalue);
+
+    return response.status(result.statusCode).json(result);
   }
 
-  search;
+  // search;
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members list." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersSearchDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -115,12 +125,11 @@ export class CohortMembersController {
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     let tenantid = headers["tenantid"];
-    return this.cohortMembersService.searchCohortMembers(
-      tenantid,
-      request,
-      cohortMembersSearchDto,
-      response
-    );
+
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .searchCohortMembers(cohortMembersSearchDto);
+    return response.status(result.statusCode).json(result);
   }
 
   //update
@@ -129,29 +138,33 @@ export class CohortMembersController {
   @ApiCreatedResponse({
     description: "Cohort Members has been updated successfully.",
   })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersUpdateDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
   public async updateCohortMembers(
     @Param("id") cohortMembersId: string,
-    @Req() request: Request,
+    @Req() request,
     @Body() cohortMemberUpdateDto: CohortMembersUpdateDto,
     @Res() response: Response
   ) {
-    return this.cohortMembersService.updateCohortMembers(
-      cohortMembersId,
-      request,
-      cohortMemberUpdateDto,
-      response
-    );
+    const loginUser = request.user.userId;
+
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .updateCohortMembers(
+        cohortMembersId,
+        loginUser,
+        cohortMemberUpdateDto,
+        response
+      );
+    return response.status(result.statusCode).json(result);
   }
 
   //delete
   @Delete("/:id")
-  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort member deleted successfully" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiNotFoundResponse({ description: "Data not found" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
@@ -166,11 +179,9 @@ export class CohortMembersController {
   ) {
     let tenantid = headers["tenantid"];
 
-    return this.cohortMembersService.deleteCohortMemberById(
-      tenantid,
-      cohortMembershipId,
-      response,
-      request
-    );
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .deleteCohortMemberById(tenantid, cohortMembershipId, response, request);
+    return response.status(result.statusCode).json(result);
   }
 }

@@ -37,6 +37,8 @@ export class PostgresCohortService {
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(CohortMembers)
     private cohortMembersRepository: Repository<CohortMembers>,
+    @InjectRepository(FieldValues)
+    private fieldValuesRepository: Repository<FieldValues>,
     @InjectRepository(Fields)
     private fieldsRepository: Repository<Fields>,
     private fieldsService: PostgresFieldsService,
@@ -285,6 +287,7 @@ export class PostgresCohortService {
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortUpdateDto.updatedBy = decoded?.sub
       cohortUpdateDto.createdBy = decoded?.sub
+      cohortUpdateDto.status = true;
 
 
       if (!isUUID(cohortId)) {
@@ -512,11 +515,16 @@ export class PostgresCohortService {
         SET "status" = false,
         "updatedBy" = '${updatedBy}'
         WHERE "cohortId" = $1`;
-        const results = await this.cohortRepository.query(query, [cohortId]);
+        await this.cohortRepository.query(query, [cohortId]);
 
-        const result = await this.cohortMembersRepository.delete(
+        await this.cohortMembersRepository.delete(
           {cohortId:cohortId}
         );
+        await this.fieldValuesRepository.delete(
+          {itemId:cohortId}
+        );
+        
+
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: "Cohort Deleted Successfully.",

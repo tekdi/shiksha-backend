@@ -230,7 +230,7 @@ export class PostgresCohortService {
         } else {
           return new SuccessResponse({
             statusCode: HttpStatus.CONFLICT,
-            message: "Cohort Name already exists.",
+            message: "Cohort name already exists.",
             data: existData,
           });
         }
@@ -495,6 +495,10 @@ export class PostgresCohortService {
     request: any
   ) {
     try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      // const createdBy = decoded?.sub;
+      const updatedBy = decoded?.sub
+
       if (!isUUID(cohortId)) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,
@@ -502,14 +506,17 @@ export class PostgresCohortService {
         });
       }
       const checkData = await this.checkAuthAndValidData(cohortId);
-      const updatedBy = request.user.userId;
+
       if (checkData === true) {
         let query = `UPDATE public."Cohort"
         SET "status" = false,
         "updatedBy" = '${updatedBy}'
         WHERE "cohortId" = $1`;
-
         const results = await this.cohortRepository.query(query, [cohortId]);
+
+        const result = await this.cohortMembersRepository.delete(
+          {cohortId:cohortId}
+        );
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: "Cohort Deleted Successfully.",

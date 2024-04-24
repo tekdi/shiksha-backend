@@ -32,7 +32,7 @@ import { RoleAdapter } from "./roleadapter"
 
 
 @ApiTags("rbac")
-@Controller("role")
+@Controller("rbac/roles")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
   constructor(private readonly roleAdapter:RoleAdapter) { }
@@ -54,7 +54,7 @@ export class RoleController {
   }
 
   //Create role
-  @Post()
+  @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role has been created successfully." })

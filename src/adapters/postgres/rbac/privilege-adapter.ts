@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { Privilege } from 'src/rbac/privilege/entities/privilege.entity';
-import { PrivilegeDto } from 'src/rbac/privilege/dto/privilege.dto';
+import { CreatePrivilegesDto, PrivilegeDto, PrivilegeResponseDto } from 'src/rbac/privilege/dto/privilege.dto';
 import { isUUID } from 'class-validator';
 
 @Injectable()
@@ -13,152 +13,165 @@ export class PostgresPrivilegeService {
         @InjectRepository(Privilege)
         private privilegeRepository: Repository<Privilege>
     ) { }
-   
-    public async createPrivilege(request: any, privilegeDto: PrivilegeDto) {
+
+    public async createPrivilege(loggedinUser: any, createPrivilegesDto: CreatePrivilegesDto) {
+
+        const privileges = [];
+        const errors = []
         try {
 
-            const label = privilegeDto.privilegeName.split(' ').join('');
+            for (const privilegeDto of createPrivilegesDto.privileges) {
+                const code = privilegeDto.code;
+
+                // Check if privilege with the same label already exists
+                const existingPrivilege = await this.checkExistingPrivilege(code);
+
+                if (existingPrivilege) {
+                    errors.push({
+                        errorMessage: `Privilege with the code '${privilegeDto.code}' already exists.`,
+                    });
+                    continue; // Skip to the next privilege
+                }
+
+                privilegeDto.createdBy = loggedinUser
+                privilegeDto.updatedBy = loggedinUser
 
 
-            // const privilegeNameLowercase = privilegeDto.privilegeName.toLowerCase();
-            
+                // Create new privilege
+                const privilege = this.privilegeRepository.create(privilegeDto);
+                const response = await this.privilegeRepository.save(privilege);
+            privileges.push(new PrivilegeResponseDto(response)); 
+            }
 
-        const result = await this.checkExistingPrivilege(label)
-
-        if (result) {
+        } catch (e) {
             return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.CONFLICT,
-                errorMessage: "Privilege with the same name already exists.",
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: e.message || 'Internal server error',
             });
         }
 
-        // Create new privilege
-       const privilege = this.privilegeRepository.create({
-            ...privilegeDto,
-            privilegeName: privilegeDto.privilegeName,
-            label:label
-        });        
-        const response = await this.privilegeRepository.save(privilege);
-
-        return new SuccessResponse({
-            statusCode: HttpStatus.CREATED,
-            message: "Privilege created successfully.",
-            data: response,
-        });
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: e,
-        });
-    }
-}
-
-async checkExistingPrivilege(label){
-    const existingPrivilege = await this.privilegeRepository.findOne({ where: { label:label } });
-    return existingPrivilege;
-}
-
-public async getPrivilege(privilegeId: string, request: any) {
-    
-        
-    try {
-
-        if (!isUUID(privilegeId)) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.BAD_REQUEST,
-                errorMessage: "Please Enter valid PrivilegeId (UUID)",
-            });
-          }
-
-          const privilege = await this.privilegeRepository.findOne({ where: { privilegeId }} );
-        if (!privilege) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.NOT_FOUND,
-                errorMessage: "Privilege not found",
-            });
-        }
-
-        return new SuccessResponse({
+        return {
             statusCode: HttpStatus.OK,
-            message: 'Ok.',
-            // totalCount,
-            data: privilege,
-        });
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: e,
-        });
+            successCount: privileges.length,
+            errorCount: errors.length,
+            privileges,
+            errors,
+        };
     }
 
-}
-
-
-
-public async updatePrivilege(privilegeId: string, request: any, privilegeDto: PrivilegeDto) {
-    try {
-        // Get the privilege using the getPrivilege method
-        const existingPrivilegeResponse = await this.getPrivilege(privilegeId, request);
-
-        if (existingPrivilegeResponse instanceof ErrorResponseTypeOrm) {
-            return existingPrivilegeResponse;
+    public async checkExistingPrivilege(code) {
+        try {
+            const existingPrivilege = await this.privilegeRepository.findOne({ where: { code } });
+            return existingPrivilege;
         }
-
-        // Cast the data property of the SuccessResponse to a Privilege object
-        const existingPrivilege: Privilege = existingPrivilegeResponse.data as Privilege;
-
-        const newLabel = privilegeDto.privilegeName.split(' ').join('');
-        
-
-        const result = await this.checkExistingPrivilege(newLabel)
-
-        if (result) {
+        catch (error) {
             return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.CONFLICT,
-                errorMessage: "Privilege with the same name already exists.",
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: error,
             });
         }
-        // Merge the updated data into the existing privilege
-        const mergedPrivilege = this.privilegeRepository.merge(existingPrivilege, privilegeDto);
-
-        mergedPrivilege.label = newLabel;
-        // Save the updated privilege record
-        const updatedPrivilegeRecord = await this.privilegeRepository.save(mergedPrivilege);
-
-        return new SuccessResponse({
-            statusCode: HttpStatus.OK,
-            message: "Privilege updated successfully",
-            data: updatedPrivilegeRecord
-        });
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: "Internal server error",
-        });
     }
-}
 
-public async getAllPrivilege(request){
+    public async getPrivilege(privilegeId: string, request: any) {
 
-    try {
-        const [result,count] = await this.privilegeRepository.findAndCount();
+        try {
 
-        return new SuccessResponse({
-            statusCode: HttpStatus.OK,
-            message: "Ok",
-            totalCount:count,
-            data: result
-        });
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: "Internal server error",
-        });
+            if (!isUUID(privilegeId)) {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Please Enter valid PrivilegeId (UUID)",
+                });
+            }
+
+            const privilege = await this.privilegeRepository.findOne({ where: { privilegeId } });
+            if (!privilege) {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    errorMessage: "Privilege not found",
+                });
+            }
+
+            return new SuccessResponse({
+                statusCode: HttpStatus.OK,
+                message: 'Ok.',
+                // totalCount,
+                data: privilege,
+            });
+        } catch (e) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: e,
+            });
+        }
+
     }
-}
 
 
-    public async deletePrivilege(privilegeId, request){
+
+    // public async updatePrivilege(privilegeId: string, request: any, privilegeDto: PrivilegeDto) {
+    //     try {
+    //         // Get the privilege using the getPrivilege method
+    //         const existingPrivilegeResponse = await this.getPrivilege(privilegeId, request);
+
+    //         if (existingPrivilegeResponse instanceof ErrorResponseTypeOrm) {
+    //             return existingPrivilegeResponse;
+    //         }
+
+    //         // Cast the data property of the SuccessResponse to a Privilege object
+    //         const existingPrivilege: Privilege = existingPrivilegeResponse.data as Privilege;
+
+    //         const newLabel = privilegeDto.privilegeName.split(' ').join('');
+
+
+    //         const result = await this.checkExistingPrivilege(newLabel)
+
+    //         if (result) {
+    //             return new ErrorResponseTypeOrm({
+    //                 statusCode: HttpStatus.CONFLICT,
+    //                 errorMessage: "Privilege with the same name already exists.",
+    //             });
+    //         }
+    //         // Merge the updated data into the existing privilege
+    //         const mergedPrivilege = this.privilegeRepository.merge(existingPrivilege, privilegeDto);
+
+    //         mergedPrivilege.label = newLabel;
+    //         // Save the updated privilege record
+    //         const updatedPrivilegeRecord = await this.privilegeRepository.save(mergedPrivilege);
+
+    //         return new SuccessResponse({
+    //             statusCode: HttpStatus.OK,
+    //             message: "Privilege updated successfully",
+    //             data: updatedPrivilegeRecord
+    //         });
+    //     } catch (e) {
+    //         return new ErrorResponseTypeOrm({
+    //             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+    //             errorMessage: "Internal server error",
+    //         });
+    //     }
+    // }
+
+    public async getAllPrivilege(request) {
+
+        try {
+            const [result, count] = await this.privilegeRepository.findAndCount();
+
+            return new SuccessResponse({
+                statusCode: HttpStatus.OK,
+                message: "Ok",
+                totalCount: count,
+                data: result
+            });
+        } catch (e) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: "Internal server error",
+            });
+        }
+    }
+
+
+    public async deletePrivilege(privilegeId, request) {
 
         try {
 

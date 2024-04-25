@@ -1,25 +1,28 @@
-import { Privilege } from 'src/rbac/privilege/entities/privilege.entity';
-import { Role } from 'src/rbac/role/entities/rbac.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, BaseEntity } from 'typeorm';
 
-@Entity({ name: 'Role_Privilege_Mapping' })
-export class RolePrivilegeMapping  {
-  @PrimaryGeneratedColumn('uuid')
-  Id: string;
+@Entity({ name: 'RolePrivilegesMapping' })
+export class RolePrivilegeMapping {
+    @PrimaryGeneratedColumn('uuid', { name: 'rolePrivilegesId' })
+    rolePrivilegesId: string;
 
-  @Column('uuid')
-  roleId: string;
+    @Column('uuid', { name: 'roleId' })
+    roleId: string;
 
-  @Column('uuid')
-  privilegeId: string;
+    @Column('uuid', { name: 'createdBy', nullable: true })
+    createdBy: string | null;
 
-  @ManyToOne(() => Privilege)
-  @JoinColumn({ name: 'privilege' })
-  privilege: Privilege;
+    @Column('uuid', { name: 'updatedBy', nullable: true })
+    updatedBy: string | null;
 
-  @ManyToOne(() => Role, {nullable:true})
-  @JoinColumn({ name: 'roleId' })
-  role: Role;
+    @CreateDateColumn({ name: 'createdAt', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updatedAt', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+    updatedAt: Date;
+
+    @Column('uuid', { name: 'privilegeId', nullable: true })
+    privilegeId: string | null;
 }
+
 
 

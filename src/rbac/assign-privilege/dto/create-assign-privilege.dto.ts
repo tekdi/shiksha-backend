@@ -9,8 +9,7 @@ export class CreatePrivilegeRoleDto {
     default: "",
   })
   @Expose()
-  @IsUUID()
-  privilegeId: string;
+  privilegeId: string[];
 
   @ApiProperty({
     type: String,
@@ -21,6 +20,17 @@ export class CreatePrivilegeRoleDto {
   @IsUUID()
   @IsNotEmpty()
   roleId: string;
+
+  @ApiProperty({
+    type: String,
+    description: "Boolean to Delete Previous Privileges",
+    default: "",
+  })
+  @Expose()
+  @IsNotEmpty()
+  deleteOld:boolean;
+
+
 
   constructor(obj: any) {
     Object.assign(this, obj);

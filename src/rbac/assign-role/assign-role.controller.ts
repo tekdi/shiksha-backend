@@ -1,26 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, Req, Res, SerializeOptions } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, Req, Res, SerializeOptions, Headers, UseGuards } from '@nestjs/common';
 import { AssignRoleAdapter } from './assign-role.apater';
 import { CreateAssignRoleDto } from './dto/create-assign-role.dto';
 import { Response, Request } from "express";
-import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiConflictResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 
 
-@Controller('assignrole')
+
+
 @ApiTags('rbac')
+@Controller('rbac/usersRoles')
+@UseGuards(JwtAuthGuard)
 export class AssignRoleController {
   constructor(private readonly assignRoleAdpater: AssignRoleAdapter) {}
 
   @Post()
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role has been Assigned successfully." })
+
+  @ApiCreatedResponse({ description: "Role assigned successfully to the user in the specified tenant." })
+  @ApiBadRequestResponse({ description: "Bad request." })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
+  @ApiConflictResponse({description:"Role is already assigned to this user."})
+
   @ApiBody({ type: CreateAssignRoleDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiHeader({ name: "tenantid" })
-  public async create(@Req() request: Request,
+  // @ApiHeader({ name: "tenantid" })
+  public async create(
+  @Req() request: Request,
   @Body() createAssignRoleDto:CreateAssignRoleDto ,
-  @Res() response: Response) {
+  @Res() response: Response,
+  @Headers() headers,
+  ) {
+    
     const result = await this.assignRoleAdpater.buildassignroleAdapter().createAssignRole(request,createAssignRoleDto);
     return response.status(result.statusCode).json(result);
   }

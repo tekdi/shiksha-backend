@@ -32,10 +32,10 @@ export class PostgresRoleService {
                 const code = roleDto.title.toLowerCase().replace(/\s+/g, '_');
 
                 // Check if role name already exists
-                const existingRole = await this.roleRepository.findOne({ where: { code } })
+                const existingRole = await this.roleRepository.findOne({ where: { code:code,tenantId:tenantId } })
                 if (existingRole) {
                     errors.push({
-                        errorMessage: `Role with the code '${code}' already exists.`,
+                        errorMessage: `Combination of this tenantId and the code '${code}' already exists.`,
                     });
                     continue;
                 }

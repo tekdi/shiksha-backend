@@ -7,7 +7,11 @@ export class RoleDto {
   @Expose()
   roleId: string;
 
- @ApiProperty()
+  @ApiProperty({
+    type: String,
+    description: "The name of the role",
+    default: "",
+  })
   @Expose()
   @IsNotEmpty()
   title: string;

@@ -139,7 +139,6 @@ export class CohortService {
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
-            fieldValuesId: "", // Provide a value for fieldValuesId
             value: fieldValues[1] ? fieldValues[1].trim() : "",
             itemId: cohortId,
             fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
@@ -208,7 +207,6 @@ export class CohortService {
             const rowid = fieldVauesRowId.fieldValuesId;
 
             let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: rowid,
               value: fieldValues[1] ? fieldValues[1].trim() : "",
               itemId: cohortId,
               fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
@@ -219,17 +217,17 @@ export class CohortService {
             };
             await this.fieldsService.updateFieldValues(rowid, fieldValueDto);
           } catch {
-            let fieldValueDto: FieldValuesDto = {
-              fieldValuesId: null,
-              value: fieldValues[1] ? fieldValues[1].trim() : "",
-              itemId: cohortId,
-              fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
-              createdBy: cohortUpdateDto?.createdBy,
-              updatedBy: cohortUpdateDto?.updatedBy,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await this.fieldsService.createFieldValues(request, fieldValueDto);
+            // let fieldValueDto: FieldValuesDto = {
+            //   fieldValuesId: null,
+            //   value: fieldValues[1] ? fieldValues[1].trim() : "",
+            //   itemId: cohortId,
+            //   fieldId: fieldValues[0] ? fieldValues[0].trim() : "",
+            //   createdBy: cohortUpdateDto?.createdBy,
+            //   updatedBy: cohortUpdateDto?.updatedBy,
+            //   createdAt: new Date().toISOString(),
+            //   updatedAt: new Date().toISOString(),
+            // };
+            // await this.fieldsService.createFieldValues(request, fieldValueDto);
           }
         }
       }
@@ -259,12 +257,9 @@ export class CohortService {
 
       let offset = 0;
       if (page > 1) {
-        offset = parseInt(limit) * (page - 1);
+        offset = limit * (page - 1);
       }
 
-      if (limit.trim() === "") {
-        limit = "0";
-      }
 
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {
@@ -275,7 +270,7 @@ export class CohortService {
       const [results, totalCount] = await this.cohortRepository.findAndCount({
         where: whereClause,
         skip: offset,
-        take: parseInt(limit),
+        take: limit,
       });
 
       const mappedResponse = await this.mappedResponse(results);

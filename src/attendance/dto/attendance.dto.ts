@@ -172,11 +172,18 @@ export class AttendanceDto {
 export class UserAttendanceDTO {
   @IsUUID()
   @IsNotEmpty()
+  @ApiProperty()
+  @IsUUID()
   userId: string;
 
-  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
+  @ApiProperty({
+    type: String,
+    description: "The attendance of the attendance",
+    default: "",
+  })
+  @Expose()
   @IsNotEmpty()
-   // Assuming these are the possible values for attendance
+  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
   attendance: string;
 }
 
@@ -184,7 +191,6 @@ export class BulkAttendanceDTO {
   @ApiProperty({
     type: String,
     description: "The date of the attendance in format yyyy-mm-dd",
-    default: new Date()
   })
   @IsNotEmpty()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
@@ -197,11 +203,15 @@ export class BulkAttendanceDTO {
   @IsUUID()
     @Expose()
     @IsNotEmpty()
+    @ApiProperty()
 
   contextId: string;
 
 
-  @ApiPropertyOptional()
+  @ApiProperty({
+    type: [UserAttendanceDTO], // Specify the type of userAttendance as an array of UserAttendanceDTO
+    description: 'List of user attendance details',
+  })
   @ValidateNested({ each: true })
  @Type(() => UserAttendanceDTO)
  // Adjust the max size according to your requirements

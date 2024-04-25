@@ -1,6 +1,6 @@
-import { Expose } from "class-transformer";
+import { Expose, Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import {IsNotEmpty,IsString, IsUUID} from "class-validator"
+import {IsNotEmpty,IsString, IsUUID, ValidateNested, isUUID} from "class-validator"
 
 export class RoleDto {
   
@@ -14,9 +14,67 @@ export class RoleDto {
   })
   @Expose()
   @IsNotEmpty()
-  roleName: string;
+  title: string;
+
+  @Expose()
+  code: string;
+
+  @Expose()
+  createdAt: Date;
+
+  @Expose()
+  updatedAt: Date;
+
+  @Expose()
+  createdBy: string;
+
+  @Expose()
+  updatedBy: string;
+
+
 
   constructor(obj: any) {
     Object.assign(this, obj);
+  }
+}
+
+
+export class CreateRolesDto {
+
+  @ApiProperty({
+    type: String,
+    description: "Tenant"
+  })
+  @Expose()
+  @IsNotEmpty()
+  @IsUUID()
+  tenantId: string;
+
+
+  @ValidateNested({ each: true })
+  @Type(() => RoleDto)
+  roles: RoleDto[];
+
+  constructor(obj: any) {
+    Object.assign(this, obj);
+  }
+}
+
+
+export class RolesResponseDto {
+  @Expose()
+  roleId: string;
+
+  @Expose()
+  title: string;
+
+  @Expose()
+  code: string;
+
+  constructor(roleDto: RoleDto) {
+    this.roleId = roleDto.roleId;
+    this.title = roleDto.title;
+    this.code = roleDto.code;
+
   }
 }

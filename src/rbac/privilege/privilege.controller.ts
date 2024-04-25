@@ -1,4 +1,4 @@
-import { PrivilegeDto } from './dto/privilege.dto';
+import { CreatePrivilegesDto, PrivilegeDto } from './dto/privilege.dto';
 import { UpdatePrivilegeDto } from './dto/update-privilege.dto';
 import {
   Controller,
@@ -24,6 +24,9 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiConflictResponse,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { Response, response } from "express";
@@ -41,8 +44,9 @@ export class PrivilegeController {
   @Get("/:privilegeId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Privilege Detail." })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiHeader({ name: "tenantid" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({strategy: "excludeAll",})
   public async getPrivilege(
     @Param("privilegeId") privilegeId: string,
@@ -60,40 +64,48 @@ export class PrivilegeController {
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Privilege has been created successfully." })
-  @ApiBody({ type: PrivilegeDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
+  @ApiConflictResponse({ description: "Privilege Already Exists" })
+  @ApiBody({ type: CreatePrivilegesDto })
   @ApiHeader({ name: "tenantid" })
   public async createPrivilege(
-    @Req() request: Request,
-    @Body() privilegeDto: PrivilegeDto,
+    @Req() request,
+    @Body() createPrivilegesDto: CreatePrivilegesDto,
     @Res() response: Response
   ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().createPrivilege(request, privilegeDto);
+
+    const result=await this.privilegeAdapter.buildPrivilegeAdapter().createPrivilege(request.user.userId, createPrivilegesDto);
     return response.status(result.statusCode).json(result);
-  }
+    }
 
 
-  @Put("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role updated successfully." })
-  @ApiBody({ type:PrivilegeDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiHeader({ name: "tenantid", })
-  public async updatePrivilege(
-    @Param("id") privilegeId: string,
-    @Req() request: Request,
-    @Body() privilegeDto: PrivilegeDto,
-    @Res() response: Response
-  ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().updatePrivilege(privilegeId, request, privilegeDto);
-    return response.status(result.statusCode).json(result);
-  } 
+  // @Put("/:id")
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Role updated successfully." })
+  // @ApiBadRequestResponse({ description: "Bad Request" })
+  // @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
+  // @ApiConflictResponse({ description: "Privilege Already Exists" })
+  // @ApiBody({ type:PrivilegeDto })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // @ApiHeader({ name: "tenantid", })
+  // public async updatePrivilege(
+  //   @Param("id") privilegeId: string,
+  //   @Req() request: Request,
+  //   @Body() privilegeDto: PrivilegeDto,
+  //   @Res() response: Response
+  // ) {
+  //   const result = await this.privilegeAdapter.buildPrivilegeAdapter().updatePrivilege(privilegeId, request, privilegeDto);
+  //   return response.status(result.statusCode).json(result);
+  // } 
 
   @Get()
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Privilege Detail." })
   @ApiHeader({ name: "tenantid" })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiOkResponse({ description: "Privileges List" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @SerializeOptions({strategy: "excludeAll",})
   public async getAllPrivilege(
     @Req() request: Request,
@@ -105,17 +117,16 @@ export class PrivilegeController {
  
   @Delete("/:id")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role updated successfully." })
-  @ApiBody({ type:PrivilegeDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiOkResponse({ description: "Privilege Deleted" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiHeader({ name: "tenantid", })
   public async deletePrivilege(
     @Param("id") privilegeId: string,
     @Req() request: Request,
-    @Body() privilegeDto: PrivilegeDto,
     @Res() response: Response
   ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().deletePrivilege(privilegeId, request, privilegeDto);
+    const result = await this.privilegeAdapter.buildPrivilegeAdapter().deletePrivilege(privilegeId, request);
     return response.status(result.statusCode).json(result);
   } 
 

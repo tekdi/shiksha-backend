@@ -5,7 +5,7 @@ export class FieldValues {
     @Column({ type: 'text', nullable: false })
     value: string;
 
-    @PrimaryGeneratedColumn('uuid', { name: 'fieldValuesId' })
+    @PrimaryGeneratedColumn('uuid') 
     fieldValuesId: string;
 
     @Column({ type: 'uuid', nullable: false, default: () => 'gen_random_uuid()' })

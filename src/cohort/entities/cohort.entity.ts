@@ -5,11 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
+  PrimaryGeneratedColumn,
 } from "typeorm";
 
 @Entity({ name: "Cohort" })
 export class Cohort {
-  @PrimaryColumn({ type: "uuid" })
+  @PrimaryGeneratedColumn('uuid')  
   cohortId: string;
 
   @Column({ nullable: true })
@@ -22,7 +23,7 @@ export class Cohort {
   type: string;
 
   @Column({ nullable: true })
-  status: string;
+  status: boolean;
 
   @Column({ nullable: true })
   image: string;
@@ -54,16 +55,10 @@ export class Cohort {
   })
   updatedAt: Date;
 
-  @CreateDateColumn({
-    type: "timestamp with time zone",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  createdBy: Date;
+  @Column()
+  createdBy: string;
 
-  @UpdateDateColumn({
-    type: "timestamp with time zone",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedBy: Date;
+  @Column()
+  updatedBy: string;
 
 }

@@ -1,16 +1,18 @@
-// export class Privilege {}
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
 
-@Entity({ name: "Privileges" })
-export class Privilege {
+@Entity({ name: "Roles" })
+export class Role {
   @PrimaryGeneratedColumn('uuid')
-  privilegeId: string;
+  roleId: string;
 
   @Column({name:"name"})
   title: string;
 
   @Column()
-  code:string
+  code: string;
+
+  @Column('uuid')
+  tenantId: string;
 
   @CreateDateColumn({ type: "timestamp with time zone", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;
@@ -23,6 +25,5 @@ export class Privilege {
 
   @Column()
   updatedBy: string;
-
 
 }

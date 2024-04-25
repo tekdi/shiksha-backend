@@ -72,7 +72,6 @@ export class AttendanceController {
   // }
 
   @Post()
-  @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Attendance has been created successfully.",
@@ -108,42 +107,7 @@ export class AttendanceController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Put("/:id")
-  @ApiConsumes("multipart/form-data")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Attendance has been Updated successfully.",
-  })
-  @UseInterceptors(
-    FileInterceptor("image", {
-      storage: diskStorage({
-        destination: "./uploads",
-        filename: editFileName,
-      }),
-      fileFilter: imageFileFilter,
-    })
-  )
-  @ApiBody({ type: AttendanceDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @UseInterceptors(ClassSerializerInterceptor)
-  public async updateAttendace(
-    @Param("id") attendanceId: string,
-    @Req() request: Request,
-    @Body() attendanceDto: AttendanceDto,
-    @Res() response: Response,
-    @UploadedFile() image
-  ) {
-    const Imageresponse = {
-      image: image?.filename,
-    };
-    Object.assign(attendanceDto, response);
-    const result = this.attendaceAdapter.buildAttenceAdapter().updateAttendance(
-      attendanceId,
-      request,
-      attendanceDto
-    );
-    return response.status(result.statusCode).json(result);
-  }
+
 
 
   @Post("/search")
@@ -176,36 +140,15 @@ export class AttendanceController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Post("/bydate")
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  @UsePipes(ValidationPipe)
-  public async attendanceFilter(
-    @Headers() headers,
-    @Req() request: Request,
-    @Res() response: Response,
-    @Body() attendanceDateDto: AttendanceDateDto
-  ) {
-    const tenantId = headers["tenantid"];
-    const result = await this.attendaceAdapter.buildAttenceAdapter().attendanceByDate(
-      tenantId,
-      request,
-      attendanceDateDto
-    );
-    return response.status(result.statusCode).json(result);
-  }
+
 
   @Post("bulkAttendance")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({
-    description: "Attendance has been created successfully.",
-  })
+  @ApiCreatedResponse({description: "Attendance has been created successfully."})
+  @ApiBadRequestResponse({description: "Bad Request",})
+  @ApiOkResponse({description: "Attendance updated successfully"})
+  @ApiInternalServerErrorResponse({description: "Internal server error"})
   @ApiBody({ type: BulkAttendanceDTO })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   @ApiHeader({
     name: "tenantid",
   })
@@ -225,11 +168,12 @@ export class AttendanceController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Post("/report")
+  @Post("/average-report")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Attendance list." })
+  @ApiOkResponse({ description: "Average attendance Report" })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server error" })
   @ApiBody({ type: AttendanceStatsDto })
-  @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })

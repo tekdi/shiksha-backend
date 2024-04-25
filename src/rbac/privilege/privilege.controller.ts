@@ -1,5 +1,5 @@
-import { CreatePrivilegesDto, PrivilegeDto } from './dto/privilege.dto';
-import { UpdatePrivilegeDto } from './dto/update-privilege.dto';
+import { CreatePrivilegesDto, PrivilegeDto } from "./dto/privilege.dto";
+import { UpdatePrivilegeDto } from "./dto/update-privilege.dto";
 import {
   Controller,
   Get,
@@ -28,13 +28,13 @@ import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
   ApiConflictResponse,
+  ApiNotFoundResponse,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { PrivilegeAdapter } from './privilegeadapter';
-import { v4 as uuidv4 } from 'uuid';
-
+import { PrivilegeAdapter } from "./privilegeadapter";
+import { v4 as uuidv4 } from "uuid";
 
 @UseGuards(JwtAuthGuard)
 @ApiTags("rbac")
@@ -65,13 +65,15 @@ export class PrivilegeController {
   @ApiBadRequestResponse({ description: "Bad Request" })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiHeader({ name: "tenantid" })
-  @SerializeOptions({strategy: "excludeAll",})
+  @SerializeOptions({ strategy: "excludeAll" })
   public async getPrivilege(
     @Param("privilegeId") privilegeId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().getPrivilege(privilegeId, request);
+    const result = await this.privilegeAdapter
+      .buildPrivilegeAdapter()
+      .getPrivilege(privilegeId, request);
     return response.status(result.statusCode).json(result);
   }
 
@@ -81,7 +83,9 @@ export class PrivilegeController {
   @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Privilege has been created successfully." })
+  @ApiCreatedResponse({
+    description: "Privilege has been created successfully.",
+  })
   @ApiBadRequestResponse({ description: "Bad Request" })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   @ApiConflictResponse({ description: "Privilege Already Exists" })
@@ -92,11 +96,11 @@ export class PrivilegeController {
     @Body() createPrivilegesDto: CreatePrivilegesDto,
     @Res() response: Response
   ) {
-
-    const result=await this.privilegeAdapter.buildPrivilegeAdapter().createPrivilege(request.user.userId, createPrivilegesDto);
+    const result = await this.privilegeAdapter
+      .buildPrivilegeAdapter()
+      .createPrivilege(request.user.userId, createPrivilegesDto);
     return response.status(result.statusCode).json(result);
-    }
-
+  }
 
   // @Put("/:id")
   // @ApiBasicAuth("access-token")
@@ -115,7 +119,7 @@ export class PrivilegeController {
   // ) {
   //   const result = await this.privilegeAdapter.buildPrivilegeAdapter().updatePrivilege(privilegeId, request, privilegeDto);
   //   return response.status(result.statusCode).json(result);
-  // } 
+  // }
 
   // @Get()
   // @ApiBasicAuth("access-token")
@@ -135,17 +139,17 @@ export class PrivilegeController {
  
   @Delete("/:id")
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Privilege Deleted" })
-  @ApiBadRequestResponse({ description: "Bad Request" })
-  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
-  @ApiHeader({ name: "tenantid", })
-  public async deletePrivilege(
-    @Param("id") privilegeId: string,
-    @Req() request: Request,
+  @ApiHeader({ name: "tenantid" })
+  @ApiOkResponse({ description: "Role deleted successfully." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
+  public async deleteRole(
+    @Param("privilegeId") privilegeId: string,
     @Res() response: Response
   ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().deletePrivilege(privilegeId, request);
+    const result = await this.privilegeAdapter
+      .buildPrivilegeAdapter()
+      .deletePrivilege(privilegeId);
     return response.status(result.statusCode).json(result);
-  } 
-
+  }
 }

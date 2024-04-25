@@ -1,4 +1,7 @@
-import { CreatePrivilegesDto, PrivilegeDto } from "src/rbac/privilege/dto/privilege.dto";
+import {
+  CreatePrivilegesDto,
+  PrivilegeDto,
+} from "src/rbac/privilege/dto/privilege.dto";
 
 export interface IServicelocator {
     createPrivilege(loggedinUser: any, createPrivileges: CreatePrivilegesDto);
@@ -8,5 +11,7 @@ export interface IServicelocator {
     );
     // updatePrivilege(privilegeId, request, privilegeDto)
     getAllPrivilege(request)
-    deletePrivilege(privilegeId, request)
-    getPrivilegebyRoleId(tenantId, roleId,request)}
+    getPrivilegebyRoleId(tenantId, roleId,request)
+  // updatePrivilege(privilegeId, request, privilegeDto)
+  deletePrivilege(privilegeId);
+}

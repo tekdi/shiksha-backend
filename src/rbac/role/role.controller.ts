@@ -22,20 +22,21 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { CreateRolesDto, RoleDto } from "./dto/role.dto";
 import { RoleSearchDto } from "./dto/role-search.dto";
 import { Response, response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { RoleAdapter } from "./roleadapter"
-
+import { RoleAdapter } from "./roleadapter";
 
 @ApiTags("rbac")
 @Controller("rbac/roles")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
-  constructor(private readonly roleAdapter:RoleAdapter) { }
+  constructor(private readonly roleAdapter: RoleAdapter) {}
 
   //Get role
   @Get("/:id")
@@ -43,13 +44,15 @@ export class RoleController {
   @ApiOkResponse({ description: "Role Detail." })
   @ApiHeader({ name: "tenantid" })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({strategy: "excludeAll",})
+  @SerializeOptions({ strategy: "excludeAll" })
   public async getRole(
     @Param("id") roleId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().getRole(roleId, request);
+    const result = await this.roleAdapter
+      .buildRbacAdapter()
+      .getRole(roleId, request);
     return response.status(result.statusCode).json(result);
   }
 
@@ -66,7 +69,9 @@ export class RoleController {
     @Body() createRolesDto: CreateRolesDto,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto);
+    const result = await this.roleAdapter
+      .buildRbacAdapter()
+      .createRole(request, createRolesDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -76,14 +81,16 @@ export class RoleController {
   @ApiCreatedResponse({ description: "Role updated successfully." })
   @ApiBody({ type: RoleDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiHeader({ name: "tenantid", })
+  @ApiHeader({ name: "tenantid" })
   public async updateRole(
     @Param("id") roleId: string,
     @Req() request: Request,
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto);
+    const result = await this.roleAdapter
+      .buildRbacAdapter()
+      .updateRole(roleId, request, roleDto);
     return response.status(result.statusCode).json(result);
   }
 
@@ -94,7 +101,7 @@ export class RoleController {
   @ApiBody({ type: RoleSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @UsePipes(ValidationPipe)
-  @SerializeOptions({ strategy: "excludeAll", })
+  @SerializeOptions({ strategy: "excludeAll" })
   @ApiHeader({ name: "tenantid" })
   public async searchRole(
     @Headers() headers,
@@ -103,17 +110,21 @@ export class RoleController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.roleAdapter.buildRbacAdapter().searchRole(tenantid,request,roleSearchDto);
+    const result = await this.roleAdapter
+      .buildRbacAdapter()
+      .searchRole(tenantid, request, roleSearchDto);
     return response.status(result.statusCode).json(result);
   }
 
   //delete role
-  @Delete("/:id")
+  @Delete("/:roleId")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role deleted successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiHeader({ name: "tenantid" })
+  @ApiOkResponse({ description: "Role deleted successfully." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
-    @Param("id") roleId: string,
+    @Param("roleId") roleId: string,
     @Res() response: Response
   ) {
     const result = await this.roleAdapter.buildRbacAdapter().deleteRole(roleId);

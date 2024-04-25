@@ -12,10 +12,16 @@ import { PostgresPrivilegeService } from "src/adapters/postgres/rbac/privilege-a
 import { HasuraRoleService } from "src/adapters/hasura/rbac/role.adapter";
 import { Role } from "../role/entities/role.entity";
 import { RolePrivilegeMapping } from "../assign-privilege/entities/assign-privilege.entity";
+import { UserRoleMapping } from "../assign-role/entities/assign-role.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Privilege, Role, RolePrivilegeMapping]),
+    TypeOrmModule.forFeature([
+      Privilege,
+      Role,
+      RolePrivilegeMapping,
+      UserRoleMapping,
+    ]),
     HttpModule,
     PostgresModule,
     HasuraModule,

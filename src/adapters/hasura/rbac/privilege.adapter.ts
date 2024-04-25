@@ -12,5 +12,6 @@ export class HasuraPrivilegeService {
   // public async updatePrivilege(privilegeId, request, privilegeDto){}
   public async getAllPrivilege(request){}
   public async deletePrivilege(privilegeId, request){}
+  public async getPrivilegebyRoleId(tenantId, roleId,request){}
 
 }

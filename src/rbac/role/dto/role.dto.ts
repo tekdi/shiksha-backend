@@ -7,11 +7,7 @@ export class RoleDto {
   @Expose()
   roleId: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The name of the role",
-    default: "",
-  })
+ @ApiProperty()
   @Expose()
   @IsNotEmpty()
   title: string;
@@ -51,6 +47,7 @@ export class CreateRolesDto {
   tenantId: string;
 
 
+  @ApiProperty( {type: [RoleDto]} )
   @ValidateNested({ each: true })
   @Type(() => RoleDto)
   roles: RoleDto[];

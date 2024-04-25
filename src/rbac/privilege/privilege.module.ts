@@ -11,6 +11,7 @@ import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';
 import { PostgresPrivilegeService } from 'src/adapters/postgres/rbac/privilege-adapter';
 import { HasuraRoleService } from 'src/adapters/hasura/rbac/role.adapter';
 import { Role } from '../role/entities/role.entity';
+import { Repository } from 'typeorm';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { Role } from '../role/entities/role.entity';
     HasuraModule
   ],
   controllers: [PrivilegeController],
-  providers: [PrivilegeAdapter,HasuraPrivilegeService,PostgresPrivilegeService,HasuraRoleService,PostgresRoleService]
+  providers: [PrivilegeAdapter,HasuraPrivilegeService,PostgresPrivilegeService,HasuraRoleService,PostgresRoleService,Repository]
 })
 export class PrivilegeModule {}
 

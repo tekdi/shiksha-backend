@@ -9,4 +9,4 @@ export interface IServicelocator {
     // updatePrivilege(privilegeId, request, privilegeDto)
     getAllPrivilege(request)
     deletePrivilege(privilegeId, request)
-}
+    getPrivilegebyRoleId(tenantId, roleId,request)}

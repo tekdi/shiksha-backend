@@ -15,6 +15,7 @@ import {
   Headers,
   Delete,
   UseGuards,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -37,9 +38,26 @@ import { v4 as uuidv4 } from 'uuid';
 
 @UseGuards(JwtAuthGuard)
 @ApiTags("rbac")
-@Controller('privilege')
+@Controller('rbac/privileges')
 export class PrivilegeController {
   constructor(private readonly privilegeAdapter: PrivilegeAdapter) {}
+
+  @Get()
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Privilege Detail." })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
+  @SerializeOptions({strategy: "excludeAll",})
+  public async getPrivilegebyRoleId(
+    @Query("tenantId") tenantId: string,
+    @Query("roleId") roleId: string,
+    @Req() request: Request,
+    @Res() response: Response
+  ) {
+    const result = await this.privilegeAdapter.buildPrivilegeAdapter().getPrivilegebyRoleId(tenantId, roleId,request);
+    return response.status(result.statusCode).json(result);
+  }
+
 
   @Get("/:privilegeId")
   @ApiBasicAuth("access-token")
@@ -60,7 +78,7 @@ export class PrivilegeController {
 
 
 
-  @Post()
+  @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Privilege has been created successfully." })
@@ -99,21 +117,21 @@ export class PrivilegeController {
   //   return response.status(result.statusCode).json(result);
   // } 
 
-  @Get()
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Privilege Detail." })
-  @ApiHeader({ name: "tenantid" })
-  @ApiOkResponse({ description: "Privileges List" })
-  @ApiBadRequestResponse({ description: "Bad Request" })
-  @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
-  @SerializeOptions({strategy: "excludeAll",})
-  public async getAllPrivilege(
-    @Req() request: Request,
-    @Res() response: Response
-  ) {
-    const result = await this.privilegeAdapter.buildPrivilegeAdapter().getAllPrivilege(request);
-    return response.status(result.statusCode).json(result);
-  }
+  // @Get()
+  // @ApiBasicAuth("access-token")
+  // @ApiOkResponse({ description: "Privilege Detail." })
+  // @ApiHeader({ name: "tenantid" })
+  // @ApiOkResponse({ description: "Privileges List" })
+  // @ApiBadRequestResponse({ description: "Bad Request" })
+  // @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
+  // @SerializeOptions({strategy: "excludeAll",})
+  // public async getAllPrivilege(
+  //   @Req() request: Request,
+  //   @Res() response: Response
+  // ) {
+  //   const result = await this.privilegeAdapter.buildPrivilegeAdapter().getAllPrivilege(request);
+  //   return response.status(result.statusCode).json(result);
+  // }
  
   @Delete("/:id")
   @ApiBasicAuth("access-token")

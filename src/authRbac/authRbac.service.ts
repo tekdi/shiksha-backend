@@ -1,6 +1,8 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
+import { UserAdapter } from "src/user/useradapter";
 // import { UsersService } from '../users/users.service';
 
 @Injectable()
@@ -11,7 +13,9 @@ export class AuthRbacService {
   jwt_secret: any;
   constructor(
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private readonly userAdapter: UserAdapter,
+    private readonly postgresRoleService: PostgresRoleService
   ) {
     this.issuer = this.configService.get<string>("ISSUER");
     this.audience = this.configService.get<string>("AUDIENCE");
@@ -28,39 +32,52 @@ export class AuthRbacService {
     return token;
   }
 
-  async signInRbac(userId: string): Promise<any> {
-    console.log(userId, "user Id");
-    const issuer = this.issuer;
-    const audience = this.audience;
-    const user = {
-      username: "admin",
-      userId: "1",
-      email: "admin@yopmail.com",
-      name: "admin",
-      roles: ["admin", "teacher"],
-      privileges: ["user.create", "attendance.create"],
-      tenantId: "ef99949b-7f3a-4a5f-806a-e67e683e38f3",
-    };
-    // if (user?.password !== pass) {
-    //   throw new UnauthorizedException();
-    // }
-    // TODO: Generate a JWT and return it here
-    // instead of the user object
+  async signInRbac(username: string): Promise<any> {
+    let userData = await this.userAdapter
+      .buildUserAdapter()
+      .findUserDetails(null, username);
 
-    if (!user) {
+    // console.log(userData, "user Id");
+
+    if (!userData) {
       throw new UnauthorizedException();
     }
 
+    userData["roles"] = await this.postgresRoleService.findUserRoleData(
+      userData?.userId,
+      userData?.tenantId
+    );
+
+    userData["priviledges"] = await this.getPrivileges(userData.roles);
+
+    // console.log(userData, "roleDta");
+
+    const issuer = this.issuer;
+    const audience = this.audience;
+
     const payload = {
-      user,
+      userData,
       iss: issuer,
       aud: audience,
     };
 
-    // console.log(payload, "auth -payload");
-
     return {
       access_token: await this.generateToken(payload),
     };
+  }
+
+  async getPrivileges(userRoleData) {
+    let privileges = [];
+    for (let data of userRoleData) {
+      const result = await this.postgresRoleService.findPrivilegeByRoleId(
+        data.roleid
+      );
+      privileges = result.map((privilege) => ({
+        privilegeId: privilege.privilegeid,
+        title: privilege.name,
+        code: privilege.code,
+      }));
+    }
+    return privileges;
   }
 }

@@ -24,6 +24,6 @@ export class AuthRbacController {
   @UseGuards(JwtAuthGuard)
   signInRbac(@Req() req) {
     // console.log(req.user, "user");
-    return this.authService.signInRbac(req.user.userId);
+    return this.authService.signInRbac(req.user.username);
   }
 }

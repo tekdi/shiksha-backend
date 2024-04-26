@@ -8,6 +8,6 @@ export interface IServicelocatorRbac {
     );
     updateRole(id?: string, request?: any, userDto?: any);
     createRole(request: any, createRolesDto: CreateRolesDto);
-    searchRole(tenantid, request: any, roleSearchDto: RoleSearchDto);
+    searchRole(roleSearchDto: RoleSearchDto);
     deleteRole(roleId);
 }

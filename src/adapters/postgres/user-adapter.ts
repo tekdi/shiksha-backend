@@ -85,7 +85,6 @@ export class PostgresUserService {
     return results;
   }
 
-
   async getUsersDetailsById(userData: Record<string, string>, response: any) {
     try {
       if (!isUUID(userData.userId)) {
@@ -343,6 +342,7 @@ export class PostgresUserService {
       const keycloakResponse = await getKeycloakAdminToken();
       const token = keycloakResponse.data.access_token;
       let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
       if (checkUserinKeyCloakandDb) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.FORBIDDEN,
@@ -365,7 +365,7 @@ export class PostgresUserService {
       let field_value_array = userCreateDto.fieldValues?.split("|");
       let fieldData = {};
       if (result && field_value_array?.length > 0) {
-        let userId = result.userId;
+        let userId = result?.userId;
         for (let i = 0; i < field_value_array?.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           fieldData = {

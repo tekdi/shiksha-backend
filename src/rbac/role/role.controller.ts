@@ -88,12 +88,12 @@ export class RoleController {
   }
 
   // search Role
-  @Post("/search")
+  @Post("/list-roles")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role List." })
   @ApiBody({ type: RoleSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @UsePipes(ValidationPipe)
+  // @UsePipes(ValidationPipe)
   @SerializeOptions({ strategy: "excludeAll", })
   @ApiHeader({ name: "tenantid" })
   public async searchRole(
@@ -102,8 +102,8 @@ export class RoleController {
     @Body() roleSearchDto: RoleSearchDto,
     @Res() response: Response
   ) {
-    let tenantid = headers["tenantid"];
-    const result = await this.roleAdapter.buildRbacAdapter().searchRole(tenantid,request,roleSearchDto);
+    // let tenantid = headers["tenantid"];
+    const result = await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto);
     return response.status(result.statusCode).json(result);
   }
 

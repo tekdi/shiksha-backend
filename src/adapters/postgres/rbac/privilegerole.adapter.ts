@@ -1,6 +1,6 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import {HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CreatePrivilegeRoleDto } from 'src/rbac/assign-privilege/dto/create-assign-privilege.dto';
@@ -15,23 +15,32 @@ export class PostgresAssignPrivilegeService {
    ){}
    public async createPrivilegeRole(request: Request,createPrivilegeRoleDto:CreatePrivilegeRoleDto){
     try {
-        let findExistingPrivilege = await this.rolePrivilegeMappingRepository.findOne({
-            where:{
-                privilegeId:createPrivilegeRoleDto?.privilegeId,
-                roleId:createPrivilegeRoleDto?.roleId
-            }
-        })
-        if(findExistingPrivilege){
-            return new SuccessResponse({
-                statusCode: HttpStatus.FORBIDDEN,
-                message: "Privilege Already Assigned to This Role.",
-            });
+        let result ;
+        if (createPrivilegeRoleDto.deleteOld) {
+            await this.deleteByRoleId(createPrivilegeRoleDto.roleId);
         }
-        let data = await this.rolePrivilegeMappingRepository.save(createPrivilegeRoleDto)
+        const privilegeRoles = createPrivilegeRoleDto.privilegeId.map(privilegeId => ({
+            roleId: createPrivilegeRoleDto.roleId,
+            privilegeId
+        }));
+        const existingPrivileges = await this.rolePrivilegeMappingRepository.find({
+            where: {
+                roleId: createPrivilegeRoleDto.roleId,
+                privilegeId: In(createPrivilegeRoleDto.privilegeId)
+            }
+        });
+
+        const newPrivileges = privilegeRoles.filter(privilegeRole => {
+            return !existingPrivileges.some(existing => existing.privilegeId === privilegeRole.privilegeId);
+        });
+
+        for (let data of newPrivileges) {
+            result = await this.rolePrivilegeMappingRepository.save(data);
+        }
         return new SuccessResponse({
             statusCode: HttpStatus.CREATED,
-            message: "Ok.",
-            data: data,
+            message: "Privileges assigned successfully.",
+            data: result,
         });
     } catch (error) {
         if(error.code === '23503'){
@@ -47,6 +56,16 @@ export class PostgresAssignPrivilegeService {
     }
    }
 
+   public async deleteByRoleId(roleId: string) {
+    try {
+        await this.rolePrivilegeMappingRepository.delete({ roleId });
+    } catch (error) {
+        throw error;
+    }
+}
+//    public async createPrivilegeRole(){
+
+//    }
    public async getPrivilegeRole(userId:string,request: Request){
     try {
         if (!isUUID(userId)) {
@@ -76,32 +95,6 @@ export class PostgresAssignPrivilegeService {
     }
     
    } 
-
-   public async deletePrivilegeRole(userId){
-    try {
-        let result = await this.checkExistingRole(userId);
-        if(!result){
-            return new SuccessResponse({
-                statusCode: HttpStatus.NOT_FOUND,
-                message: 'No Role assigned to user',
-                data: result,
-            });
-        }
-        let response =  await this.rolePrivilegeMappingRepository.delete(userId)
-        return new SuccessResponse({
-            statusCode: HttpStatus.OK,
-            message: 'Role deleted successfully.',
-            data: {
-                rowCount: response.affected,
-            }
-        });
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: e,
-        });
-    }
-   }
 
    async checkExistingRole(privilegeId){
     const result= await this.rolePrivilegeMappingRepository.findOne({

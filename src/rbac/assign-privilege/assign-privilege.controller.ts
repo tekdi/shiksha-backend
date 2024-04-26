@@ -39,16 +39,16 @@ export class AssignPrivilegeController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Delete("/:id")
-  @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Assigend Privililege has been deleted successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  public async deletePrivilegeRole(
-    @Param("id") userId: string,
-    @Res() response: Response
-  ) {
-    const result = await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().deletePrivilegeRole(userId);
-    return response.status(result.statusCode).json(result);
-  }
+  // @Delete("/:id")
+  // @ApiBasicAuth("access-token")
+  // @ApiCreatedResponse({ description: "Assigend Privililege has been deleted successfully." })
+  // @ApiForbiddenResponse({ description: "Forbidden" })
+  // public async deletePrivilegeRole(
+  //   @Param("id") userId: string,
+  //   @Res() response: Response
+  // ) {
+  //   const result = await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().deletePrivilegeRole(userId);
+  //   return response.status(result.statusCode).json(result);
+  // }
   
 }

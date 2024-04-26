@@ -31,7 +31,6 @@ import {
   ApiBadRequestResponse,
 } from "@nestjs/swagger";
 
-import { UserDto } from "./dto/user.dto";
 import { UserSearchDto } from "./dto/user-search.dto";
 import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
@@ -41,6 +40,7 @@ import { Response } from "express";
 import { isUUID } from "class-validator";
 import { SuccessResponse } from "src/success-response";
 @ApiTags("User")
+@UseGuards(JwtAuthGuard)
 @Controller("users")
 export class UserController {
   constructor(

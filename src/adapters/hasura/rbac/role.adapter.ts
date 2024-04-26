@@ -10,5 +10,5 @@ export class HasuraRoleService {
   public async createRole(request: any, createRolesDto: CreateRolesDto){}
   public async deleteRole(roleId: string) {}
   public async updateRole(roleId: string, request: any, roleDto: RoleDto) {}
-  public async searchRole(tenantid: string, request: any, roleSearchDto: RoleSearchDto) {}
+  public async searchRole(roleSearchDto: RoleSearchDto) {}
 }

@@ -47,7 +47,7 @@ import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
 @Controller("cohorts")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
@@ -57,7 +57,7 @@ export class CohortController {
   @ApiOkResponse({ description: "Cohort detais Fetched Succcessfully" })
   @ApiNotFoundResponse({ description: "Cohort Not Found" })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
-  @ApiBadRequestResponse({description:"Bad Request"})
+  @ApiBadRequestResponse({ description: "Bad Request" })
   @SerializeOptions({ strategy: "excludeAll", })
   @ApiHeader({ name: "tenantid", })
   public async getCohortsDetails(
@@ -78,7 +78,7 @@ export class CohortController {
   @ApiCreatedResponse({ description: "Cohort has been created successfully." })
   @ApiBadRequestResponse({ description: "Bad request." })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
-  @ApiConflictResponse({description:"Cohort already exists."})
+  @ApiConflictResponse({ description: "Cohort already exists." })
 
   @UseInterceptors(
     FileInterceptor("image", {
@@ -101,15 +101,6 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
-    // Define expected fields
-    const expectedFields = ['programId', 'parentId', 'name', 'type', 'fieldValues' ]; 
-
-    // Check if any unexpected fields are present in the request body
-    const unexpectedFields = Object.keys(cohortCreateDto).filter(field => !expectedFields.includes(field));
-    if (unexpectedFields.length > 0) {
-      throw new BadRequestException(`Unexpected fields found: ${unexpectedFields.join(', ')}`);
-    }
-            
     let tenantid = headers["tenantid"];
     const payload = {
       image: image?.filename,
@@ -180,11 +171,6 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
-    const imgresponse = {
-      image: image?.filename,
-    };
-    Object.assign(cohortUpdateDto, imgresponse);
-
     const result = await this.cohortAdapter.buildCohortAdapter().updateCohort(
       cohortId,
       request,

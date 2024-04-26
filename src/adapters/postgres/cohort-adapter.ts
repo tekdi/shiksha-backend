@@ -37,6 +37,8 @@ export class PostgresCohortService {
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(CohortMembers)
     private cohortMembersRepository: Repository<CohortMembers>,
+    @InjectRepository(FieldValues)
+    private fieldValuesRepository: Repository<FieldValues>,
     @InjectRepository(Fields)
     private fieldsRepository: Repository<Fields>,
     private fieldsService: PostgresFieldsService,
@@ -230,7 +232,7 @@ export class PostgresCohortService {
         } else {
           return new SuccessResponse({
             statusCode: HttpStatus.CONFLICT,
-            message: "Cohort Name already exists.",
+            message: "Cohort name already exists.",
             data: existData,
           });
         }
@@ -284,6 +286,8 @@ export class PostgresCohortService {
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortUpdateDto.updatedBy = decoded?.sub
+      cohortUpdateDto.createdBy = decoded?.sub
+      cohortUpdateDto.status = true;
 
 
       if (!isUUID(cohortId)) {
@@ -296,32 +300,34 @@ export class PostgresCohortService {
       const checkData = await this.checkAuthAndValidData(cohortId);
 
       if (checkData === true) {
-        const filteredDto = Object.entries(cohortUpdateDto)
-          .filter(([_, value]) => value !== undefined && value !== '')
-          .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+        let updateData = {};
+        let fieldValueData = {};
 
-        if (Object.keys(filteredDto).length === 0) {
-          // If there are no properties to update, return success
-          return new SuccessResponse({
-            statusCode: HttpStatus.OK,
-            message: "No fields to update.",
-            data: {
-              rowCount: 0,
+        // Iterate over all keys in cohortUpdateDto
+        for (let key in cohortUpdateDto) {
+          if (cohortUpdateDto.hasOwnProperty(key) && cohortUpdateDto[key] !== null) {
+            if (key !== 'fieldValues') {
+              updateData[key] = cohortUpdateDto[key];
+            } else {
+              fieldValueData[key] = cohortUpdateDto[key];
             }
-          });
+          }
         }
 
-        const response = await this.cohortRepository.update(cohortId, cohortUpdateDto);
+        const response = await this.cohortRepository.update(cohortId, updateData);
 
-        if (cohortUpdateDto.fieldValues) {
+
+        if (fieldValueData['fieldValues']) {
+
           let field_value_array = cohortUpdateDto.fieldValues.split("|");
           if (field_value_array.length > 0) {
-            let field_values = [];
-            for (let i = 0; i < field_value_array.length; i++) {
 
+            for (let i = 0; i < field_value_array.length; i++) {
               let fieldValues = field_value_array[i].split(":");
               let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
               try {
+                console.log("hii");
+                
                 const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
                 const rowid = fieldVauesRowId.fieldValuesId;
 
@@ -331,6 +337,8 @@ export class PostgresCohortService {
                 };
                 await this.fieldsService.updateFieldValues(rowid, fieldValueUpdateDto);
               } catch {
+                console.log("hii1");
+
                 let fieldValueDto: FieldValuesDto = {
                   value: fieldValues[1] ? fieldValues[1].trim() : "",
                   itemId: cohortId,
@@ -340,6 +348,8 @@ export class PostgresCohortService {
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                 };
+                // console.log(fieldValueDto);
+                
                 await this.fieldsService.createFieldValues(request, fieldValueDto);
               }
             }
@@ -348,7 +358,7 @@ export class PostgresCohortService {
 
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
-          message: "Ok.",
+          message: "Cohort updated successfully.",
           data: {
             rowCount: response.affected,
           }
@@ -488,6 +498,10 @@ export class PostgresCohortService {
     request: any
   ) {
     try {
+      const decoded: any = jwt_decode(request.headers.authorization);
+      // const createdBy = decoded?.sub;
+      const updatedBy = decoded?.sub
+
       if (!isUUID(cohortId)) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,
@@ -495,14 +509,22 @@ export class PostgresCohortService {
         });
       }
       const checkData = await this.checkAuthAndValidData(cohortId);
-      const updatedBy = request.user.userId;
+
       if (checkData === true) {
         let query = `UPDATE public."Cohort"
         SET "status" = false,
         "updatedBy" = '${updatedBy}'
         WHERE "cohortId" = $1`;
+        await this.cohortRepository.query(query, [cohortId]);
 
-        const results = await this.cohortRepository.query(query, [cohortId]);
+        await this.cohortMembersRepository.delete(
+          {cohortId:cohortId}
+        );
+        await this.fieldValuesRepository.delete(
+          {itemId:cohortId}
+        );
+        
+
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: "Cohort Deleted Successfully.",

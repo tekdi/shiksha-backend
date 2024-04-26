@@ -8,10 +8,12 @@ import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';
 import { HasuraRoleService } from 'src/adapters/hasura/rbac/role.adapter';
 import { HttpModule } from '@nestjs/axios';
 import { RoleAdapter } from './roleadapter';
+import { RolePrivilegeMapping } from '../assign-privilege/entities/assign-privilege.entity';
+import { UserRoleMapping } from '../assign-role/entities/assign-role.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Role]),
+    TypeOrmModule.forFeature([Role, RolePrivilegeMapping, UserRoleMapping]),
     HttpModule,
     PostgresModule,
     HasuraModule

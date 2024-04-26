@@ -1,6 +1,6 @@
-import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import {HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CreatePrivilegeRoleDto } from 'src/rbac/assign-privilege/dto/create-assign-privilege.dto';
@@ -23,8 +23,19 @@ export class PostgresAssignPrivilegeService {
             roleId: createPrivilegeRoleDto.roleId,
             privilegeId
         }));
-        for(let data of privilegeRoles) {
-            result = await this.rolePrivilegeMappingRepository.save(data)
+        const existingPrivileges = await this.rolePrivilegeMappingRepository.find({
+            where: {
+                roleId: createPrivilegeRoleDto.roleId,
+                privilegeId: In(createPrivilegeRoleDto.privilegeId)
+            }
+        });
+
+        const newPrivileges = privilegeRoles.filter(privilegeRole => {
+            return !existingPrivileges.some(existing => existing.privilegeId === privilegeRole.privilegeId);
+        });
+
+        for (let data of newPrivileges) {
+            result = await this.rolePrivilegeMappingRepository.save(data);
         }
         return new SuccessResponse({
             statusCode: HttpStatus.CREATED,

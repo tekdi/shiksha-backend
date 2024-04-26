@@ -1,16 +1,27 @@
-import { Controller, Get, Param, Res, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  UseGuards,
+  Headers,
+} from "@nestjs/common";
 import { AppService } from "./app.service";
 import { JwtAuthGuard } from "./common/guards/keycloak.guard";
-import { ApiBasicAuth } from "@nestjs/swagger";
+import { ApiBasicAuth, ApiHeader } from "@nestjs/swagger";
+import { RbacAuthGuard } from "./common/guards/rbac.guard";
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(RbacAuthGuard, JwtAuthGuard)
+  @ApiHeader({
+    name: "rbac_token",
+  })
   @ApiBasicAuth("access-token")
-  getHello(): object {
+  getHello(@Headers() headers): object {
     return this.appService.getHello();
   }
 

@@ -11,6 +11,7 @@ import { ConfigurationModule } from "./configs/configuration.module";
 // In use for Shiksha 2.0
 import { DatabaseModule } from "./common/database.module";
 import { AuthModule } from "./auth/auth.module";
+import { AuthRbacModule } from "./authRbac/authRbac.module";
 import { CohortModule } from "./cohort/cohort.module";
 import { CohortMembersModule } from "./cohortMembers/cohortMembers.module";
 import { FieldsModule } from "./fields/fields.module";
@@ -31,6 +32,7 @@ import { RbacModule } from "./rbac/rbac.module";
     CohortMembersModule,
     FieldsModule,
     AuthModule,
+    AuthRbacModule,
     DatabaseModule,
   ],
   controllers: [AppController],

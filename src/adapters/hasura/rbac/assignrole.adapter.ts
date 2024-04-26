@@ -8,5 +8,5 @@ export class HasuraAssignRoleService {
   constructor(private httpService: HttpService) {}
   public async createAssignRole(request: any, createAssignRoleDto:CreateAssignRoleDto){};
   public async getAssignedRole(request: any, createAssignRoleDto:CreateAssignRoleDto){};
-  public async deleteAssignedRole(userId){};
+  public async deleteAssignedRole(deleteAssignRoleDto){};
 }

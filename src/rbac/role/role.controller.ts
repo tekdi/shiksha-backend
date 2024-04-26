@@ -22,6 +22,8 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
 } from "@nestjs/swagger";
 import { Request } from "@nestjs/common";
 import { CreateRolesDto, RoleDto } from "./dto/role.dto";
@@ -108,12 +110,14 @@ export class RoleController {
   }
 
   //delete role
-  @Delete("/:id")
+  @Delete("/:roleId")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Role deleted successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiHeader({ name: "tenantid" })
+  @ApiOkResponse({ description: "Role deleted successfully." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
-    @Param("id") roleId: string,
+    @Param("roleId") roleId: string,
     @Res() response: Response
   ) {
     const result = await this.roleAdapter.buildRbacAdapter().deleteRole(roleId);

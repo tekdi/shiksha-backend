@@ -25,64 +25,64 @@ export class PostgresRoleService {
     private readonly roleprivilegeMappingRepository: Repository<RolePrivilegeMapping>
   ) {}
   public async createRole(request: any, createRolesDto: CreateRolesDto) {
-    const tenant = await this.checkTenantID(createRolesDto.tenantId);
+
+    const tenant = await this.checkTenantID(createRolesDto.tenantId)
     if (!tenant) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.BAD_REQUEST,
-        errorMessage: "Please enter valid tenantId",
-      });
+        return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorMessage: "Please enter valid tenantId",
+        });
     }
     const roles = [];
-    const errors = [];
+    const errors = []
     try {
-      // Convert role name to lowercase
-      for (const roleDto of createRolesDto.roles) {
-        const tenantId = createRolesDto.tenantId;
-        const code = roleDto.title.toLowerCase().replace(/\s+/g, "_");
 
-        // Check if role name already exists
-        const existingRole = await this.roleRepository.findOne({
-          where: { code },
-        });
-        if (existingRole) {
-          errors.push({
-            errorMessage: `Role with the code '${code}' already exists.`,
-          });
-          continue;
+        // Convert role name to lowercase
+        for (const roleDto of createRolesDto.roles) {
+            const tenantId = createRolesDto.tenantId;
+            const code = roleDto.title.toLowerCase().replace(/\s+/g, '_');
+
+            // Check if role name already exists
+            const existingRole = await this.roleRepository.findOne({ where: { code:code,tenantId:tenantId } })
+            if (existingRole) {
+                errors.push({
+                    errorMessage: `Combination of this tenantId and the code '${code}' already exists.`,
+                });
+                continue;
+            }
+
+            const newRoleDto = new RoleDto({
+                ...roleDto,
+                code,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdBy: request.user.userId, // Assuming you have a user object in the request
+                updatedBy: request.user.userId,
+                tenantId, // Add the tenantId to the RoleDto
+            });
+            // Convert roleDto to lowercase
+            // const response = await this.roleRepository.save(roleDto);
+            const roleEntity = this.roleRepository.create(newRoleDto);
+
+            // Save the role entity to the database
+            const response = await this.roleRepository.save(roleEntity);
+            roles.push(new RolesResponseDto(response));
         }
-
-        const newRoleDto = new RoleDto({
-          ...roleDto,
-          code,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: request.user.userId, // Assuming you have a user object in the request
-          updatedBy: request.user.userId,
-          tenantId, // Add the tenantId to the RoleDto
-        });
-        // Convert roleDto to lowercase
-        // const response = await this.roleRepository.save(roleDto);
-        const roleEntity = this.roleRepository.create(newRoleDto);
-
-        // Save the role entity to the database
-        const response = await this.roleRepository.save(roleEntity);
-        roles.push(new RolesResponseDto(response));
-      }
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
+        return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            errorMessage: e,
+        });
     }
 
     return {
-      statusCode: HttpStatus.OK,
-      successCount: roles.length,
-      errorCount: errors.length,
-      roles,
-      errors,
+        statusCode: HttpStatus.OK,
+        successCount: roles.length,
+        errorCount: errors.length,
+        roles,
+        errors,
     };
-  }
+}
 
   public async getRole(roleId: string, request: any) {
     try {

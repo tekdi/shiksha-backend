@@ -1,6 +1,6 @@
 import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CreateAssignRoleDto, ResponseAssignRoleDto } from 'src/rbac/assign-role/dto/create-assign-role.dto';
@@ -9,6 +9,7 @@ import { Role } from "src/rbac/role/entities/role.entity";
 import { IsAlpha, IsUUID, isUUID } from 'class-validator';
 import { executionAsyncResource } from 'async_hooks';
 import jwt_decode from "jwt-decode";
+import { DeleteAssignRoleDto } from 'src/rbac/assign-role/dto/delete-assign-role.dto';
 
 
 @Injectable()
@@ -133,31 +134,68 @@ export class PostgresAssignroleService {
 
     }
 
-    public async deleteAssignedRole(userId) {
+    public async deleteAssignedRole(deleteAssignRoleDto: DeleteAssignRoleDto) {
         try {
-            let result = await this.checkExistingRole(userId);
-            if (!result) {
-                return new SuccessResponse({
-                    statusCode: HttpStatus.NOT_FOUND,
-                    message: 'No Role assigned to user',
-                    data: result,
-                });
-            }
-            let response = await this.userRoleMappingRepository.delete(userId)
-            return new SuccessResponse({
-                statusCode: HttpStatus.OK,
-                message: 'Role deleted successfully.',
-                data: {
-                    rowCount: response.affected,
-                }
-            });
-        } catch (e) {
+          // Validate userId format
+          if (!isUUID(deleteAssignRoleDto.userId)) {
             return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: e,
+              statusCode: HttpStatus.BAD_REQUEST,
+              errorMessage: "Invalid userId format. Please provide a valid UUID.",
             });
+          }
+          // Validate roleId format
+          for (const roleId of deleteAssignRoleDto.roleId) {
+            if (!isUUID(roleId)) {
+              return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.BAD_REQUEST,
+                errorMessage: "Invalid roleId format. Please provide valid UUIDs.",
+              });
+            }
+          }
+          // Check if the userId exists in userRoleMapping table
+          const userExists = await this.userRoleMappingRepository.findOne({
+            where: { userId: deleteAssignRoleDto.userId },
+          });
+          if (!userExists) {
+            return new ErrorResponseTypeOrm({
+              statusCode: HttpStatus.BAD_REQUEST,
+              errorMessage: "User not found in userRoleMapping table",
+            });
+          }
+          // Check if all roleId(s) exist
+          const roleExists = await this.userRoleMappingRepository.find({
+            where: {
+              userId: deleteAssignRoleDto.userId,
+              roleId: In(deleteAssignRoleDto.roleId),
+            },
+          });
+          // If any roleId(s) are missing, throw an error
+          if (roleExists.length !== deleteAssignRoleDto.roleId.length) {
+            // throw new Error("One or more roles not found for the user");
+            return new ErrorResponseTypeOrm({
+              statusCode: HttpStatus.BAD_REQUEST,
+              errorMessage: "Roles not found for the user",
+            });
+          }
+          // If all validations pass, proceed with deletion
+          const response = await this.userRoleMappingRepository.delete({
+            userId: deleteAssignRoleDto.userId,
+            roleId: In(deleteAssignRoleDto.roleId),
+          });
+          return new SuccessResponse({
+            statusCode: HttpStatus.OK,
+            message: "Roles deleted successfully.",
+            data: {
+              rowCount: response.affected,
+            },
+          });
+        } catch (e) {
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            errorMessage: e.message || "Internal server error",
+          });
         }
-    }
+      }
 
     //    async checkAndAddUserRole(data){
     //     let existingUser = await this.checkExistingRole(data.userId) ;

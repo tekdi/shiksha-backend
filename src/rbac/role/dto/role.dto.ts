@@ -51,6 +51,7 @@ export class CreateRolesDto {
   tenantId: string;
 
 
+  @ApiProperty( {type: [RoleDto]} )
   @ValidateNested({ each: true })
   @Type(() => RoleDto)
   roles: RoleDto[];

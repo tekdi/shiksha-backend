@@ -1,17 +1,18 @@
-import { Module } from "@nestjs/common";
-import { PrivilegeController } from "./privilege.controller";
-import { Privilege } from "./entities/privilege.entity";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { HttpModule } from "@nestjs/axios";
-import { PostgresModule } from "src/adapters/postgres/potsgres-module";
-import { HasuraModule } from "src/adapters/hasura/hasura.module";
-import { PrivilegeAdapter } from "./privilegeadapter";
-import { HasuraPrivilegeService } from "src/adapters/hasura/rbac/privilege.adapter";
-import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
-import { PostgresPrivilegeService } from "src/adapters/postgres/rbac/privilege-adapter";
-import { HasuraRoleService } from "src/adapters/hasura/rbac/role.adapter";
-import { Role } from "../role/entities/role.entity";
-import { RolePrivilegeMapping } from "../assign-privilege/entities/assign-privilege.entity";
+import { Module } from '@nestjs/common';
+import { PrivilegeController } from './privilege.controller';
+import { Privilege } from './entities/privilege.entity';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
+import { PostgresModule } from 'src/adapters/postgres/potsgres-module';
+import { HasuraModule } from 'src/adapters/hasura/hasura.module';
+import { PrivilegeAdapter } from './privilegeadapter';
+import { HasuraPrivilegeService } from 'src/adapters/hasura/rbac/privilege.adapter';
+import { PostgresRoleService } from 'src/adapters/postgres/rbac/role-adapter';
+import { PostgresPrivilegeService } from 'src/adapters/postgres/rbac/privilege-adapter';
+import { HasuraRoleService } from 'src/adapters/hasura/rbac/role.adapter';
+import { Role } from '../role/entities/role.entity';
+import { Repository } from 'typeorm';
+import { RolePrivilegeMapping } from '../assign-privilege/entities/assign-privilege.entity';
 
 @Module({
   imports: [
@@ -21,12 +22,6 @@ import { RolePrivilegeMapping } from "../assign-privilege/entities/assign-privil
     HasuraModule,
   ],
   controllers: [PrivilegeController],
-  providers: [
-    PrivilegeAdapter,
-    HasuraPrivilegeService,
-    PostgresPrivilegeService,
-    HasuraRoleService,
-    PostgresRoleService,
-  ],
+  providers: [PrivilegeAdapter,HasuraPrivilegeService,PostgresPrivilegeService,HasuraRoleService,PostgresRoleService,Repository]
 })
 export class PrivilegeModule {}

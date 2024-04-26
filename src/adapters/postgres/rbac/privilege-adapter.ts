@@ -11,6 +11,7 @@ import {
 } from "src/rbac/privilege/dto/privilege.dto";
 import { isUUID } from "class-validator";
 import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-privilege.entity";
+import { Role } from "src/rbac/role/entities/role.entity";
 
 @Injectable()
 export class PostgresPrivilegeService {
@@ -18,7 +19,9 @@ export class PostgresPrivilegeService {
     @InjectRepository(Privilege)
     private privilegeRepository: Repository<Privilege>,
     @InjectRepository(RolePrivilegeMapping)
-    private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>
+    private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) {}
 
   public async createPrivilege(
@@ -213,5 +216,74 @@ export class PostgresPrivilegeService {
         errorMessage: "Internal server error",
       });
     }
-  }
+}
+
+    public async getPrivilegebyRoleId(tenantId, roleId, request) {
+
+        if (!isUUID(tenantId) || !isUUID(roleId)) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.BAD_REQUEST,
+                errorMessage: "Please Enter valid tenantId and roleId (UUID)",
+            });
+        }
+
+        try {
+            const valid = await this.checkValidTenantIdRoleIdCombination(tenantId, roleId)
+
+            if (!valid) {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    errorMessage: "Invalid combination of roleId and tenantId",
+                });
+            }
+
+            let query = `SELECT r.*, u.*
+        FROM public."RolePrivilegesMapping" AS r
+        inner JOIN public."Privileges" AS u ON r."privilegeId" = u."privilegeId"
+        where r."roleId"=$1`
+
+            const result = await this.privilegeRepository.query(query, [roleId]);
+            const privilegeResponseArray: PrivilegeResponseDto[] = result.map((item: any) => {
+                const privilegeDto = new PrivilegeDto(item);
+                privilegeDto.title = item.name
+                return new PrivilegeResponseDto(privilegeDto);
+            });
+
+            if (!privilegeResponseArray.length) {
+                return new ErrorResponseTypeOrm({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    errorMessage: "No privileges assigned to the role",
+                });
+            }
+
+            return new SuccessResponse({
+                statusCode: HttpStatus.OK,
+                message: "Ok",
+                data: privilegeResponseArray
+            });
+        }
+        catch (error) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: error,
+            });
+        }
+
+
+    }
+
+    public async checkValidTenantIdRoleIdCombination(tenantId, roleId) {
+        try {
+
+            const ValidTenantIdRoleCombination = await this.roleRepository.findOne({ where: { tenantId: tenantId, roleId: roleId } });
+            return ValidTenantIdRoleCombination;
+        }
+        catch (error) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: error,
+            });
+        }
+    }
+
 }

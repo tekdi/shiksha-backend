@@ -45,6 +45,7 @@ export class PrivilegeDto {
 
 
 export class CreatePrivilegesDto {
+  @ApiProperty({type:[PrivilegeDto]})
   @ValidateNested({ each: true })
   @Type(() => PrivilegeDto)
   privileges: PrivilegeDto[];

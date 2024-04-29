@@ -18,6 +18,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt-keycloak") {
      * This can be obtained via req.user in the Controllers
      * This is where we validate that the user is valid and delimit the payload returned to req.user
      */
-    return { userId: payload.sub };
+    // console.log(payload, "payload");
+    return {
+      userId: payload.sub,
+      name: payload.name,
+      username: payload.preferred_username,
+    };
   }
 }

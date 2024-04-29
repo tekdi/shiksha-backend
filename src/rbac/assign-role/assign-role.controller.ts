@@ -2,8 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, Validation
 import { AssignRoleAdapter } from './assign-role.apater';
 import { CreateAssignRoleDto } from './dto/create-assign-role.dto';
 import { Response, Request } from "express";
-import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiConflictResponse } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiConflictResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { DeleteAssignRoleDto } from './dto/delete-assign-role.dto';
 
 
 
@@ -52,15 +53,19 @@ export class AssignRoleController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Delete("/:id")
+  @Delete("/:userId")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Assigend Role deleted successfully." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiHeader({ name: "tenantid" })
+  @ApiOkResponse({ description: "Role deleted successfully." })
+  @ApiNotFoundResponse({ description: "Data not found" })
+  @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
-    @Param("id") userId: string,
+    @Body() deleteAssignRoleDto: DeleteAssignRoleDto, // Modify this line to accept DeleteAssignRoleDto
     @Res() response: Response
   ) {
-    const result = await this.assignRoleAdpater.buildassignroleAdapter().deleteAssignedRole(userId);
+    const result = await this.assignRoleAdpater
+      .buildassignroleAdapter()
+      .deleteAssignedRole(deleteAssignRoleDto);
     return response.status(result.statusCode).json(result);
   }
   

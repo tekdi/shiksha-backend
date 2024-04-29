@@ -13,6 +13,7 @@ import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import { RoleSearchDto } from "../../../rbac/role/dto/role-search.dto";
 import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entity";
 import { Privilege } from "src/rbac/privilege/entities/privilege.entity";
+import { isUUID } from "class-validator";
 
 @Injectable()
 export class PostgresRoleService {
@@ -222,7 +223,37 @@ public async createRole(request: any, createRolesDto: CreateRolesDto) {
 
   public async deleteRole(roleId: string) {
     try {
-      let response = await this.roleRepository.delete(roleId);
+      if (!isUUID(roleId)) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please Enter valid (UUID)",
+        });
+      }
+
+      const roleToDelete = await this.roleRepository.findOne({
+        where: { roleId: roleId },
+      });
+
+      if (!roleToDelete) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "Role  not found",
+        });
+      }
+      // Delete the role
+      const response = await this.roleRepository.delete(roleId);
+
+      // Delete entries from RolePrivilegesMapping table associated with the roleId
+      const rolePrivilegesDeleteResponse =
+        await this.roleprivilegeMappingRepository.delete({
+          roleId: roleId,
+        });
+
+      const userRoleDeleteResponse =
+        await this.userRoleMappingRepository.delete({
+          roleId: roleId,
+        });
+
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: "Role deleted successfully.",
@@ -233,7 +264,7 @@ public async createRole(request: any, createRolesDto: CreateRolesDto) {
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
+        errorMessage: "Internal server error", // Access the error message
       });
     }
   }

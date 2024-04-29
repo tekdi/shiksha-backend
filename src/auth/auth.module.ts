@@ -1,8 +1,9 @@
-import { HttpService, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "src/common/guards/keycloak.strategy";
+import { RbacJwtStrategy } from "src/common/guards/rbac.strategy";
 import { UserAdapter } from "../user/useradapter";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "../user/entities/user-entity";
@@ -24,6 +25,12 @@ import { PostgresModule } from "src/adapters/postgres/potsgres-module";
     PostgresModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, KeycloakService, UserAdapter],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RbacJwtStrategy,
+    KeycloakService,
+    UserAdapter,
+  ],
 })
 export class AuthModule {}

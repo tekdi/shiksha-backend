@@ -297,6 +297,8 @@ export class PostgresRoleService {
     // let userRoleData = await this.userRoleMappingRepository.query(query,[userId,tenantId])
     return userRoleData;                                                   
   }
+
+  // Make this query with in clause
   public async findPrivilegeByRoleId(roleId: string) {
     const privileges = await this.roleprivilegeMappingRepository
       .createQueryBuilder("rpm")

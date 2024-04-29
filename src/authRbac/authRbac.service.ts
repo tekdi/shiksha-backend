@@ -67,17 +67,10 @@ export class AuthRbacService {
   }
 
   async getPrivileges(userRoleData) {
-    let privileges = [];
-    for (let data of userRoleData) {
-      const result = await this.postgresRoleService.findPrivilegeByRoleId(
-        data.roleid
-      );
-      privileges = result.map((privilege) => ({
-        privilegeId: privilege.privilegeid,
-        title: privilege.name,
-        code: privilege.code,
-      }));
-    }
+    const roleIds = userRoleData.map(({ roleid }) => roleid);
+    const privileges = await this.postgresRoleService.findPrivilegeByRoleId(
+      roleIds
+    );
     return privileges;
   }
 }

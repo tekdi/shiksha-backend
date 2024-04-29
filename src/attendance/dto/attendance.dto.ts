@@ -1,4 +1,4 @@
-import { ManyToOne, JoinColumn } from 'typeorm';
+import { ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidateNested, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -150,9 +150,11 @@ export class AttendanceDto {
   cohort: Cohort; 
 
 
+  @CreateDateColumn()
   @Expose()
   createdAt: string;
 
+  @UpdateDateColumn()
   @Expose()
   updatedAt: string;
 

@@ -561,6 +561,9 @@ export class PostgresAttendanceService {
         attendanceData: BulkAttendanceDTO
     ) {
 
+       const  loginUserId=request.user.userId
+
+
         const responses = [];
         const errors = [];
         try {
@@ -577,7 +580,7 @@ export class PostgresAttendanceService {
                     tenantId:tenantId
                 })
                 const attendanceRes: any = await this.updateAttendanceRecord(
-                    request,
+                    loginUserId,
                     userAttendance
                 );
 

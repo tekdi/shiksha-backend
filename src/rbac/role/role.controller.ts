@@ -35,7 +35,7 @@ import { RoleAdapter } from "./roleadapter"
 
 @ApiTags("rbac")
 @Controller("rbac/roles")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class RoleController {
   constructor(private readonly roleAdapter:RoleAdapter) { }
 

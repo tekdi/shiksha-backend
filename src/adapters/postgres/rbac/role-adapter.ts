@@ -24,65 +24,65 @@ export class PostgresRoleService {
     @InjectRepository(RolePrivilegeMapping)
     private readonly roleprivilegeMappingRepository: Repository<RolePrivilegeMapping>
   ) {}
-  public async createRole(request: any, createRolesDto: CreateRolesDto) {
+public async createRole(request: any, createRolesDto: CreateRolesDto) {
 
-    const tenant = await this.checkTenantID(createRolesDto.tenantId)
-    if (!tenant) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorMessage: "Please enter valid tenantId",
-        });
-    }
-    const roles = [];
-    const errors = []
-    try {
-
-        // Convert role name to lowercase
-        for (const roleDto of createRolesDto.roles) {
-            const tenantId = createRolesDto.tenantId;
-            const code = roleDto.title.toLowerCase().replace(/\s+/g, '_');
-
-            // Check if role name already exists
-            const existingRole = await this.roleRepository.findOne({ where: { code:code,tenantId:tenantId } })
-            if (existingRole) {
-                errors.push({
-                    errorMessage: `Combination of this tenantId and the code '${code}' already exists.`,
-                });
-                continue;
-            }
-
-            const newRoleDto = new RoleDto({
-                ...roleDto,
-                code,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                createdBy: request.user.userId, // Assuming you have a user object in the request
-                updatedBy: request.user.userId,
-                tenantId, // Add the tenantId to the RoleDto
+        const tenant = await this.checkTenantID(createRolesDto.tenantId)
+        if (!tenant) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.BAD_REQUEST,
+                errorMessage: "Please enter valid tenantId",
             });
-            // Convert roleDto to lowercase
-            // const response = await this.roleRepository.save(roleDto);
-            const roleEntity = this.roleRepository.create(newRoleDto);
-
-            // Save the role entity to the database
-            const response = await this.roleRepository.save(roleEntity);
-            roles.push(new RolesResponseDto(response));
         }
-    } catch (e) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: e,
-        });
-    }
+        const roles = [];
+        const errors = []
+        try {
 
-    return {
-        statusCode: HttpStatus.OK,
-        successCount: roles.length,
-        errorCount: errors.length,
-        roles,
-        errors,
-    };
-}
+            // Convert role name to lowercase
+            for (const roleDto of createRolesDto.roles) {
+                const tenantId = createRolesDto.tenantId;
+                const code = roleDto.title.toLowerCase().replace(/\s+/g, '_');
+
+                // Check if role name already exists
+                const existingRole = await this.roleRepository.findOne({ where: { code:code,tenantId:tenantId } })
+                if (existingRole) {
+                    errors.push({
+                        errorMessage: `Combination of this tenantId and the code '${code}' already exists.`,
+                    });
+                    continue;
+                }
+
+                const newRoleDto = new RoleDto({
+                    ...roleDto,
+                    code,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    createdBy: request.user.userId, // Assuming you have a user object in the request
+                    updatedBy: request.user.userId,
+                    tenantId, // Add the tenantId to the RoleDto
+                });
+                // Convert roleDto to lowercase
+                // const response = await this.roleRepository.save(roleDto);
+                const roleEntity = this.roleRepository.create(newRoleDto);
+
+                // Save the role entity to the database
+                const response = await this.roleRepository.save(roleEntity);
+                roles.push(new RolesResponseDto(response));
+            }
+        } catch (e) {
+            return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: e,
+            });
+        }
+
+        return {
+            statusCode: HttpStatus.OK,
+            successCount: roles.length,
+            errorCount: errors.length,
+            roles,
+            errors,
+        };
+    }
 
   public async getRole(roleId: string, request: any) {
     try {
@@ -153,21 +153,22 @@ export class PostgresRoleService {
         });
     }
     if (whereClause.userId && whereClause.tenantId && whereClause.field==="Privilege") {
-        const userRoleMappingData = await this.findUserRoleData(whereClause.userId, whereClause.tenantId)
-        const roles = [];
-        for (let data of userRoleMappingData) {
-            const result = await this.findPrivilegeByRoleId(data.roleid);
-            roles.push({
-                roleId: data.roleid,
-                title: data.title,
-                code: data.code,
-                privileges: result.map((privilege) => ({
-                    privilegeId: privilege.privilegeid,
-                    title: privilege.name,
-                    code: privilege.code,
-                })),
-            });
-        }return new SuccessResponse({
+      const userRoleMappingData = await this.findUserRoleData(whereClause.userId, whereClause.tenantId);
+      const roleIds = userRoleMappingData.map(data => data.roleid);
+      
+      const result = await this.findPrivilegeByRoleId(roleIds);
+      
+      const roles = userRoleMappingData.map(data => {
+          const roleResult = result.find(privilegeData => privilegeData.roleid === data.roleid);
+          return {
+            roleId: data.roleid,
+            title: data.title,
+            code: data.code,
+            privileges: roleResult ? roleResult : []
+        };
+      });
+      
+        return new SuccessResponse({
             statusCode: HttpStatus.OK,
             message: "Role For User with Privileges fetched successfully.",
             data: roles,
@@ -183,23 +184,18 @@ export class PostgresRoleService {
     }
     else if (whereClause.tenantId && whereClause.field === "Privilege") {
         const userRoleData = await this.findRoleData(whereClause.tenantId);
-        const roles = [];
-    
-        for (let data of userRoleData) {
-            const result = await this.findPrivilegeByRoleId(data.roleId);
-            roles.push({
-                roleId: data.roleId,
-                title: data.title,
-                code: data.code,
-                privileges: result.map((privilege) => ({
-                    privilegeId: privilege.privilegeid,
-                    title: privilege.name,
-                    code: privilege.code,
-                })),
-            });
-        }
-    
-        return new SuccessResponse({
+        const result = await this.findPrivilegeByRoleId(userRoleData.map(data => data.roleId));
+        const roles = userRoleData.map(data => {
+          const roleResult = result.find(privilegeData => privilegeData.roleid === data.roleId);
+          return {
+              roleId: data.roleId,
+              title: data.title,
+              code: data.code,
+              privileges: roleResult ? roleResult : []
+          };
+      });
+      
+      return new SuccessResponse({
             statusCode: HttpStatus.OK,
             message: "Role For Tenant with Privileges fetched successfully.",
             data: roles,
@@ -216,9 +212,7 @@ export class PostgresRoleService {
             statusCode: HttpStatus.BAD_REQUEST,
             message: "Please Enter Valid Filter",
         });
-    }
-    
-    } catch (e) {
+    }} catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorMessage: e,
@@ -252,6 +246,7 @@ export class PostgresRoleService {
     });
     return data;
   }
+
   public async findUserRoleData(userId: string,tenantId: string){
     let userRoleData = await this.userRoleMappingRepository.createQueryBuilder('urp').
     innerJoin(Role,'r','r.roleId=urp.roleId').
@@ -259,14 +254,10 @@ export class PostgresRoleService {
     where("urp.userId= :userId",{userId}).
     andWhere("urp.tenantId=:tenantId",{tenantId})
     .getRawMany()
-    // let query =`SELECT "urp"."roleId" AS "urp_roleId", "r"."name" AS "r_name", "r"."code" AS "r_code" 
-    // FROM "UserRolesMapping" "urp" 
-    // INNER JOIN "Roles" "r" ON "r"."roleId"="urp"."roleId" 
-    // WHERE "urp"."userId"=$1 AND "urp"."tenantId"= $2`
-    // let userRoleData = await this.userRoleMappingRepository.query(query,[userId,tenantId])
     return userRoleData;                                                   
   }
-  public async findPrivilegeByRoleId(roleId: string) {
+
+  public async findPrivilegeByRoleId(roleIds: string[]) {
     const privileges = await this.roleprivilegeMappingRepository
       .createQueryBuilder("rpm")
       .innerJoin(Privilege, "p", "p.privilegeId=rpm.privilegeId")
@@ -274,11 +265,12 @@ export class PostgresRoleService {
         "p.privilegeId as privilegeId",
         "p.name as name",
         "p.code as code",
+        "rpm.roleId as roleId"
       ])
-      .where("rpm.roleId = :roleId", { roleId })
-      .getRawMany()
+      .where("rpm.roleId IN (:...roleIds)", { roleIds })
+      .getRawMany();
     return privileges;
-  }
+}
 
   public async checkTenantID(tenantId) {
     try {
@@ -294,5 +286,6 @@ export class PostgresRoleService {
         errorMessage: error,
       });
     }
+
   }
 }

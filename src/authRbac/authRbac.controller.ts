@@ -1,10 +1,7 @@
 import {
-  Body,
   Controller,
-  Post,
   HttpCode,
   HttpStatus,
-  Param,
   Get,
   UseGuards,
   Req,
@@ -27,7 +24,6 @@ export class AuthRbacController {
   @UseGuards(JwtAuthGuard)
   signInRbac(@Req() req) {
     const tenantId = req.headers["tenantid"];
-    console.log(req.user, "user", tenantId);
     return this.authService.signInRbac(req.user.username, tenantId);
   }
 }

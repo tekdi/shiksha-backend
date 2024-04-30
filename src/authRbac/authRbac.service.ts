@@ -3,7 +3,6 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
 import { UserAdapter } from "src/user/useradapter";
-// import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthRbacService {
@@ -21,7 +20,7 @@ export class AuthRbacService {
     this.audience = this.configService.get<string>("AUDIENCE");
     this.jwt_expires_In = this.configService.get("RBAC_JWT_EXPIRES_IN");
     this.jwt_secret = this.configService.get<string>("RBAC_JWT_SECRET");
-  } // private usersService: UsersService,
+  }
 
   async generateToken(payload) {
     const plainObject = JSON.parse(JSON.stringify(payload));
@@ -37,8 +36,6 @@ export class AuthRbacService {
       .buildUserAdapter()
       .findUserDetails(null, username);
 
-    // console.log(userData, "user Id");
-
     if (!userData) {
       throw new UnauthorizedException();
     }
@@ -50,7 +47,6 @@ export class AuthRbacService {
 
     userData["priviledges"] = await this.getPrivileges(userData.roles);
     userData["tenantId"] = tenantId;
-    // console.log(userData, "roleDta");
 
     const issuer = this.issuer;
     const audience = this.audience;

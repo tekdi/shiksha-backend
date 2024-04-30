@@ -1,4 +1,4 @@
-import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import {HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -82,6 +82,9 @@ export class PostgresUserService {
       skip: offset,
       take: parseInt(limit),
     });
+    if(!results.length) {
+      return null;
+    }
     return results;
   }
 
@@ -253,6 +256,7 @@ export class PostgresUserService {
     })
     return userDetails;
   }
+
   async findCustomFields(userData, role) {
     let customFields = await this.fieldsRepository.find({
       where: {
@@ -262,6 +266,7 @@ export class PostgresUserService {
     })
     return customFields;
   }
+  
   async findFilledValues(userId: string) {
     let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
     LEFT JOIN public."FieldValues" F
@@ -426,7 +431,6 @@ export class PostgresUserService {
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
     }
-
     let result = await this.usersRepository.save(user);
     if (result) {
       let cohortData = {

@@ -32,7 +32,7 @@ export class AuthRbacService {
     return token;
   }
 
-  async signInRbac(username: string): Promise<any> {
+  async signInRbac(username: string, tenantId: string): Promise<any> {
     let userData = await this.userAdapter
       .buildUserAdapter()
       .findUserDetails(null, username);
@@ -45,11 +45,11 @@ export class AuthRbacService {
 
     userData["roles"] = await this.postgresRoleService.findUserRoleData(
       userData?.userId,
-      userData?.tenantId
+      tenantId
     );
 
     userData["priviledges"] = await this.getPrivileges(userData.roles);
-
+    userData["tenantId"] = tenantId;
     // console.log(userData, "roleDta");
 
     const issuer = this.issuer;
@@ -68,6 +68,9 @@ export class AuthRbacService {
 
   async getPrivileges(userRoleData) {
     const roleIds = userRoleData.map(({ roleid }) => roleid);
+    if (!roleIds.length) {
+      return [];
+    }
     const privileges = await this.postgresRoleService.findPrivilegeByRoleId(
       roleIds
     );

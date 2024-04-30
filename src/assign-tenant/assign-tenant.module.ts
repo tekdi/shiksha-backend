@@ -1,0 +1,36 @@
+import { HttpModule, Module } from '@nestjs/common';
+import { AssignTenantController } from './assign-tenant.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserTenantMapping } from "./entities/assign-tenant.entity";
+import { AssignTenantAdapter } from "./assign-tenant.apater";
+import { PostgresAssignTenantService } from "src/adapters/postgres/assigntenant-adapter";
+import { HasuraAssignTenantService } from "src/adapters/hasura/assigntenant.adapter";
+import { User } from "src/user/entities/user-entity";
+import { Tenants } from "src/assign-tenant/entities/tenant.entity";
+
+
+@Module({
+  imports:[TypeOrmModule.forFeature([UserTenantMapping,User,Tenants]),HttpModule],
+  controllers: [AssignTenantController],
+  providers: [AssignTenantAdapter,HasuraAssignTenantService,PostgresAssignTenantService]
+
+})
+export class AssignTenantModule {}
+
+
+// import { Module } from '@nestjs/common';
+// import { AssignRoleAdapter } from './assign-role.apater';
+// import { AssignRoleController } from './assign-role.controller';
+// import { TypeOrmModule } from '@nestjs/typeorm';
+// import { UserRoleMapping } from './entities/assign-role.entity';
+// import { Role } from "src/rbac/role/entities/role.entity";
+// import { PostgresAssignroleService } from 'src/adapters/postgres/rbac/assignrole-adapter';
+// import { HasuraAssignRoleService } from 'src/adapters/hasura/rbac/assignrole.adapter';
+// import { HttpModule } from '@nestjs/axios';
+
+// @Module({
+//   imports:[TypeOrmModule.forFeature([UserRoleMapping,Role]),HttpModule],
+//   controllers: [AssignRoleController],
+//   providers: [AssignRoleAdapter,HasuraAssignRoleService,PostgresAssignroleService]
+// })
+// export class AssignRoleModule {}

@@ -93,7 +93,7 @@ export class CohortMembersController {
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .getCohortMembers(cohortMembershipId,response);
+      .getCohortMembers(cohortMembershipId);
 
     return response.status(result.statusCode).json(result);
   }

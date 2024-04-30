@@ -34,8 +34,7 @@ export class PostgresCohortMembersService {
   ) {}
 
   public async getCohortMembers(
-    cohortMembershipId: string,
-    response: any
+    cohortMembershipId: string
   ) {
     try {
 
@@ -109,31 +108,43 @@ export class PostgresCohortMembersService {
   }
 
   async findUserNameWithPagination(searchData: string, searchKey: any, limit: number, offset: number) {
-   let whereCase;
+    let whereCase;
+    let whereValue = [];
+    let limitClause = '';
+    let offsetClause = '';
+    
     if (searchData['cohortId'] && !searchData['userId']) {
-      whereCase = `WHERE CM."cohortId" = $1 LIMIT $2 OFFSET $3`;
+      whereCase = `WHERE CM."cohortId" = $1`;
+      whereValue.push(searchData['cohortId']);
     } else if (searchData['userId'] && !searchData['cohortId']) {
-      whereCase = `WHERE CM."userId" = $1 LIMIT $2 OFFSET $3`;
+      whereCase = `WHERE CM."userId" = $1`;
+      whereValue.push(searchData['userId']);
     } else if (searchData['userId'] && searchData['cohortId']) {
-      whereCase = `WHERE CM."userId" = $1 AND CM."cohortId" = $2 LIMIT $3 OFFSET $4`;
+      whereCase = `WHERE CM."userId" = $1 AND CM."cohortId" = $2`;
+      whereValue.push(searchData['userId'], searchData['cohortId']);
     } else {
       whereCase = ''; // No filtering condition
     }
     
+    // Set LIMIT and OFFSET based on the values of limit and offset
+    if (limit !== undefined) {
+      limitClause = `LIMIT $${whereValue.length + 1}`;
+      whereValue.push(limit);
+    }
+    
+    if (offset !== undefined) {
+      offsetClause = `OFFSET $${whereValue.length + 1}`;
+      whereValue.push(offset);
+    }
+    
     let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state, U.mobile FROM public."CohortMembers" CM
       LEFT JOIN public."Users" U
-      ON CM."userId" = U."userId" ${whereCase}`;
-
-    let result;
-    if (searchData['cohortId'] && !searchData['userId']) {
-      result = await this.usersRepository.query(query,[searchData['cohortId'], limit, offset]);
-    } else if (searchData['userId'] && !searchData['cohortId']) {
-      result = await this.usersRepository.query(query, [searchData['userId'], limit, offset]);
-    } else if (searchData['userId'] && searchData['cohortId']) {
-      result = await this.usersRepository.query(query, [searchData['userId'], searchData['cohortId'], limit, offset]);
-    } 
-
+      ON CM."userId" = U."userId" ${whereCase}
+      ${limitClause} ${offsetClause}`;
+    
+    let result = await this.usersRepository.query(query, whereValue);
     return result;
+    
 }
 
   async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {

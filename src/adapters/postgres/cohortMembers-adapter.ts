@@ -19,6 +19,7 @@ import { Fields } from "src/fields/entities/fields.entity";
 import { UUID } from "typeorm/driver/mongodb/bson.typings";
 import { isUUID } from "class-validator";
 import { Cohort } from "src/cohort/entities/cohort.entity";
+
 @Injectable()
 export class PostgresCohortMembersService {
   constructor(
@@ -32,37 +33,42 @@ export class PostgresCohortMembersService {
     private cohortRepository: Repository<Cohort>
   ) {}
 
-  async getCohortMembers(cohortId: any, fieldvalue: any) {
+  public async getCohortMembers(
+    cohortMembershipId: string,
+    response: any
+  ) {
     try {
-      if (!isUUID(cohortId)) {
+
+      if (cohortMembershipId && !isUUID(cohortMembershipId)) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please Enter valid (UUID)",
+          errorMessage: "Please Enter a valid UUID for userId",
         });
       }
-      const userDetails = await this.findcohortData(cohortId);
-      if (userDetails === true) {
-        let results = {
-          userDetails: [],
-        };
+      const cohortMemberExist = await this.cohortMembersRepository.findOne({
+        where: { cohortMembershipId },
 
-        let cohortDetails = await this.getUserDetails(
-          cohortId,
-          "cohortId",
-          fieldvalue
-        );
-        results.userDetails.push(cohortDetails);
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: "Ok.",
-          data: results,
-        });
-      } else {
+    });
+      if (!cohortMemberExist) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.NOT_FOUND,
-          errorMessage: "Cohort Member not exist",
+          errorMessage: "Cohort Member with specified cohortMembershipId not found",
         });
       }
+      // Fetch cohort members based on cohortId
+      // Fetch cohort member based on cohortMembershipId with cohort information joined
+      const cohortMember = await this.cohortMembersRepository.findOne({
+        where: { cohortMembershipId },
+        relations: ['cohort', 'user'] // Include 'cohort' and 'user' relations
+
+    });
+
+
+       return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: "Cohort Members fetched successfully.",
+        data: cohortMember,
+      });
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -70,6 +76,66 @@ export class PostgresCohortMembersService {
       });
     }
   }
+
+  async getUserDetailsWithPagination(searchId: any, searchKey: any, fieldShowHide: any, limit: number, offset: number) {
+    let results = {
+      userDetails: [],
+    };
+
+    let getUserDetails = await this.findUserNameWithPagination(searchId, searchKey, limit, offset);
+
+    for (let data of getUserDetails) {
+      let userDetails = {
+        userId: data?.userId,
+        userName: data?.userName,
+        name: data?.name,
+        role: data?.role,
+        district: data?.district,
+        state: data?.state,
+        mobile: data?.mobile,
+        customField: [],
+      };
+
+      if (fieldShowHide === "false") {
+        results.userDetails.push(userDetails);
+      } else {
+        const fieldValues = await this.getFieldandFieldValues(data.userId);
+        userDetails.customField.push(fieldValues);
+        results.userDetails.push(userDetails);
+      }
+    }
+
+    return results;
+  }
+
+  async findUserNameWithPagination(searchData: string, searchKey: any, limit: number, offset: number) {
+   let whereCase;
+    if (searchData['cohortId'] && !searchData['userId']) {
+      whereCase = `WHERE CM."cohortId" = $1 LIMIT $2 OFFSET $3`;
+    } else if (searchData['userId'] && !searchData['cohortId']) {
+      whereCase = `WHERE CM."userId" = $1 LIMIT $2 OFFSET $3`;
+    } else if (searchData['userId'] && searchData['cohortId']) {
+      whereCase = `WHERE CM."userId" = $1 AND CM."cohortId" = $2 LIMIT $3 OFFSET $4`;
+    } else {
+      whereCase = ''; // No filtering condition
+    }
+    
+    let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state, U.mobile FROM public."CohortMembers" CM
+      LEFT JOIN public."Users" U
+      ON CM."userId" = U."userId" ${whereCase}`;
+
+    let result;
+    if (searchData['cohortId'] && !searchData['userId']) {
+      result = await this.usersRepository.query(query,[searchData['cohortId'], limit, offset]);
+    } else if (searchData['userId'] && !searchData['cohortId']) {
+      result = await this.usersRepository.query(query, [searchData['userId'], limit, offset]);
+    } else if (searchData['userId'] && searchData['cohortId']) {
+      result = await this.usersRepository.query(query, [searchData['userId'], searchData['cohortId'], limit, offset]);
+    } 
+
+    return result;
+}
+
   async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {
     let results = {
       userDetails: [],
@@ -159,11 +225,30 @@ export class PostgresCohortMembersService {
       let { limit, page, filters } = cohortMembersSearchDto;
       let offset = 0;
       if (page > 1) {
-        offset = parseInt(limit) * (page - 1);
+        offset = limit * (page - 1);
       }
-      if (limit.trim() === "") {
-        limit = "0";
+
+      const MAX_LIMIT = 20;
+      const PAGE_LIMIT = 100000;
+
+      // Validate the limit parameter
+      if (limit > MAX_LIMIT) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
+        });
       }
+
+      if (page > PAGE_LIMIT) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
+        });
+      }
+
+      // if (limit === 0) {
+      //   limit = 0;
+      // }
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -212,27 +297,33 @@ export class PostgresCohortMembersService {
       const [userData] = await this.cohortMembersRepository.findAndCount({
         where: whereClause,
         skip: offset,
-        take: parseInt(limit),
+        take: limit,
       });
       let results = {
         userDetails: [],
       };
-      if (whereClause["cohortId"]) {
-        let cohortDetails = await this.getUserDetails(
-          whereClause["cohortId"],
+      const parsedLimit =limit
+ 
+      if (whereClause["cohortId"] || whereClause["userId"]) {
+        let cohortDetails = await this.getUserDetailsWithPagination(
+          whereClause,
           "cohortId",
-          "true"
+         "true",
+         parsedLimit,
+         offset
         );
         results.userDetails.push(cohortDetails);
       }
-      if (whereClause["userId"]) {
-        let cohortDetails = await this.getUserDetails(
-          whereClause["userId"],
-          "userId",
-          "true"
-        );
-        results.userDetails.push(cohortDetails);
-      }
+      // if (whereClause["userId"]) {
+      //   let cohortDetails = await this.getUserDetailsWithPagination(
+      //     whereClause["userId"],
+      //     "userId",
+      //    "true",
+      //    parsedLimit,
+      //    offset
+      //   );
+      //   results.userDetails.push(cohortDetails);
+      // }
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,

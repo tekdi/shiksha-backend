@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 
 @Entity({ name: "Users" })
 export class User {
@@ -53,4 +54,7 @@ export class User {
   @Column({ default: "active" })
   status: string;
   userRoleMappings: User;
+
+     @OneToMany(() => CohortMembers, cohortMembers => cohortMembers.user)
+    cohortMembers: CohortMembers[];
 }

@@ -77,30 +77,23 @@ export class CohortMembersController {
   }
 
   //get cohort members
-  @Get("/:cohortId")
+  @Get("/:cohortMembershipId")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members detail" })
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
   @SerializeOptions({ strategy: "excludeAll" })
-  @ApiHeader({ name: "tenantid" })
-  @ApiQuery({
-    name: "fieldvalue",
-    description: "Send True to Fetch Custom Field of User",
-    required: false,
-  })
+  
   public async getCohortMembers(
     @Headers() headers,
-    @Param("cohortId") cohortId: string,
+    @Param("cohortMembershipId") cohortMembershipId: string,
     @Req() request: Request,
     @Res() response: Response,
-    @Query("fieldvalue") fieldvalue: string | null = null
-  ) {
-    let tenantid = headers["tenantid"];
+   ) {
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .getCohortMembers(cohortId, fieldvalue);
+      .getCohortMembers(cohortMembershipId,response);
 
     return response.status(result.statusCode).json(result);
   }

@@ -1,3 +1,5 @@
+import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
+import { FieldValues } from "src/fields/entities/fields-values.entity";
 import {
   Entity,
   PrimaryColumn,
@@ -6,6 +8,7 @@ import {
   UpdateDateColumn,
   ManyToMany,
   PrimaryGeneratedColumn,
+  OneToMany,
 } from "typeorm";
 
 @Entity({ name: "Cohort" })
@@ -60,5 +63,11 @@ export class Cohort {
 
   @Column()
   updatedBy: string;
+
+  // @OneToMany(() => CohortMembers, cohortMembers => cohortMembers.cohortId)
+  // cohortMembers: CohortMembers[];
+
+  @OneToMany(() => CohortMembers, cohortMember => cohortMember.cohort)
+  cohortMembers: CohortMembers[];
 
 }

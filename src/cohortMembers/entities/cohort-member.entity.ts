@@ -1,3 +1,6 @@
+import { Cohort } from "src/cohort/entities/cohort.entity";
+import { FieldValues } from "src/fields/entities/fields-values.entity";
+import { User } from "src/user/entities/user-entity";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,6 +9,8 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  JoinColumn,
+  ManyToOne,
 } from "typeorm";
 
 @Entity({ name: "CohortMembers" })
@@ -43,4 +48,13 @@ export class CohortMembers {
   @Column({})
   updatedBy: string;
 
+  @ManyToOne(() => Cohort, cohort => cohort.cohortMembers)
+  @JoinColumn({ name: 'cohortId' })
+  cohort: Cohort;
+
+  @ManyToOne(() => User, user => user.cohortMembers)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+ 
 }

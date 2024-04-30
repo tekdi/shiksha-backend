@@ -3,7 +3,6 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
 import { UserAdapter } from "src/user/useradapter";
-// import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthRbacService {
@@ -21,7 +20,7 @@ export class AuthRbacService {
     this.audience = this.configService.get<string>("AUDIENCE");
     this.jwt_expires_In = this.configService.get("RBAC_JWT_EXPIRES_IN");
     this.jwt_secret = this.configService.get<string>("RBAC_JWT_SECRET");
-  } // private usersService: UsersService,
+  }
 
   async generateToken(payload) {
     const plainObject = JSON.parse(JSON.stringify(payload));
@@ -32,12 +31,10 @@ export class AuthRbacService {
     return token;
   }
 
-  async signInRbac(username: string): Promise<any> {
+  async signInRbac(username: string, tenantId: string): Promise<any> {
     let userData = await this.userAdapter
       .buildUserAdapter()
       .findUserDetails(null, username);
-
-    // console.log(userData, "user Id");
 
     if (!userData) {
       throw new UnauthorizedException();
@@ -45,12 +42,11 @@ export class AuthRbacService {
 
     userData["roles"] = await this.postgresRoleService.findUserRoleData(
       userData?.userId,
-      userData?.tenantId
+      tenantId
     );
 
     userData["priviledges"] = await this.getPrivileges(userData.roles);
-
-    // console.log(userData, "roleDta");
+    userData["tenantId"] = tenantId;
 
     const issuer = this.issuer;
     const audience = this.audience;
@@ -67,17 +63,13 @@ export class AuthRbacService {
   }
 
   async getPrivileges(userRoleData) {
-    let privileges = [];
-    for (let data of userRoleData) {
-      const result = await this.postgresRoleService.findPrivilegeByRoleId(
-        data.roleid
-      );
-      privileges = result.map((privilege) => ({
-        privilegeId: privilege.privilegeid,
-        title: privilege.name,
-        code: privilege.code,
-      }));
+    const roleIds = userRoleData.map(({ roleid }) => roleid);
+    if (!roleIds.length) {
+      return [];
     }
+    const privileges = await this.postgresRoleService.findPrivilegeByRoleId(
+      roleIds
+    );
     return privileges;
   }
 }

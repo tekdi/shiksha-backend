@@ -15,9 +15,9 @@ export class CohortDto {
   @Expose()
   cohortId: string;
   @Expose()
-  createdAt: string;
+  createdAt: Date;
   @Expose()
-  updatedAt: string;
+  updatedAt: Date;
 
   //programId
   @ApiPropertyOptional({
@@ -117,5 +117,29 @@ export class CohortDto {
 
   constructor(obj: any) {
     Object.assign(this, obj);
+  }
+}
+
+export class ReturnResponseBody{
+  @Expose()
+  cohortId: string;
+  @Expose()
+  parentId: string;
+  @Expose()
+  name: string;
+  @Expose()
+  type: string;
+  @Expose()
+  status: boolean;
+  @Expose()
+  tenantId: string;
+
+  constructor(cohortDto: CohortDto) {
+    this.cohortId = cohortDto.cohortId;
+    this.parentId = cohortDto.parentId;
+    this.name = cohortDto.name;
+    this.type = cohortDto.type;
+    this.status = cohortDto.status;
+    this.tenantId = cohortDto.tenantId;
   }
 }

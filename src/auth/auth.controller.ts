@@ -14,12 +14,12 @@ import {
   SerializeOptions,
   Req,
   Res,
-  Request,
   Response,
   HttpStatus,
   HttpCode,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from "@nestjs/common";
 import {
   AuthDto,
@@ -27,6 +27,8 @@ import {
   LogoutRequestBody,
 } from "./dto/auth-dto";
 import { AuthService } from "./auth.service";
+import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { RbacAuthGuard } from "src/common/guards/rbac.guard";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -43,19 +45,19 @@ export class AuthController {
   }
 
   @Get("/user")
+  @ApiHeader({
+    name: "rbac_token",
+  })
+  @UseGuards(JwtAuthGuard, RbacAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  @ApiHeader({
-    name: "tenantid",
-  })
-  public async getUserByAuth(
-    @Req() request: Request,
-    @Res() response: Response
-  ) {
+  public async getUserByAuth(@Req() request, @Res() response: Response) {
+    console.log(request.user, "user");
+    console.log(request.user.userData, "user");
     // const tenantId = headers["tenantid"];
     return this.authService.getUserByAuth(request, response);
   }

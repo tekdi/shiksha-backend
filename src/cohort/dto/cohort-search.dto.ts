@@ -124,7 +124,7 @@ export class CohortSearchDto {
     description: "Filters",
   })
   @IsObject()
-  filters: object;
+  filters: setFilters;
 
   constructor(partial: Partial<CohortSearchDto>) {
     Object.assign(this, partial);

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNumber, IsNumberString, IsObject, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsNumber, IsNumberString, IsObject, IsOptional, IsString } from "class-validator";
 import { CohortDto } from "./cohort.dto";
 import { Expose } from "class-transformer";
 
@@ -78,7 +78,7 @@ export class setFilters {
   })
   @Expose()
   @IsOptional()
-  @IsString()
+  @IsBoolean()
   status?: boolean;
 
   //createdBy

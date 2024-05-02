@@ -119,7 +119,4 @@ export class PostgresAssignTenantService {
         }
     }
 
-    public async updateAssignTenant(request: any, createAssignTenantDto: CreateAssignTenantDto) {
-    }
-
 }

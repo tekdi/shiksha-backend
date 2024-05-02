@@ -5,13 +5,13 @@ import {
   IsEmail,
   IsString,
   IsNumber,
+  IsArray,
+  IsUUID,
 } from "class-validator";
 import { User } from "../entities/user-entity";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UserCreateDto {
-  @Expose()
-  tenantId: string;
 
   @Expose()
   userId: string;
@@ -123,6 +123,17 @@ export class UserCreateDto {
   })
   @Expose()
   fieldValues: string;
+
+  @ApiProperty({
+    type: String,
+    description: "Tenant Id",
+    default: [],
+  })
+  @Expose()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  @IsNotEmpty({ each: true })
+  tenantId: string;
 
   constructor(partial: Partial<UserCreateDto>) {
     Object.assign(this, partial);

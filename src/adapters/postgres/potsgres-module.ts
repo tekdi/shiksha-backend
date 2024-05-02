@@ -12,20 +12,23 @@ import { AttendanceEntity } from "src/attendance/entities/attendance.entity";
 import { PostgresAttendanceService } from "./attendance-adapter";
 import { PostgresFieldsService } from "./fields-adapter";
 import { Cohort } from "src/cohort/entities/cohort.entity";
-
+import { UserTenantMapping } from "src/assign-tenant/entities/assign-tenant.entity";
+import { Tenants } from "src/assign-tenant/entities/tenant.entity";
 
 
 @Module({
     imports: [HttpModule,
-    TypeOrmModule.forFeature([
-    User,
-    Field,
-    FieldValues,
-    CohortMembers,
-    AttendanceEntity,
-    Fields,
-    Cohort
-    ])
+        TypeOrmModule.forFeature([
+            User,
+            Field,
+            FieldValues,
+            CohortMembers,
+            AttendanceEntity,
+            Fields,
+            Cohort,
+            UserTenantMapping,
+            Tenants
+        ])
     ],
     providers: [
         PostgresUserService,
@@ -37,6 +40,5 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
         PostgresAttendanceService,
         PostgresFieldsService
     ],
-  })
-  export class PostgresModule {}
-  
+})
+export class PostgresModule { }

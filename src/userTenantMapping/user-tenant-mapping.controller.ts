@@ -30,7 +30,7 @@ import { Request } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
 import { Response, response } from "express";
-import { AssignTenantAdapter } from "./user-tenant-mapping.apater";
+import { AssignTenantAdapter } from "./user-tenant-mapping.adapter";
 import { AssignTenantMappingDto } from "./dto/user-tenant-mapping.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
@@ -50,6 +50,7 @@ export class AssignTenantController {
     @UsePipes(new ValidationPipe())
     @ApiBody({ type: AssignTenantMappingDto })
     public async createCohort(
+        @Headers() headers,
         @Req() request: Request,
         @Body() assignTenantMappingDto: AssignTenantMappingDto,
         @Res() response: Response

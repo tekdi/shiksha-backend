@@ -85,6 +85,7 @@ export class UserController {
   @ApiForbiddenResponse({ description: "User Already Exists"})
   @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
   async createUser(
+    @Headers() headers,
     @Req() request: Request,
     @Body() userCreateDto: UserCreateDto,
     @Res() response: Response

@@ -340,8 +340,10 @@ export class PostgresUserService {
       userCreateDto.updatedBy = decoded?.sub
 
       //Check duplicate field entry
-      let field_value_array = userCreateDto.fieldValues.split("|");
-      await this.validateFieldValues(field_value_array);
+      if (userCreateDto.fieldValues) {
+        let field_value_array = userCreateDto.fieldValues.split("|");
+        await this.validateFieldValues(field_value_array);
+      }
 
       userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
       const userSchema = new UserCreateDto(userCreateDto);
@@ -372,6 +374,8 @@ export class PostgresUserService {
       userCreateDto.userId = resKeycloak;
 
 
+
+
       // Check if tenant array is not empty
       const tenantIds = userCreateDto.tenantId;
       const userId = userCreateDto.userId;
@@ -384,51 +388,12 @@ export class PostgresUserService {
         });
       }
 
-      for (const tenantId of tenantIds) {
-        let findExistingRole = await this.userTenantMappingRepository.findOne({
-          where: {
-            userId: userId,
-            tenantId: tenantId,
-          },
-        });
-        if (findExistingRole) {
-          errors.push({
-            errorMessage: `User is already exist in ${tenantId} Tenant.`,
-          });
-          continue;
-        }
-  
-        // User is exist in user table 
-        let userExist = await this.usersRepository.findOne({
-          where: {
-            userId: userId,
-          },
-        });
-        if (!userExist) {
-          errors.push({
-            errorMessage: `User ${userId} is not exist.`,
-          });
-          continue;
-        }
-  
-        // User is exist in user table 
-        let tenantExist = await this.tenantsRepository.findOne({
-          where: {
-            tenantId: tenantId,
-          },
-        });
-        if (!tenantExist) {
-          errors.push({
-            errorMessage: `Tenant ${tenantId} is not exist.`,
-          });
-          continue;
-        }
-      }
+
       if (errors.length > 0) {
         return {
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorCount: errors.length,
-            errors,
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorCount: errors.length,
+          errors,
         };
       }
 
@@ -436,20 +401,23 @@ export class PostgresUserService {
       let result = await this.createUserInDatabase(request, userCreateDto, cohortId);
 
       let fieldData = {};
-      if (result && field_value_array?.length > 0) {
-        let userId = result?.userId;
-        for (let i = 0; i < field_value_array?.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          fieldData = {
-            fieldId: fieldValues[0],
-            value: fieldValues[1]
-          }
-          let result = await this.updateCustomFields(userId, fieldData);
-          if (!result) {
-            return new ErrorResponseTypeOrm({
-              statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-              errorMessage: `Error is ${result}`,
-            });
+      if (userCreateDto.fieldValues) {
+        let field_value_array = userCreateDto.fieldValues.split("|");
+        if (result && field_value_array?.length > 0) {
+          let userId = result?.userId;
+          for (let i = 0; i < field_value_array?.length; i++) {
+            let fieldValues = field_value_array[i].split(":");
+            fieldData = {
+              fieldId: fieldValues[0],
+              value: fieldValues[1]
+            }
+            let result = await this.updateCustomFields(userId, fieldData);
+            if (!result) {
+              return new ErrorResponseTypeOrm({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                errorMessage: `Error is ${result}`,
+              });
+            }
           }
         }
       }
@@ -526,8 +494,47 @@ export class PostgresUserService {
       let errors = [];
 
       for (const tenantId of tenantIds) {
-  
+        let findExistingRole = await this.userTenantMappingRepository.findOne({
+          where: {
+            userId: userId,
+            tenantId: tenantId,
+          },
+        });
+        if (findExistingRole) {
+          errors.push({
+            errorMessage: `User is already exist in ${tenantId} Tenant.`,
+          });
+          continue;
+        }
 
+        // User is exist in user table 
+        let userExist = await this.usersRepository.findOne({
+          where: {
+            userId: userId,
+          },
+        });
+        if (!userExist) {
+          errors.push({
+            errorMessage: `User ${userId} is not exist.`,
+          });
+          continue;
+        }
+
+        // User is exist in user table 
+        let tenantExist = await this.tenantsRepository.findOne({
+          where: {
+            tenantId: tenantId,
+          },
+        });
+        if (!tenantExist) {
+          errors.push({
+            errorMessage: `Tenant ${tenantId} is not exist.`,
+          });
+          continue;
+        }
+      }
+
+      for (const tenantId of tenantIds) {
 
         const data = await this.userTenantMappingRepository.save({
           userId: userId,
@@ -667,7 +674,7 @@ export class PostgresUserService {
     }
   }
 
-  public async validateFieldValues(field_value_array:string[]) {
+  public async validateFieldValues(field_value_array: string[]) {
     let encounteredKeys = []
     for (const fieldValue of field_value_array) {
       const [fieldId] = fieldValue.split(":").map(value => value.trim());
@@ -680,8 +687,8 @@ export class PostgresUserService {
       }
       encounteredKeys.push(fieldId);
 
-  };
-}
+    };
+  }
 
 }
 

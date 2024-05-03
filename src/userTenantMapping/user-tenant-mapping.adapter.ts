@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { PostgresAssignTenantService } from "src/adapters/postgres/usertenantmapping-adapter";
-import { HasuraAssignTenantService } from "src/adapters/hasura/usertenantmapping.adapter";
+import { PostgresAssignTenantService } from "src/adapters/postgres/userTenantMapping-adapter";
+import { HasuraAssignTenantService } from "src/adapters/hasura/userTenantMapping.adapter";
 import { IServicelocatorassignTenant } from "src/adapters/usertenantmappinglocator";
 
 @Injectable()

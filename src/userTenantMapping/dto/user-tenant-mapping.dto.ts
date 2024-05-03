@@ -23,7 +23,7 @@ export class AssignTenantMappingDto {
     @IsArray()
     @IsUUID(undefined, { each: true })
     @IsNotEmpty({ each: true })
-    tenantId: string;
+    tenantId: string[];
 
     constructor(obj: any) {
         Object.assign(this, obj);

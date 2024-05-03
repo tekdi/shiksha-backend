@@ -20,7 +20,7 @@ export class PostgresAssignTenantService {
         private tenantsRepository: Repository<Tenants>,
     ) { }
 
-    private async validateUserTenantMapping(userId: string, tenantId: string, errors: any[]) {
+    public async validateUserTenantMapping(userId: string, tenantId: string, errors: any[]) {
         // check if user tenant mapping exists.
         const existingMapping = await this.userTenantMappingRepository.findOne({
             where: { userId, tenantId },

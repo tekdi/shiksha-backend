@@ -25,6 +25,7 @@ import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 @Injectable()
 export class PostgresUserService {
   axios = require("axios");
+
   constructor(
     // private axiosInstance: AxiosInstance,
     @InjectRepository(User)
@@ -38,7 +39,7 @@ export class PostgresUserService {
     @InjectRepository(UserTenantMapping)
     private userTenantMappingRepository: Repository<UserTenantMapping>,
     @InjectRepository(Tenants)
-    private tenantsRepository: Repository<Tenants>
+    private tenantsRepository: Repository<Tenants>,
   ) { }
   async searchUser(tenantId: string,
     request: any,
@@ -342,7 +343,37 @@ export class PostgresUserService {
       //Check duplicate field entry
       if (userCreateDto.fieldValues) {
         let field_value_array = userCreateDto.fieldValues.split("|");
-        await this.validateFieldValues(field_value_array);
+        const validateField = await this.validateFieldValues(field_value_array);
+
+        if(validateField == false){
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.CONFLICT,
+            errorMessage: "Duplicate fieldId found in fieldValues.",
+          });
+        }
+      }
+
+      // Check if tenant array is not empty
+      const tenantIds = userCreateDto.tenantId;
+      const userId = userCreateDto.userId;
+      let errors = [];
+
+      if (!tenantIds || tenantIds.length === 0) {
+        return new SuccessResponse({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: "Tenants array cannot be empty.",
+        });
+      }
+
+      //Check tenent is exist or not
+      for (const tenantId of tenantIds) {
+        const validate = await this.validateUserTenantMapping(userId, tenantId);
+        if (validate == false) {
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorMessage: `Tenant ${tenantId} does not exist.`,
+          });
+        }
       }
 
       userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
@@ -375,18 +406,6 @@ export class PostgresUserService {
 
 
 
-
-      // Check if tenant array is not empty
-      const tenantIds = userCreateDto.tenantId;
-      const userId = userCreateDto.userId;
-      let errors = [];
-
-      if (!tenantIds || tenantIds.length === 0) {
-        return new SuccessResponse({
-          statusCode: HttpStatus.BAD_REQUEST,
-          message: "Tenants array cannot be empty.",
-        });
-      }
 
 
       if (errors.length > 0) {
@@ -494,59 +513,25 @@ export class PostgresUserService {
       let errors = [];
 
       for (const tenantId of tenantIds) {
-        let findExistingRole = await this.userTenantMappingRepository.findOne({
-          where: {
-            userId: userId,
-            tenantId: tenantId,
-          },
-        });
-        if (findExistingRole) {
-          errors.push({
-            errorMessage: `User is already exist in ${tenantId} Tenant.`,
-          });
-          continue;
-        }
-
-        // User is exist in user table 
-        let userExist = await this.usersRepository.findOne({
-          where: {
-            userId: userId,
-          },
-        });
-        if (!userExist) {
-          errors.push({
-            errorMessage: `User ${userId} is not exist.`,
-          });
-          continue;
-        }
-
-        // User is exist in user table 
-        let tenantExist = await this.tenantsRepository.findOne({
-          where: {
-            tenantId: tenantId,
-          },
-        });
-        if (!tenantExist) {
-          errors.push({
-            errorMessage: `Tenant ${tenantId} is not exist.`,
-          });
-          continue;
-        }
-      }
-
-      for (const tenantId of tenantIds) {
-
         const data = await this.userTenantMappingRepository.save({
           userId: userId,
           tenantId: tenantId,
           createdBy: request['user'].userId,
           updatedBy: request['user'].userId
         })
-
-        // result.push(new ResponseAssignTenantDto(data, `Tenant assigned successfully to the user.`));
       }
     } catch (error) {
       throw new Error(error)
+    }
+  }
+
+  public async validateUserTenantMapping(userId: string, tenantId: string) {
+    // check if tenant exists
+    const tenantExist = await this.tenantsRepository.findOne({ where: { tenantId: tenantId } });
+    if (!tenantExist) {
+      return false
+    } else {
+      return true
     }
   }
 
@@ -680,10 +665,7 @@ export class PostgresUserService {
       const [fieldId] = fieldValue.split(":").map(value => value.trim());
 
       if (encounteredKeys.includes(fieldId)) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.CONFLICT,
-          errorMessage: `Duplicate fieldId '${fieldId}' found in fieldValues.`,
-        });
+        return false
       }
       encounteredKeys.push(fieldId);
 

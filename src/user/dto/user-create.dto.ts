@@ -133,7 +133,7 @@ export class UserCreateDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   @IsNotEmpty({ each: true })
-  tenantId: string;
+  tenantId: string[];
 
   constructor(partial: Partial<UserCreateDto>) {
     Object.assign(this, partial);

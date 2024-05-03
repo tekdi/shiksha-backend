@@ -28,11 +28,5 @@ import {
       default: () => "CURRENT_TIMESTAMP",
     })
     updatedAt: Date;
-  
-    // @Column()
-    // createdBy: string;
-  
-    // @Column()
-    // updatedBy: string;
   }
   

@@ -1,12 +1,12 @@
 import { HttpModule, Module } from '@nestjs/common';
-import { AssignTenantController } from './assign-tenant.controller';
+import { AssignTenantController } from './user-tenant-mapping.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserTenantMapping } from "./entities/assign-tenant.entity";
-import { AssignTenantAdapter } from "./assign-tenant.apater";
-import { PostgresAssignTenantService } from "src/adapters/postgres/assigntenant-adapter";
-import { HasuraAssignTenantService } from "src/adapters/hasura/assigntenant.adapter";
+import { UserTenantMapping } from "./entities/user-tenant-mapping.entity";
+import { AssignTenantAdapter } from "./user-tenant-mapping.apater";
+import { PostgresAssignTenantService } from "src/adapters/postgres/usertenantmapping-adapter";
+import { HasuraAssignTenantService } from "src/adapters/hasura/usertenantmapping.adapter";
 import { User } from "src/user/entities/user-entity";
-import { Tenants } from "src/assign-tenant/entities/tenant.entity";
+import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 
 @Module({

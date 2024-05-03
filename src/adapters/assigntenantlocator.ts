@@ -1,4 +1,4 @@
-import { CreateAssignTenantDto } from "src/assign-tenant/dto/assign-tenant-create.dto";
+import { AssignTenantMappingDto } from "src/userTenantMapping/dto/user-tenant-mapping.dto";
 export interface IServicelocatorassignTenant {
-    createAssignTenant(request: any, createAssignTenantDto:CreateAssignTenantDto);
+    userTenantMapping(request: any, assignTenantMappingDto:AssignTenantMappingDto);
 }

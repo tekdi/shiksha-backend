@@ -12,8 +12,8 @@ import { AttendanceEntity } from "src/attendance/entities/attendance.entity";
 import { PostgresAttendanceService } from "./attendance-adapter";
 import { PostgresFieldsService } from "./fields-adapter";
 import { Cohort } from "src/cohort/entities/cohort.entity";
-import { UserTenantMapping } from "src/assign-tenant/entities/assign-tenant.entity";
-import { Tenants } from "src/assign-tenant/entities/tenant.entity";
+import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
+import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 
 @Module({

@@ -1,13 +1,12 @@
 import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { UserTenantMapping } from 'src/assign-tenant/entities/assign-tenant.entity';
-import { CreateAssignTenantDto } from "src/assign-tenant/dto/assign-tenant-create.dto";
-import { ResponseAssignTenantDto } from "src/assign-tenant/dto/assign-tenant-create.dto";
+import { UserTenantMapping } from 'src/userTenantMapping/entities/user-tenant-mapping.entity';
+import { AssignTenantMappingDto,ResponseAssignTenantDto } from "src/userTenantMapping/dto/user-tenant-mapping.dto";
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { User } from "src/user/entities/user-entity";
-import { Tenants } from "src/assign-tenant/entities/tenant.entity";
+import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 
 @Injectable()
@@ -20,27 +19,26 @@ export class PostgresAssignTenantService {
         @InjectRepository(Tenants)
         private tenantsRepository: Repository<Tenants>,
     ) { }
-    public async createAssignTenant(request: any, createAssignTenantDto: CreateAssignTenantDto) {
+
+    public async userTenantMapping(request: any, assignTenantMappingDto: AssignTenantMappingDto) {
         try {
 
-            const userId = createAssignTenantDto.userId;
-            const tenantIds = createAssignTenantDto.tenantId;
+            const userId = assignTenantMappingDto.userId;
+            const tenantIds = assignTenantMappingDto.tenantId;
 
             // Check if tenant array is not empty
             if (!tenantIds || tenantIds.length === 0) {
                 return new SuccessResponse({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    message: "Roles array cannot be empty.",
+                    message: "Please provide at least one tenant Id",
                 });
             }
+
             let result = [];
             let errors = [];
 
             for (const tenantId of tenantIds) {
-                // If role already exists for user, return error response
-                console.log(userId);
-                console.log(tenantId);
-
+                // check if user tenant mapping exists.
                 let findExistingRole = await this.userTenantMappingRepository.findOne({
                     where: {
                         userId: userId,
@@ -54,7 +52,7 @@ export class PostgresAssignTenantService {
                     continue;
                 }
 
-                // User is exist in user table 
+                // check if user exists
                 let userExist = await this.userRepository.findOne({
                     where: {
                         userId: userId,
@@ -62,12 +60,12 @@ export class PostgresAssignTenantService {
                 });
                 if (!userExist) {
                     errors.push({
-                        errorMessage: `User ${userId} is not exist.`,
+                        errorMessage: `User ${userId} does not exist.`,
                     });
                     continue;
                 }
 
-                // User is exist in user table 
+                // check if tenant exists
                 let tenantExist = await this.tenantsRepository.findOne({
                     where: {
                         tenantId: tenantId,
@@ -75,7 +73,7 @@ export class PostgresAssignTenantService {
                 });
                 if (!tenantExist) {
                     errors.push({
-                        errorMessage: `Tenant ${tenantId} is not exist.`,
+                        errorMessage: `Tenant ${tenantId} does not exist.`,
                     });
                     continue;
                 }
@@ -88,7 +86,7 @@ export class PostgresAssignTenantService {
                     updatedBy: request['user'].userId
                 })
 
-                result.push(new ResponseAssignTenantDto(data, `Tenant assigned successfully to the user.`));
+                result.push(new ResponseAssignTenantDto(data, `User is successfully added to the Tenants.`));
             }
 
             if (result.length == 0) {
@@ -106,12 +104,6 @@ export class PostgresAssignTenantService {
                 errors,
             };
         } catch (error) {
-            if (error.code === '23503') {
-                return new ErrorResponseTypeOrm({
-                    statusCode: HttpStatus.NOT_FOUND,
-                    errorMessage: `User Id or Role Id Doesn't Exist in Database `
-                });
-            }
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: JSON.stringify(error)

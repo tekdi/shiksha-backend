@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AssignTenantController } from './assign-tenant.controller';
+import { AssignTenantController } from './user-tenant-mapping.controller';
 
 describe('AssignTenantController', () => {
   let controller: AssignTenantController;

@@ -19,9 +19,8 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { isUUID } from 'class-validator';
 import { UserSearchDto } from 'src/user/dto/user-search.dto';
-import { UserTenantMapping } from "src/assign-tenant/entities/assign-tenant.entity";
-import { Tenants } from "src/assign-tenant/entities/tenant.entity";
-import { ResponseAssignTenantDto } from "src/assign-tenant/dto/assign-tenant-create.dto";
+import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
+import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 @Injectable()
 export class PostgresUserService {

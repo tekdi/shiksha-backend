@@ -7,7 +7,7 @@ import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
 import { CohortMembersSearchDto } from "src/cohortMembers/dto/cohortMembers-search.dto";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
+import { IsNull, Not, Repository, getConnection} from "typeorm";
 import { CohortDto } from "src/cohort/dto/cohort.dto";
 import APIResponse from "src/utils/response";
 import { HttpStatus } from "@nestjs/common";
@@ -41,7 +41,7 @@ export class PostgresCohortMembersService {
       if (cohortMembershipId && !isUUID(cohortMembershipId)) {
         return new ErrorResponseTypeOrm({
           statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please Enter a valid UUID for userId",
+          errorMessage: "Please Enter a valid UUID for cohortMembershipId",
         });
       }
       const cohortMemberExist = await this.cohortMembersRepository.findOne({
@@ -81,7 +81,7 @@ export class PostgresCohortMembersService {
       userDetails: [],
     };
 
-    let getUserDetails = await this.findUserNameWithPagination(searchId, searchKey, limit, offset);
+    let getUserDetails = await this.findUserNameWithPagination(searchId, limit, offset);
 
     for (let data of getUserDetails) {
       let userDetails = {
@@ -106,8 +106,8 @@ export class PostgresCohortMembersService {
 
     return results;
   }
-
-  async findUserNameWithPagination(searchData: string, searchKey: any, limit: number, offset: number) {
+  
+  async findUserNameWithPagination(searchData: string, limit: number, offset: number) {
     let whereCase;
     let whereValue = [];
     let limitClause = '';
@@ -147,7 +147,7 @@ export class PostgresCohortMembersService {
     
 }
 
-  async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {
+async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {
     let results = {
       userDetails: [],
     };
@@ -237,24 +237,6 @@ export class PostgresCohortMembersService {
       let offset = 0;
       if (page > 1) {
         offset = limit * (page - 1);
-      }
-
-      const MAX_LIMIT = 20;
-      const PAGE_LIMIT = 100000;
-
-      // Validate the limit parameter
-      if (limit > MAX_LIMIT) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
-        });
-      }
-
-      if (page > PAGE_LIMIT) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
-        });
       }
 
       // if (limit === 0) {

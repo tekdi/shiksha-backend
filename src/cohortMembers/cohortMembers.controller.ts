@@ -39,7 +39,7 @@ import { Response } from "express";
 
 @ApiTags("Cohort Members")
 @Controller("cohortmembers")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
   constructor(
     private readonly cohortMembersService: CohortMembersService,

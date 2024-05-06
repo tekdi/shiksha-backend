@@ -39,22 +39,10 @@ export class CohortMembersDto {
   @Expose()
   role: string;
 
-  //createdBy
-  @ApiPropertyOptional({
-    type: String,
-    description: "The createdBy of the cohort members",
-    default: "",
-  })
-  @Expose()
+  @Exclude() 
   createdBy: string;
 
-  //updatedBy
-  @ApiPropertyOptional({
-    type: String,
-    description: "The updatedBy of the cohort members",
-    default: "",
-  })
-  @Expose()
+  @Exclude()
   updatedBy: string;
 
   constructor(obj: any) {

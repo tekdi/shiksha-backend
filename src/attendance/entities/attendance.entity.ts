@@ -63,6 +63,9 @@ export class AttendanceEntity {
   @Column()
   updatedBy: string;
 
+  @Column()
+  scope: string;
+
   constructor(obj: Partial<AttendanceEntity>) {
     Object.assign(this, obj);
   }

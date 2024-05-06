@@ -72,11 +72,7 @@ export class AttendanceDto {
   @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
   attendance: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The remark of the attendance",
-    default: "",
-  })
+  
   @Expose()
   @ApiPropertyOptional()
   remark: string;
@@ -164,6 +160,9 @@ export class AttendanceDto {
   @Expose()
   updatedBy: string;
 
+  @Expose()
+  scope: string;
+
   constructor(obj: any) {
     Object.assign(this, obj);
   }
@@ -187,6 +186,44 @@ export class UserAttendanceDTO {
   @IsNotEmpty()
   @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
   attendance: string;
+
+
+  @Expose()
+  @ApiPropertyOptional()
+  remark: string;
+
+  @Expose()
+  @ApiPropertyOptional()
+  latitude: number;
+
+  @Expose()
+  @ApiPropertyOptional()
+  longitude: number;
+
+
+  @Expose()
+  @ApiPropertyOptional()
+  image: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  metaData: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  syncTime: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  session: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "The contextType of the attendance",
+    default: "",
+  })
+  @Expose()
+  contextType: string;
 }
 
 export class BulkAttendanceDTO {

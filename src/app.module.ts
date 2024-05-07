@@ -18,6 +18,7 @@ import { FieldsModule } from "./fields/fields.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { UserModule } from "./user/user.module";
 import { RbacModule } from "./rbac/rbac.module";
+import { AssignTenantModule } from './userTenantMapping/user-tenant-mapping.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RbacModule } from "./rbac/rbac.module";
     AttendanceModule,
     CohortModule,
     CohortMembersModule,
+    AssignTenantModule,
     FieldsModule,
     AuthModule,
     AuthRbacModule,

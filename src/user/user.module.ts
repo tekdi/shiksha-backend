@@ -9,10 +9,12 @@ import { User } from "./entities/user-entity";
 import { FieldValues } from "./entities/field-value-entities";
 import { Field } from "./entities/field-entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
+import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
+import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, FieldValues, Field, CohortMembers]),
+    TypeOrmModule.forFeature([User, FieldValues, Field, CohortMembers,UserTenantMapping,Tenants]),
     HttpModule,
     HasuraModule,
     PostgresModule,

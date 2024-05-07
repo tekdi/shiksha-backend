@@ -29,6 +29,7 @@ import {
   ApiNotFoundResponse,
   ApiInternalServerErrorResponse,
   ApiBadRequestResponse,
+  ApiConflictResponse,
 } from "@nestjs/swagger";
 
 import { UserSearchDto } from "./dto/user-search.dto";
@@ -84,16 +85,13 @@ export class UserController {
   @ApiBody({ type: UserCreateDto })
   @ApiForbiddenResponse({ description: "User Already Exists"})
   @ApiInternalServerErrorResponse({ description: "Internal Server Error" })
-  @ApiHeader({
-    name: "tenantid",
-  })
+  @ApiConflictResponse({ description: "Duplicate data." })
   async createUser(
     @Headers() headers,
     @Req() request: Request,
     @Body() userCreateDto: UserCreateDto,
     @Res() response: Response
   ) {
-    userCreateDto.tenantId = headers["tenantid"];
     const result = await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
     return response.status(result.statusCode).json(result);
   }

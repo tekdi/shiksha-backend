@@ -47,7 +47,7 @@ import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
 @Controller("cohorts")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
@@ -101,6 +101,12 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
+    const expectedFields = ['programId', 'parentId', 'name', 'type', 'fieldValues' ]; 
+    const unexpectedFields = Object.keys(cohortCreateDto).filter(field => !expectedFields.includes(field));
+    if (unexpectedFields.length > 0) {
+      throw new BadRequestException(`Unexpected fields found: ${unexpectedFields.join(', ')}`);
+    }
+
     let tenantid = headers["tenantid"];
     const payload = {
       image: image?.filename,
@@ -171,6 +177,11 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
+    const expectedFields = ['cohortId','programId', 'parentId', 'name', 'type', 'fieldValues' ]; 
+    const unexpectedFields = Object.keys(cohortUpdateDto).filter(field => !expectedFields.includes(field));
+    if (unexpectedFields.length > 0) {
+      throw new BadRequestException(`Unexpected fields found: ${unexpectedFields.join(', ')}`);
+    }
     const result = await this.cohortAdapter.buildCohortAdapter().updateCohort(
       cohortId,
       request,

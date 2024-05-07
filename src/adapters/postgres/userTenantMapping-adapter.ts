@@ -2,7 +2,7 @@ import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { UserTenantMapping } from 'src/userTenantMapping/entities/user-tenant-mapping.entity';
-import { AssignTenantMappingDto,ResponseAssignTenantDto } from "src/userTenantMapping/dto/user-tenant-mapping.dto";
+import { UserTenantMappingDto,ResponseAssignTenantDto } from "src/userTenantMapping/dto/user-tenant-mapping.dto";
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { User } from "src/user/entities/user-entity";
@@ -49,7 +49,7 @@ export class PostgresAssignTenantService {
         return true;
     }
     
-    public async userTenantMapping(request: any, assignTenantMappingDto: AssignTenantMappingDto) {
+    public async userTenantMapping(request: any, assignTenantMappingDto: UserTenantMappingDto) {
         try {
 
             const userId = assignTenantMappingDto.userId;

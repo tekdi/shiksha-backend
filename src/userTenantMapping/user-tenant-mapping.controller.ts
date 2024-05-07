@@ -31,7 +31,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 
 import { Response, response } from "express";
 import { AssignTenantAdapter } from "./user-tenant-mapping.adapter";
-import { AssignTenantMappingDto } from "./dto/user-tenant-mapping.dto";
+import { UserTenantMappingDto } from "./dto/user-tenant-mapping.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 @ApiTags("AssignTenant")
@@ -48,16 +48,16 @@ export class AssignTenantController {
     @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
     @ApiConflictResponse({ description: "Tenant is already assigned to this user." })
     @UsePipes(new ValidationPipe())
-    @ApiBody({ type: AssignTenantMappingDto })
+    @ApiBody({ type: UserTenantMappingDto })
     public async createCohort(
         @Headers() headers,
         @Req() request: Request,
-        @Body() assignTenantMappingDto: AssignTenantMappingDto,
+        @Body() userTenantMappingDto: UserTenantMappingDto,
         @Res() response: Response
     ) {
         const result = await this.assignTenantAdapter.buildAssignTenantAdapter().userTenantMapping(
             request,
-            assignTenantMappingDto
+            userTenantMappingDto
         );
         return response.status(result.statusCode).json(result);
     }

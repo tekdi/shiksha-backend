@@ -275,7 +275,7 @@ export class PostgresUserService {
   }
   async allUsersTenent(userId: string){
     const query = `
-    SELECT T.name AS tenantName, T.*, UTM."Id" AS userTenantMappingId 
+    SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId 
     FROM public."UserTenantMapping" UTM 
     LEFT JOIN public."Tenants" T 
     ON T."tenantId" = UTM."tenantId" 

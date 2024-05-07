@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 
 @Entity({ name: "Users" })
 export class User {
@@ -53,4 +54,12 @@ export class User {
   @Column({ default: "active" })
   status: string;
   userRoleMappings: User;
+
+
+  // @OneToMany(() => CohortMembers, cohortMember => cohortMember.cohort)
+  // cohortMembers: CohortMembers[];
+
+  @OneToMany(() => UserTenantMapping, userTenantMapping => userTenantMapping.user)
+  userTenantMapping: UserTenantMapping[];
+
 }

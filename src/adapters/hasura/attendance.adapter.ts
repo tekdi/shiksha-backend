@@ -203,7 +203,7 @@ export class AttendanceHasuraService implements IServicelocator {
       let offset = 0;
       if (attendanceSearchDto.page > 1) {
         offset =
-          parseInt(attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
+          (attendanceSearchDto.limit) * (attendanceSearchDto.page - 1);
       }
 
       attendanceSearchDto.filters["tenantId"] = tenantId ? tenantId : "";
@@ -247,8 +247,8 @@ export class AttendanceHasuraService implements IServicelocator {
               }
             }`,
         variables: {
-          limit: parseInt(attendanceSearchDto.limit)
-            ? parseInt(attendanceSearchDto.limit)
+          limit: (attendanceSearchDto.limit)
+            ? (attendanceSearchDto.limit)
             : 10,
           offset: offset,
           filters: attendanceSearchDto.filters,

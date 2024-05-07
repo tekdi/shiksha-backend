@@ -88,7 +88,7 @@ export class AttendanceController {
   @ApiBody({ type: AttendanceDto })
   // @UseInterceptors(ClassSerializerInterceptor)
   @ApiHeader({
-    name: "tenantid",
+    name: "tenantid"
   })
   @UsePipes(ValidationPipe)
   public async createAttendace(
@@ -110,7 +110,7 @@ export class AttendanceController {
 
 
 
-  @Post("/search")
+  @Post("/list")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Attendance List" })
   @ApiBadRequestResponse({ description: "Bad Request" })
@@ -131,6 +131,12 @@ export class AttendanceController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
+    if (!tenantid) {
+      return response.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        errorMessage: "tenantId is missing in headers",
+      });
+    }
 
     const result = await this.attendaceAdapter.buildAttenceAdapter().searchAttendance(
       tenantid,

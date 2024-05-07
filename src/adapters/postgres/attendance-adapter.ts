@@ -2,8 +2,8 @@ import { User } from '../../user/entities/user-entity';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from "@nestjs/typeorm";
 import { AttendanceEntity } from "../../attendance/entities/attendance.entity";
-import {  Repository,Between } from "typeorm";
-import {  HttpStatus, Injectable } from "@nestjs/common";
+import { Repository, Between, In, MoreThanOrEqual, LessThanOrEqual } from "typeorm";
+import { ConsoleLogger, HttpStatus, Injectable } from "@nestjs/common";
 import { AttendanceSearchDto } from "../../attendance/dto/attendance-search.dto";
 import { SuccessResponse } from 'src/success-response';
 import { AttendanceDto, BulkAttendanceDTO } from '../../attendance/dto/attendance.dto';
@@ -12,6 +12,7 @@ import { AttendanceStatsDto } from '../../attendance/dto/attendance-stats.dto';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 const moment = require('moment');
+const facetedSearch = require("in-memory-faceted-search");
 
 @Injectable()
 export class PostgresAttendanceService {
@@ -34,94 +35,190 @@ export class PostgresAttendanceService {
 
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
         try {
-            let { limit, page, filters } = attendanceSearchDto;
+            let { limit, page, filters, facets } = attendanceSearchDto;
+            // Set default limit to 0 if not provided
             if (!limit) {
-                limit = '0';
+                limit = 10;
             }
-    
+
             let offset = 0;
+            // Calculate offset based on page number
             if (page > 1) {
-                offset = parseInt(limit) * (page - 1);
+                offset = (limit) * (page - 1);
             }
-    
-            const UserKeys = this.userRepository.metadata.columns.map((column) => column.propertyName);
-            const AttendaceKeys = this.attendanceRepository.metadata.columns.map((column) => column.propertyName);
-            const CohortMembersKeys = this.cohortMembersRepository.metadata.columns.map((column) => column.propertyName);
-    
-            let whereClause = `u."tenantId" = $1`; // Default WHERE clause for filtering by tenantId
-            let queryParams = [tenantId]; // Parameters for the query
-            let attendanceList = '';
+
+            // Get column names from metadata
+            const attendanceKeys = this.attendanceRepository.metadata.columns.map((column) => column.propertyName);
+
+            let whereClause: any = { tenantId };
+            // Default WHERE clause for filtering by tenantId
+
             if (filters && Object.keys(filters).length > 0) {
-                let index = 2; // Starting index for additional parameters
                 for (const [key, value] of Object.entries(filters)) {
-                    if (UserKeys.includes(key)) {
-                        whereClause += ` AND u."${key}" = $${index}`;
-                        queryParams.push(value);
-                    } else if (AttendaceKeys.includes(key)) {
+                    if (attendanceKeys.includes(key)) {
                         if (key === "attendanceDate") {
-                            attendanceList = ` AND (a."attendanceDate" = $${index} OR a."attendanceDate" IS NULL)`;
+                            // For attendanceDate, consider NULL values as well
+                            whereClause[key] = In([value, null]);
                         }
-                        whereClause += ` AND a."${key}" = $${index}`;
-                        queryParams.push(value);
-                    } else if (CohortMembersKeys.includes(key)) {
-                        whereClause += ` AND cm."${key}" = $${index}`;
-                        queryParams.push(value);
-                    } else if (filters.fromDate && filters.toDate) {
-                        whereClause += ` AND a."attendanceDate" BETWEEN $${index} AND $${index + 1}`;
-                        queryParams.push(filters.fromDate);
-                        queryParams.push(filters.toDate);
-                        index += 1; // Increment index for toDate parameter
-                    } else {
+                        whereClause[key] = value;
+                    }
+
+                    else if (filters.fromDate && filters.toDate) {
+
+
+                        // Convert fromDate and toDate strings to Date objects
+                        const fromDate = new Date(filters.fromDate);
+                        const toDate = new Date(filters.toDate);
+
+                        // Construct the whereClause with the date range using Between
+                        whereClause["attendanceDate"] = Between(fromDate, toDate);
+                    }
+                    else {
+                        // If filter key is invalid, return a BadRequest response
                         return new ErrorResponseTypeOrm({
                             statusCode: HttpStatus.BAD_REQUEST,
-                            errorMessage: `${key} Invalid key`,
+                            errorMessage: `${key} Invalid filter key`,
                         });
                     }
-                    index += 1; // Increment index for next parameter
                 }
+
             }
-    
-            const query = `
-                SELECT u.*, cm.*, a.*     
-                FROM "Users" u
-                INNER JOIN "CohortMembers" cm ON cm."userId" = u."userId" 
-                LEFT JOIN "Attendance" a ON a."userId" = cm."userId" ${attendanceList} 
-                WHERE ${whereClause};
-            `;
-            const results = await this.attendanceRepository.query(query, queryParams);
-            const mappedResponse = await this.mappedResponse(results);
-    
-            return new SuccessResponse({
-                statusCode: HttpStatus.OK,
-                message: 'Ok.',
-                data: mappedResponse,
+
+            // Fetch data from the database
+            const attendanceList = await this.attendanceRepository.find({
+                where: whereClause
             });
+
+            const paginatedAttendanceList = attendanceList.slice(offset, offset + (limit));
+
+            if (facets && facets.length > 0) {
+                let facetFields = [];
+                // Check for invalid facets
+                for (const facet of facets) {
+                    if (!attendanceKeys.includes(facet)) {
+                        // If facet is not present in attendanceKeys, return a BadRequest response
+                        return new ErrorResponseTypeOrm({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            errorMessage: `${facet} Invalid facet`,
+                        });
+                    }
+                    facetFields.push({ name: facet, field: facet });
+                }
+
+
+
+
+                // Process the data to calculate counts based on facets
+                const tree = await this.facetedSearch({ data: attendanceList, facets: facetFields });
+                // const result = Object.entries(tree).map(([key, value]) => ({ [key]: value }));
+
+                let result = [];
+                // Process the data to calculate counts based on facets
+                for (const facet of facetFields) {
+                    const { field } = facet;
+                    const tree = await this.facetedSearch({ data: attendanceList, facets: [facet] });
+                    const formattedData = Object.entries(tree[field]).map(([key, value]) => ({ [key]: value }));
+                    result.push({ [field]: formattedData }); // Modified the structure here
+                }
+
+
+
+                // Return success response with counts
+                return new SuccessResponse({
+                    statusCode: HttpStatus.OK,
+                    message: 'Ok.',
+                    data: {
+                        result: result,
+                    },
+                });
+            }
+            else {
+
+                return new SuccessResponse({
+                    statusCode: HttpStatus.OK,
+                    message: 'Ok.',
+                    data: {
+                        attendanceList: paginatedAttendanceList
+                    },
+                });
+
+
+            }
         } catch (error) {
-            if (error.code=== "22P02"){
+            if (error.code === "22P02") {
+                // Handle invalid input value error
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    errorMessage: `Invalid value Entered For ${error.routine}`,
-                })
+                    errorMessage: `Invalid value entered for ${error.routine}`,
+                });
             }
+            // Handle other errors with internal server error response
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: error,
+                errorMessage: error, // Use error message if available
             });
         }
     }
 
 
+    async facetedSearch({ data, facets }) {
+        const tree = [];
+        // Iterate over facets
+        for (const facet of facets) {
+            const { field } = facet;
+
+            // Initialize main facet in tree
+            tree[field] = {};
+
+            // Iterate over data to count occurrences of each field value
+            for (const item of data) {
+                const value = item[field];
+                const attendanceValue = item["attendance"];
+
+                // If contextId doesn't exist in the tree, initialize it with an empty object
+                if (!tree[field][value]) {
+                    tree[field][value] = {};
+                }
+
+                // Increment count for attendanceValue
+                if (!tree[field][value][attendanceValue]) {
+                    tree[field][value][attendanceValue] = 1;
+                } else {
+                    tree[field][value][attendanceValue]++;
+                }
+            }
+
+            // Calculate percentage for each contextId
+            // Calculate percentage for each contextId
+            for (const value in tree[field]) {
+                const counts = tree[field][value];
+                const totalCount = Object.values(counts).reduce((acc: number, curr: unknown) => acc + (curr as number), 0);
+
+                for (const key in counts) {
+                    const count = counts[key];
+                    const percentage = (count / Number(totalCount)) * 100; // Convert totalCount to a number
+                    // counts[key + "_count"] = count;
+                    counts[key + "_percentage"] = percentage.toFixed(2); // Round percentage to two decimal places
+                }
+            }
+
+        }
+        return tree;
+    }
+
+
+
     async attendanceReport(attendanceStatsDto: AttendanceStatsDto) {
         let { contextId, limit, offset, filters } = attendanceStatsDto;
         try {
-            
+
             let nameFilter = '';
             let userFilter = '';
             let dateFilter = '';
             let queryParams: any[] = [contextId];
             let subqueryParams: any[] = [contextId]; // Initialize query parameters array
             let paramIndex = 1; // Initialize parameter index
-    
+
             if (filters && filters.search) {
                 nameFilter = `AND u."name" ILIKE $${++paramIndex}`; // Increment paramIndex
                 queryParams.push(`%${filters.search.trim()}%`);
@@ -134,14 +231,14 @@ export class PostgresAttendanceService {
 
             }
             if (filters && filters.fromDate && filters.toDate) {
-                dateFilter = `WHERE aa."attendanceDate" >= $${++paramIndex} AND aa."attendanceDate" <= $${++paramIndex}`;   
+                dateFilter = `WHERE aa."attendanceDate" >= $${++paramIndex} AND aa."attendanceDate" <= $${++paramIndex}`;
                 queryParams.push(filters.fromDate);
                 queryParams.push(filters.toDate);
                 subqueryParams.push(filters.fromDate);
                 subqueryParams.push(filters.toDate);
             }
 
-    
+
             let query = `
                 SELECT 
                     u."userId",
@@ -174,7 +271,7 @@ export class PostgresAttendanceService {
                 GROUP BY 
                     u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
             `;
-    
+
             if (filters) {
                 if (filters.nameOrder && (filters.nameOrder === "asc" || filters.nameOrder === "desc")) {
                     query += ` ORDER BY "name" ${filters.nameOrder}`;
@@ -185,14 +282,14 @@ export class PostgresAttendanceService {
             query += `
                 LIMIT $${++paramIndex}
                 OFFSET $${++paramIndex}`;
-            
+
             queryParams.push(limit);
             queryParams.push(offset);
-    
 
-    
+
+
             const result = await this.attendanceRepository.query(query, queryParams);
-    
+
             if (!filters || !filters?.userId) {
                 // We don't need average for single user
                 const countquery = `
@@ -229,7 +326,7 @@ export class PostgresAttendanceService {
                         GROUP BY 
                             u."userId", u."name", aa_stats."total_attendance", aa_stats."present_count"
                     ) AS subquery`;
-    
+
 
                 const average = await this.attendanceRepository.query(countquery, subqueryParams);
                 const report = await this.mapResponseforReport(result);
@@ -252,7 +349,7 @@ export class PostgresAttendanceService {
                 });
             }
 
-            
+
         } catch (error) {
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -260,19 +357,19 @@ export class PostgresAttendanceService {
             });
         }
     }
-    
-    
-    
-    
-    
 
-    
+
+
+
+
+
+
 
     public async mappedResponse(result: any) {
         const attendanceResponse = result.map((item: any) => {
 
             const dateObject = new Date(item.attendanceDate);
-            const formattedDate = moment(dateObject).format('YYYY-MM-DD');            const attendanceMapping = {
+            const formattedDate = moment(dateObject).format('YYYY-MM-DD'); const attendanceMapping = {
                 tenantId: item?.tenantId ? `${item.tenantId}` : "",
                 attendanceId: item?.attendanceId ? `${item.attendanceId}` : "",
                 userId: item?.userId ? `${item.userId}` : "",
@@ -291,8 +388,8 @@ export class PostgresAttendanceService {
                 updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
                 createdBy: item?.createdBy ? `${item.createdBy}` : "",
                 updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
-                username:item?.username ? `${item.username}` : "",
-                role:item?.role ? `${item.role}` : "",
+                username: item?.username ? `${item.username}` : "",
+                role: item?.role ? `${item.role}` : "",
 
             };
 
@@ -310,7 +407,7 @@ export class PostgresAttendanceService {
                 userId: item?.userId ? `${item.userId}` : "",
                 attendance_percentage: item?.attendance_percentage ? `${item.attendance_percentage}` : "",
             };
-                
+
             return new AttendanceStatsDto(attendanceReportMapping);
         });
 
@@ -348,14 +445,14 @@ export class PostgresAttendanceService {
 
         try {
 
-            const Isvalid = await this.validateUserForCohort(attendanceDto.userId,attendanceDto.contextId)
+            const Isvalid = await this.validateUserForCohort(attendanceDto.userId, attendanceDto.contextId)
 
-            if(!Isvalid){
+            if (!Isvalid) {
 
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.BAD_REQUEST,
                     errorMessage: "Invalid combination of contextId and userId",
-                }); 
+                });
 
             }
 
@@ -366,13 +463,11 @@ export class PostgresAttendanceService {
                 userId: attendanceDto.userId,
             };
 
-
             const attendanceFound: any = await this.searchAttendance(
                 attendanceDto.tenantId,
                 loginUserId,
                 attendanceToSearch
             );
-
 
             if (attendanceFound instanceof ErrorResponseTypeOrm) {
                 return new ErrorResponseTypeOrm({
@@ -382,12 +477,12 @@ export class PostgresAttendanceService {
             }
 
             if (
-                attendanceFound.data.length > 0 && attendanceFound.data[0].attendanceId != "" &&
-                attendanceFound.statusCode === 200 && attendanceFound instanceof SuccessResponse
+                attendanceFound.data.attendanceList.length > 0
             ) {
+
                 attendanceDto.updatedBy = loginUserId
-              return   await this.updateAttendance(
-                    attendanceFound.data[0].attendanceId,
+                return await this.updateAttendance(
+                    attendanceFound.data.attendanceList[0].attendanceId,
                     loginUserId,
                     attendanceDto
                 );
@@ -420,6 +515,7 @@ export class PostgresAttendanceService {
                 where: { attendanceId },
             });
 
+
             if (!attendanceRecord) {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.BAD_REQUEST,
@@ -427,8 +523,8 @@ export class PostgresAttendanceService {
                 });
             }
 
-
-            this.attendanceRepository.merge(attendanceRecord, attendanceDto);
+            Object.assign(attendanceRecord, attendanceDto);
+            // this.attendanceRepository.merge(attendanceRecord, attendanceDto);
 
             // Save the updated attendance record
             const updatedAttendanceRecord = await this.attendanceRepository.save(
@@ -448,14 +544,14 @@ export class PostgresAttendanceService {
                     errorMessage: "Please provide valid contextId",
                 });
             }
-            else{          
+            else {
                 return new ErrorResponseTypeOrm({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     errorMessage: error,
 
                 })
             }
-            
+
         }
     }
 
@@ -465,8 +561,6 @@ export class PostgresAttendanceService {
     */
     public async createAttendance(request: any, attendanceDto: AttendanceDto) {
 
-
-        
         try {
             const attendance = this.attendanceRepository.create(attendanceDto);
             const result = await this.attendanceRepository.save(attendance);
@@ -561,7 +655,7 @@ export class PostgresAttendanceService {
         attendanceData: BulkAttendanceDTO
     ) {
 
-       const  loginUserId=request.user.userId
+        const loginUserId = request.user.userId
 
 
         const responses = [];
@@ -577,25 +671,34 @@ export class PostgresAttendanceService {
                     contextId: attendanceData.contextId,
                     attendance: attendance.attendance,
                     userId: attendance.userId,
-                    tenantId:tenantId
+                    tenantId: tenantId,
+                    remark: attendance.remark,
+                    latitude: attendance.latitude,
+                    longitude: attendance.longitude,
+                    image: attendance.image,
+                    metaData: attendance.metaData,
+                    syncTime: attendance.syncTime,
+                    session: attendance.session,
+                    contextType: attendance.contextType,
                 })
+
                 const attendanceRes: any = await this.updateAttendanceRecord(
                     loginUserId,
                     userAttendance
                 );
 
-                if (attendanceRes?.statusCode === 200||attendanceRes?.statusCode === 201) {
+                if (attendanceRes?.statusCode === 200 || attendanceRes?.statusCode === 201) {
                     responses.push(attendanceRes.data);
                 }
-                 else {
+                else {
                     errors.push({
                         userId: attendance.userId,
                         attendanceRes,
                     });
                 }
                 count++;
-            
-           
+
+
             }
         } catch (e) {
             return new ErrorResponseTypeOrm({
@@ -617,18 +720,17 @@ export class PostgresAttendanceService {
 
 
 
-    public async validateUserForCohort(userId,cohortId)
-        {
-            const attendanceRecord = await this.cohortMembersRepository.findOne({
-                where: { userId, cohortId } // Include cohortId in the where clause
-            });
-            if(attendanceRecord){
-                return true
-            }else{
-                return false
-            }
-            
+    public async validateUserForCohort(userId, cohortId) {
+        const attendanceRecord = await this.cohortMembersRepository.findOne({
+            where: { userId, cohortId } // Include cohortId in the where clause
+        });
+        if (attendanceRecord) {
+            return true
+        } else {
+            return false
         }
+
+    }
 
 }
 

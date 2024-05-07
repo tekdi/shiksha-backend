@@ -255,22 +255,22 @@ export class PostgresUserService {
       delete whereClause.userId;
       whereClause.username = username;
     }
-    let getUserDetails = await this.usersRepository.findOne({
+    let userDetails = await this.usersRepository.findOne({
       where: whereClause
     })
 
-    const tenentDetails = await this.allUsersTenent(getUserDetails.userId)
-      let userDetails = {
-        userId: getUserDetails.userId,
-        userName: getUserDetails.username,
-        name: getUserDetails.name,
-        role: getUserDetails.role,
-        district: getUserDetails.district,
-        state: getUserDetails.state,
-        mobile: getUserDetails.mobile,
+    const tenentDetails = await this.allUsersTenent(userDetails.userId)
+      let userData = {
+        userId: userDetails.userId,
+        userName: userDetails.username,
+        name: userDetails.name,
+        role: userDetails.role,
+        district: userDetails.district,
+        state: userDetails.state,
+        mobile: userDetails.mobile,
       }
-      userDetails['tenantData']=tenentDetails;
-    return userDetails;
+      userData['tenantData']=tenentDetails;
+    return userData;
 
   }
   async allUsersTenent(userId: string){

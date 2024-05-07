@@ -1,5 +1,5 @@
 import { ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidateNested, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { IsDate, IsDateString, IsDefined, IsEnum, IsUUID, Matches, Validate, ValidateIf, ValidateNested, ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsObject } from 'class-validator';
@@ -10,18 +10,24 @@ import { Cohort } from 'src/cohort/entities/cohort.entity';
 
 //for student valid enum are[present,absent]
 //for teacher valid enum are[present,on-leave,half-day]
-enum Attendance{
-  present="present",
-  absent="absent",
-  onLeave="on-leave",
-  halfDay="half-day"
+enum Attendance {
+  present = "present",
+  absent = "absent",
+  onLeave = "on-leave",
+  halfDay = "half-day"
+}
+
+enum Scope {
+  self = 'self',
+  student = 'student',
 }
 
 @ValidatorConstraint({ name: 'isNotAfterToday', async: false })
 export class IsNotAfterToday implements ValidatorConstraintInterface {
   validate(date: Date, args: ValidationArguments) {
     const currentDateIST = addHours(new Date(), 5.5);
-    return isBefore(date, currentDateIST);  }
+    return isBefore(date, currentDateIST);
+  }
 
   defaultMessage(args: ValidationArguments) {
     return 'Attendance date must not be after today';
@@ -34,7 +40,7 @@ export class AttendanceDto {
   @Expose()
   tenantId: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: String,
     description: "The userid of the attendance",
     default: "",
@@ -45,7 +51,7 @@ export class AttendanceDto {
   @Expose()
   userId: string;
 
-  @ManyToOne(() => User, {nullable:true})
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -58,7 +64,7 @@ export class AttendanceDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
   @Validate(IsNotAfterToday, {
     message: 'Attendance date must not be after today',
-  })  
+  })
   @Expose()
   attendanceDate: Date;
 
@@ -69,38 +75,25 @@ export class AttendanceDto {
   })
   @Expose()
   @IsNotEmpty()
-  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
+  @IsEnum(Attendance, { message: "Please enter valid enum values for attendance [present, absent,on-leave, half-day]" })
   attendance: string;
 
-  
+
   @Expose()
   @ApiPropertyOptional()
   remark: string;
 
-  @ApiProperty({
-    type: String,
-    description: "The latitude of the attendance",
-    default: 0,
-  })
+ 
   @Expose()
   @ApiPropertyOptional()
   latitude: number;
 
-  @ApiProperty({
-    type: String,
-    description: "The longitude of the attendance",
-    default: 0,
-  })
+  
   @Expose()
   @ApiPropertyOptional()
   longitude: number;
 
-  @ApiProperty({
-    type: "string",
-    format: "binary",
-    description: "The image of person",
-    default: "NA",
-  })
+  
   @Expose()
   @ApiPropertyOptional()
   image: string;
@@ -130,11 +123,6 @@ export class AttendanceDto {
     description: "The contextId of the attendance",
     default: "",
   })
-  @ApiProperty({
-    type: String,
-    description: "The contextId of the attendance",
-    default: "",
-  })
   @IsNotEmpty()
   @IsUUID()
   @Expose()
@@ -143,7 +131,7 @@ export class AttendanceDto {
 
   @ManyToOne(() => Cohort, { nullable: true }) // Define the ManyToOne relationship with Cohort entity
   @JoinColumn({ name: "contextId", referencedColumnName: "cohortId" }) // Map contextId to cohortId column in Cohort table
-  cohort: Cohort; 
+  cohort: Cohort;
 
 
   @CreateDateColumn()
@@ -160,13 +148,13 @@ export class AttendanceDto {
   @Expose()
   updatedBy: string;
 
-  @Expose()
-  scope: string;
+  @ApiPropertyOptional()
+  @ValidateIf(o => o.scope !== undefined && o.scope !== null) @IsEnum(Scope, { message: "Please enter valid enum values for scope [self, student]" })
+  scope: string
 
   constructor(obj: any) {
     Object.assign(this, obj);
   }
-  
 }
 
 
@@ -184,7 +172,7 @@ export class UserAttendanceDTO {
   })
   @Expose()
   @IsNotEmpty()
-  @IsEnum(Attendance,{message:"Please enter valid enum values for attendance [present, absent,on-leave, half-day]"})
+  @IsEnum(Attendance, { message: "Please enter valid enum values for attendance [present, absent,on-leave, half-day]" })
   attendance: string;
 
 
@@ -235,16 +223,21 @@ export class BulkAttendanceDTO {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
   @Validate(IsNotAfterToday, {
     message: 'Attendance date must not be after today',
-  })  
+  })
   @Expose()
   attendanceDate: Date;
 
   @IsUUID()
-    @Expose()
-    @IsNotEmpty()
-    @ApiProperty()
+  @Expose()
+  @IsNotEmpty()
+  @ApiProperty()
 
   contextId: string;
+
+  @ApiPropertyOptional()
+  @ValidateIf(o => o.scope !== undefined && o.scope !== null)
+  @IsEnum(Scope, { message: "Please enter valid enum values for scope [self, student]" })
+  scope: string
 
 
   @ApiProperty({
@@ -252,8 +245,8 @@ export class BulkAttendanceDTO {
     description: 'List of user attendance details',
   })
   @ValidateNested({ each: true })
- @Type(() => UserAttendanceDTO)
- // Adjust the max size according to your requirements
+  @Type(() => UserAttendanceDTO)
+  // Adjust the max size according to your requirements
   userAttendance: UserAttendanceDTO[];
 
   constructor(obj: any) {

@@ -4,8 +4,11 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
+    ManyToOne,
+    JoinColumn,
   } from "typeorm";
-
+  import { User } from "src/user/entities/user-entity";
+  
   @Entity({ name: "UserTenantMapping" })
   export class UserTenantMapping {
     @PrimaryGeneratedColumn("uuid")
@@ -34,5 +37,12 @@ import {
   
     @Column()
     updatedBy: string;
+
+
+
+    @ManyToOne(() => User, user => user.userTenantMapping)
+    @JoinColumn({ name: 'userId' })
+    user: User; 
+
   }
   

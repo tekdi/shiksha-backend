@@ -308,7 +308,7 @@ export class PostgresUserService {
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
         updatedData['basicDetails'] = userDto.userData;
       }
-      if (userDto.customFields.length > 0) {
+      if (userDto?.customFields?.length > 0) {
         for (let data of userDto.customFields) {
           const result = await this.updateCustomFields(userDto.userId, data);
           if (result) {

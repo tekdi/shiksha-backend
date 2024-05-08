@@ -38,7 +38,7 @@ export class PostgresAttendanceService {
             let { limit, page, filters, facets } = attendanceSearchDto;
             // Set default limit to 0 if not provided
             if (!limit) {
-                limit = 10;
+                limit = 20;
             }
 
             let offset = 0;

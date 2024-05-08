@@ -67,11 +67,11 @@
 
 
   export class AttendanceSearchDto {
-    @ApiProperty({
+    @ApiPropertyOptional({
       type: Number,
       description: "Limit",
     })
-    @ValidateIf(o => !o.facets)
+    @IsOptional()
     @IsNotEmpty() 
     @IsNumber({}, { message: 'Limit must be a number' }) 
     limit: number;

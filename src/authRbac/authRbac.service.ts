@@ -45,7 +45,7 @@ export class AuthRbacService {
       tenantId
     );
 
-    userData["priviledges"] = await this.getPrivileges(userData.roles);
+    userData["privileges"] = await this.getPrivileges(userData.roles);
     userData["tenantId"] = tenantId;
 
     const issuer = this.issuer;

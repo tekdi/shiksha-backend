@@ -261,17 +261,9 @@ export class PostgresUserService {
     })
 
     const tenentDetails = await this.allUsersTenent(userDetails.userId)
-      let userData = {
-        userId: userDetails.userId,
-        userName: userDetails.username,
-        name: userDetails.name,
-        role: userDetails.role,
-        district: userDetails.district,
-        state: userDetails.state,
-        mobile: userDetails.mobile,
-      }
-      userData['tenantData']=tenentDetails;
-    return userData;
+
+    userDetails['tenantData'] = tenentDetails;
+    return userDetails;
 
   }
   async allUsersTenent(userId: string){

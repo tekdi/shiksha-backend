@@ -256,7 +256,8 @@ export class PostgresUserService {
       whereClause.username = username;
     }
     let userDetails = await this.usersRepository.findOne({
-      where: whereClause
+      where: whereClause,
+      select: ["userId", "username", "name", "role", "district","state","mobile"]
     })
 
     const tenentDetails = await this.allUsersTenent(userDetails.userId)

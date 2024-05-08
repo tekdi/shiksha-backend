@@ -13,8 +13,7 @@ import { Cohort } from 'src/cohort/entities/cohort.entity';
 enum Attendance {
   present = "present",
   absent = "absent",
-  onLeave = "on-leave",
-  halfDay = "half-day"
+  onLeave = "on-leave"
 }
 
 enum Scope {
@@ -75,7 +74,7 @@ export class AttendanceDto {
   })
   @Expose()
   @IsNotEmpty()
-  @IsEnum(Attendance, { message: "Please enter valid enum values for attendance [present, absent,on-leave, half-day]" })
+  @IsEnum(Attendance, { message: "Please enter valid enum values for attendance [present, absent,on-leave]" })
   attendance: string;
 
 

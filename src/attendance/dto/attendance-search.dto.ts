@@ -7,12 +7,12 @@
   import { Type } from "class-transformer";
 
   export class AttendanceFiltersDto  {
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({default:"yyyy-mm-dd"})
     @IsOptional()
     @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
     fromDate?: Date;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({default:"yyyy-mm-dd"})
     @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
     @IsOptional()
     toDate?: Date;
@@ -20,7 +20,7 @@
     @ApiPropertyOptional()
     @IsUUID()
     @IsOptional()
-    cohortId ?:string
+    contextId ?:string
 
     @ApiPropertyOptional()
     scope ?: string
@@ -67,11 +67,11 @@
 
 
   export class AttendanceSearchDto {
-    @ApiProperty({
+    @ApiPropertyOptional({
       type: Number,
       description: "Limit",
     })
-    @ValidateIf(o => !o.facets)
+    @IsOptional()
     @IsNotEmpty() 
     @IsNumber({}, { message: 'Limit must be a number' }) 
     limit: number;
@@ -94,6 +94,7 @@
 
     @ApiPropertyOptional({
       description: "Facets",
+      example: [ "contextId","userId","scope"]
     })
     facets?: string[];
 

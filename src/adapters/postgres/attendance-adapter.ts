@@ -38,7 +38,7 @@ export class PostgresAttendanceService {
             let { limit, page, filters, facets } = attendanceSearchDto;
             // Set default limit to 0 if not provided
             if (!limit) {
-                limit = 10;
+                limit = 20;
             }
 
             let offset = 0;
@@ -487,6 +487,9 @@ export class PostgresAttendanceService {
                     attendanceDto
                 );
             } else {
+                if (!attendanceDto.scope) {
+                    attendanceDto.scope = "student"
+                }
                 attendanceDto.createdBy = loginUserId;
                 attendanceDto.updatedBy = loginUserId;
                 return await this.createAttendance(loginUserId, attendanceDto);
@@ -523,8 +526,7 @@ export class PostgresAttendanceService {
                 });
             }
 
-            Object.assign(attendanceRecord, attendanceDto);
-            // this.attendanceRepository.merge(attendanceRecord, attendanceDto);
+            this.attendanceRepository.merge(attendanceRecord, attendanceDto);
 
             // Save the updated attendance record
             const updatedAttendanceRecord = await this.attendanceRepository.save(
@@ -668,18 +670,19 @@ export class PostgresAttendanceService {
 
                 const userAttendance = new AttendanceDto({
                     attendanceDate: attendanceData.attendanceDate,
-                    contextId: attendanceData.contextId,
-                    attendance: attendance.attendance,
-                    userId: attendance.userId,
+                    contextId: attendanceData?.contextId,
+                    scope: attendanceData?.scope,
+                    attendance: attendance?.attendance,
+                    userId: attendance?.userId,
                     tenantId: tenantId,
-                    remark: attendance.remark,
-                    latitude: attendance.latitude,
-                    longitude: attendance.longitude,
-                    image: attendance.image,
-                    metaData: attendance.metaData,
-                    syncTime: attendance.syncTime,
-                    session: attendance.session,
-                    contextType: attendance.contextType,
+                    remark: attendance?.remark,
+                    latitude: attendance?.latitude,
+                    longitude: attendance?.longitude,
+                    image: attendance?.image,
+                    metaData: attendance?.metaData,
+                    syncTime: attendance?.syncTime,
+                    session: attendance?.session,
+                    contextType: attendance?.contextType,
                 })
 
                 const attendanceRes: any = await this.updateAttendanceRecord(

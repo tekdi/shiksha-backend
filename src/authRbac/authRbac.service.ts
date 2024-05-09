@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
@@ -36,8 +40,10 @@ export class AuthRbacService {
       .buildUserAdapter()
       .findUserDetails(null, username);
 
-    if (!userData) {
-      throw new UnauthorizedException();
+    if (!userData || !tenantId || !userData?.roles?.length) {
+      throw new BadRequestException(
+        "User details or tenant not found for user"
+      );
     }
 
     userData["roles"] = await this.postgresRoleService.findUserRoleData(

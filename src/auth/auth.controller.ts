@@ -54,9 +54,6 @@ export class AuthController {
     strategy: "excludeAll",
   })
   public async getUserByAuth(@Req() request, @Res() response: Response) {
-    console.log(request.user, "user");
-    console.log(request.user.userData, "userData");
-    // const tenantId = headers["tenantid"];
     return this.authService.getUserByAuth(request, response);
   }
 

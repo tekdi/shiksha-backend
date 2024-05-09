@@ -110,15 +110,13 @@ export class PostgresAttendanceService {
 
                 // Process the data to calculate counts based on facets
                 const tree = await this.facetedSearch({ data: attendanceList, facets: facetFields });
-                // const result = Object.entries(tree).map(([key, value]) => ({ [key]: value }));
 
-                let result = [];
+                let result = {};
                 // Process the data to calculate counts based on facets
                 for (const facet of facetFields) {
                     const { field } = facet;
                     const tree = await this.facetedSearch({ data: attendanceList, facets: [facet] });
-                    const formattedData = Object.entries(tree[field]).map(([key, value]) => ({ [key]: value }));
-                    result.push({ [field]: formattedData }); // Modified the structure here
+                    result[field] = tree[field];
                 }
 
 

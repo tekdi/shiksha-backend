@@ -6,10 +6,25 @@
   import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
   import { Type } from "class-transformer";
 
+
+  @ValidatorConstraint({ name: 'isNotAfterFromDate', async: false })
+export class IsFromDateBeforeToDateConstraint implements ValidatorConstraintInterface {
+  validate(fromDate: Date, args: ValidationArguments) {
+    const toDate = args.object[args.constraints[0]];
+    const res = isSameDay(fromDate, toDate) || isBefore(fromDate, toDate);
+    return res
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return 'From Date must be before or equal to To Date';
+  }
+}
+
   export class AttendanceFiltersDto  {
     @ApiPropertyOptional({default:"yyyy-mm-dd"})
     @IsOptional()
     @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Please provide a valid date in the format yyyy-mm-dd' })
+    @Validate(IsFromDateBeforeToDateConstraint, ['toDate'])
     fromDate?: Date;
 
     @ApiPropertyOptional({default:"yyyy-mm-dd"})

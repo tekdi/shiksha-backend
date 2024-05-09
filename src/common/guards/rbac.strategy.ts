@@ -10,18 +10,37 @@ export class RbacJwtStrategy extends PassportStrategy(Strategy, "jwt-rbac") {
       jwtFromRequest: ExtractJwt.fromHeader("rbac_token"),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>("RBAC_JWT_SECRET"),
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: any) {
+  async validate(request: any, payload: any) {
+    const requiredPermissions = request.user.requiredPermissions;
+    const userPermissions = payload.userData.privileges.map(({ code }) => code);
+    const roles = payload.userData.roles.map(({ code }) => code);
+
+    if (roles.includes("admin")) {
+      return payload;
+    }
+
     if (
       !(
         payload.iss === this.configService.get<string>("ISSUER") &&
-        payload.aud === this.configService.get<string>("AUDIENCE")
+        payload.aud === this.configService.get<string>("AUDIENCE") &&
+        userPermissions.length > 0
       )
     ) {
       throw new UnauthorizedException();
     }
-    return payload;
+
+    const isAuthorized = requiredPermissions.every((permission: string) =>
+      userPermissions.includes(permission)
+    );
+
+    if (isAuthorized) {
+      return payload;
+    }
+
+    throw new UnauthorizedException();
   }
 }

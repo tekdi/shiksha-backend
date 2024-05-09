@@ -29,6 +29,7 @@ import {
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { RbacAuthGuard } from "src/common/guards/rbac.guard";
+import { Permissions } from "src/common/decorators/permission.decorator";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -45,10 +46,7 @@ export class AuthController {
   }
 
   @Get("/user")
-  @ApiHeader({
-    name: "rbac_token",
-  })
-  @UseGuards(JwtAuthGuard, RbacAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -57,7 +55,7 @@ export class AuthController {
   })
   public async getUserByAuth(@Req() request, @Res() response: Response) {
     console.log(request.user, "user");
-    console.log(request.user.userData, "user");
+    console.log(request.user.userData, "userData");
     // const tenantId = headers["tenantid"];
     return this.authService.getUserByAuth(request, response);
   }

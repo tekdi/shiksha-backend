@@ -174,46 +174,4 @@ export class AttendanceController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Post("/average-report")
-  @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Average attendance Report" })
-  @ApiBadRequestResponse({ description: "Bad Request" })
-  @ApiInternalServerErrorResponse({ description: "Internal Server error" })
-  @ApiBody({ type: AttendanceStatsDto })
-  @SerializeOptions({
-    strategy: "excludeAll",
-  })
-  @UsePipes(ValidationPipe)
-  public async report(
-    @Headers() headers,
-    @Req() request: Request,
-    @Res() response: Response,
-    @Body() attendanceStatsDto: AttendanceStatsDto
-  ) {
-    let tenantid = headers["tenantid"];
-
-    const result = await this.attendaceAdapter.buildAttenceAdapter().attendanceReport(
-      attendanceStatsDto
-    );
-    return response.status(result.statusCode).json(result);
-  }
-
-  /** No longer required in Shiksha 2.0 */
-  /*
-  @Get("usersegment/:attendance")
-  @UseInterceptors(ClassSerializerInterceptor)
-  // @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: " Ok." })
-  @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "groupId", required: false })
-  @ApiQuery({ name: "date" })
-  public async userSegment(
-    @Query("groupId") groupId: string,
-    @Param("attendance") attendance: string,
-    @Query("date") date: string,
-    @Req() request: Request
-  ) {
-    return await this.service.userSegment(groupId, attendance, date, request);
-  }
-  */
 }

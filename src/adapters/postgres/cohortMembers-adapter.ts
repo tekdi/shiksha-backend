@@ -85,15 +85,14 @@ export class PostgresCohortMembersService {
         role: data?.role,
         district: data?.district,
         state: data?.state,
-        mobile: data?.mobile,
-        customField: [],
+        mobile: data?.mobile
       };
 
       if (fieldShowHide === "false") {
         results.userDetails.push(userDetails);
       } else {
-        const fieldValues = await this.getFieldandFieldValues(data.userId);
-        userDetails.customField.push(fieldValues);
+        const fieldValues = await this.getFieldandFieldValues(data.userId);        
+        userDetails['customField'] = fieldValues;
         results.userDetails.push(userDetails);
       }
     }
@@ -159,11 +158,9 @@ export class PostgresCohortMembersService {
       let { limit, page, filters } = cohortMembersSearchDto;
       let offset = 0;
       if (page > 1) {
-        offset = parseInt(limit) * (page - 1);
+        offset = limit * (page - 1);
       }
-      if (limit.trim() === "") {
-        limit = "0";
-      }
+
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -212,26 +209,23 @@ export class PostgresCohortMembersService {
       const [userData] = await this.cohortMembersRepository.findAndCount({
         where: whereClause,
         skip: offset,
-        take: parseInt(limit),
+        take: limit,
       });
-      let results = {
-        userDetails: [],
-      };
+      let results = {};
       if (whereClause["cohortId"]) {
-        let cohortDetails = await this.getUserDetails(
+        results = await this.getUserDetails(
           whereClause["cohortId"],
           "cohortId",
           "true"
         );
-        results.userDetails.push(cohortDetails);
       }
+      
       if (whereClause["userId"]) {
-        let cohortDetails = await this.getUserDetails(
+        results = await this.getUserDetails(
           whereClause["userId"],
           "userId",
           "true"
         );
-        results.userDetails.push(cohortDetails);
       }
 
       return new SuccessResponse({

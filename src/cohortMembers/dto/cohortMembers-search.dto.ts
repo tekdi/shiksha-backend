@@ -2,10 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CohortMembersSearchDto {
   @ApiProperty({
-    type: String,
+    type: Number,
     description: "Limit",
   })
-  limit: string;
+  limit: number;
 
   @ApiProperty({
     type: Number,

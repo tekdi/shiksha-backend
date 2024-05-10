@@ -47,10 +47,10 @@ export class PostgresUserService {
     userSearchDto: UserSearchDto) {
     try {
       let findData = await this.findAllUserDetails(userSearchDto);
-      if (!findData) {
+      if (!findData.length) {
         return new SuccessResponse({
           statusCode: HttpStatus.BAD_REQUEST,
-          message: 'No Data Found For User',
+          message: 'Either Filter is wrong or No Data Found For the User',
         });
       }
       return new SuccessResponse({
@@ -89,6 +89,7 @@ export class PostgresUserService {
       skip: offset,
       take: parseInt(limit),
     });
+    console.log(results);
     return results;
   }
 
@@ -419,12 +420,7 @@ export class PostgresUserService {
         }
       );
       userCreateDto.userId = resKeycloak;
-
-
-
-
-
-      if (errors.length > 0) {
+       if (errors.length > 0) {
         return {
           statusCode: HttpStatus.BAD_REQUEST,
           errorCount: errors.length,
@@ -487,16 +483,17 @@ export class PostgresUserService {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
+    user.email = userCreateDto?.email
     user.role = userCreateDto?.role
     user.mobile = Number(userCreateDto?.mobile) || null,
-      user.tenantId = null
+    user.tenantId = null
     user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-      user.state = userCreateDto?.state,
-      user.district = userCreateDto?.district,
-      user.address = userCreateDto?.address,
-      user.pincode = userCreateDto?.pincode
+    user.state = userCreateDto?.state,
+    user.district = userCreateDto?.district,
+    user.address = userCreateDto?.address,
+    user.pincode = userCreateDto?.pincode
 
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);

@@ -82,9 +82,6 @@ export class CohortMembersService {
 
     try {
       let { limit, page, filters } = cohortMembersSearchDto;
-      if (!limit) {
-        limit = 0;
-      }
 
       let offset = 0;
       if (page > 1) {

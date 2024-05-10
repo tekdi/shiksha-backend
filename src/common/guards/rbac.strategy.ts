@@ -16,8 +16,9 @@ export class RbacJwtStrategy extends PassportStrategy(Strategy, "jwt-rbac") {
 
   async validate(request: any, payload: any) {
     const requiredPermissions = request.user.requiredPermissions;
-    const userPermissions = payload.userData.privileges.map(({ code }) => code);
-    const roles = payload.userData.roles.map(({ code }) => code);
+
+    const userPermissions = payload.userData.privileges;
+    const roles = payload.userData.roles;
 
     if (roles.includes("admin")) {
       return payload;

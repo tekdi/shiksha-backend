@@ -12,6 +12,7 @@ export class RbacAuthGuard extends AuthGuard("jwt-rbac") {
   canActivate(
     context: ExecutionContext
   ): boolean | Promise<boolean> | Observable<boolean> {
+    // Required permissions come from permission decorator for each API end point
     const requiredPermissions = this.reflector.get<string[]>(
       "permissions",
       context.getHandler()
@@ -23,9 +24,8 @@ export class RbacAuthGuard extends AuthGuard("jwt-rbac") {
       return true; // No permissions required, allow access
     }
     payload.requiredPermissions = requiredPermissions;
-
-    const request = context.switchToHttp().getRequest();
-    request.requiredPermissions = requiredPermissions;
+    // const request = context.switchToHttp().getRequest();
+    // request.requiredPermissions = requiredPermissions;
     return super.canActivate(context);
   }
 }

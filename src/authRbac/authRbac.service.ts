@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PostgresRoleService } from "src/adapters/postgres/rbac/role-adapter";
@@ -36,16 +40,23 @@ export class AuthRbacService {
       .buildUserAdapter()
       .findUserDetails(null, username);
 
-    if (!userData) {
-      throw new UnauthorizedException();
+    if (!userData || !tenantId) {
+      throw new BadRequestException(
+        "User details or tenant not found for user"
+      );
     }
 
-    userData["roles"] = await this.postgresRoleService.findUserRoleData(
+    const userRoles = await this.postgresRoleService.findUserRoleData(
       userData?.userId,
       tenantId
     );
 
-    userData["privileges"] = await this.getPrivileges(userData.roles);
+    if (!userRoles?.length) {
+      throw new BadRequestException("Roles not found for user");
+    }
+
+    userData["roles"] = userRoles.map(({ code }) => code);
+    userData["privileges"] = await this.getPrivileges(userRoles);
     userData["tenantId"] = tenantId;
 
     const issuer = this.issuer;
@@ -67,9 +78,11 @@ export class AuthRbacService {
     if (!roleIds.length) {
       return [];
     }
-    const privileges = await this.postgresRoleService.findPrivilegeByRoleId(
+    const privilegesData = await this.postgresRoleService.findPrivilegeByRoleId(
       roleIds
     );
+
+    const privileges = privilegesData.map(({ code }) => code);
     return privileges;
   }
 }

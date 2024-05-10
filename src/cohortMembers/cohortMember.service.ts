@@ -83,12 +83,12 @@ export class CohortMembersService {
     try {
       let { limit, page, filters } = cohortMembersSearchDto;
       if (!limit) {
-        limit = "0";
+        limit = 0;
       }
 
       let offset = 0;
       if (page > 1) {
-        offset = parseInt(limit) * (page - 1);
+        offset = limit * (page - 1);
       }
 
       const whereClause = {};
@@ -113,7 +113,7 @@ export class CohortMembersService {
 
         let filterDetails = {
           where: data.cohortId,
-          take: parseInt(limit),
+          take: limit,
           skip: offset,
         };
 

@@ -29,12 +29,11 @@ export class UserCreateDto {
   @Expose()
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The role of the user",
   })
   @Expose()
-  @IsNotEmpty()
   role: string;
 
   @ApiPropertyOptional({

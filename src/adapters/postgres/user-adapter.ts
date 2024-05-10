@@ -20,6 +20,7 @@ import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { isUUID } from 'class-validator';
 import { UserSearchDto } from 'src/user/dto/user-search.dto';
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
+import { AssignUserRole } from "../../user/entities/assignRole.entity";
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 
 @Injectable()
@@ -38,6 +39,9 @@ export class PostgresUserService {
     private cohortMemberRepository: Repository<CohortMembers>,
     @InjectRepository(UserTenantMapping)
     private userTenantMappingRepository: Repository<UserTenantMapping>,
+    @InjectRepository(AssignUserRole)
+    private AssignUserRoleRepository: Repository<AssignUserRole>,
+
     @InjectRepository(Tenants)
     private tenantsRepository: Repository<Tenants>,
   ) { }
@@ -517,16 +521,34 @@ export class PostgresUserService {
         tenantIds: userCreateDto?.tenantId,
       }
       await this.assignUserToTenant(tenantsData, request);
+      await this.assignRoleAndUserToTenant(userCreateDto.role,tenantsData, request);
     }
     return result;
+  }
+
+  async assignRoleAndUserToTenant(role, tenantsData, request) {
+    try {
+      const tenantIds = tenantsData.tenantIds;
+      const userId = tenantsData.userId;
+
+      for (const tenantId of tenantIds) {
+        const data = await this.AssignUserRoleRepository.save({
+          userId: userId,
+          tenantId: tenantId,
+          roleId: role,
+          createdBy: request['user'].userId,
+          updatedBy: request['user'].userId
+        })
+      }
+    } catch (error) {
+      throw new Error(error)
+    }
   }
 
   async assignUserToTenant(tenantsData, request) {
     try {
       const tenantIds = tenantsData.tenantIds;
       const userId = tenantsData.userId;
-      let result = [];
-      let errors = [];
 
       for (const tenantId of tenantIds) {
         const data = await this.userTenantMappingRepository.save({

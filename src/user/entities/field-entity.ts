@@ -76,4 +76,7 @@ export class Field {
 
   @Column({ type: 'jsonb', nullable: true })
   fieldParams: object;
+
+  @Column({ type: 'jsonb', nullable: true })
+  fieldAttributes: object;
 }

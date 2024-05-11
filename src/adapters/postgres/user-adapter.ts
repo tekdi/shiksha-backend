@@ -89,7 +89,6 @@ export class PostgresUserService {
       skip: offset,
       take: parseInt(limit),
     });
-    console.log(results);
     return results;
   }
 
@@ -126,6 +125,7 @@ export class PostgresUserService {
       }
       const customFields = await this.findCustomFields(userData, userDetails.role)
 
+
       result.userData = userDetails;
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
@@ -134,6 +134,8 @@ export class PostgresUserService {
           fieldId: data.fieldId,
           label: data.label,
           value: fieldValue || '',
+          isRequired: data.fieldAttributes ? data.fieldAttributes['isRequired'] : '',
+          isEditable: data.fieldAttributes ? data.fieldAttributes['isEditable'] : '',
           options: data?.fieldParams?.['options'] || {},
           type: data.type || ''
         };
@@ -143,7 +145,7 @@ export class PostgresUserService {
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
-        message: 'Ok.',
+        message: 'User detais Fetched Succcessfully.',
         data: result,
       });
 
@@ -284,12 +286,17 @@ export class PostgresUserService {
         contextType: role.toUpperCase()
       }
     })
+    
     return customFields;
   }
   async findFilledValues(userId: string) {
-    let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
-    LEFT JOIN public."FieldValues" F
-    ON U."userId" = F."itemId" where U."userId" =$1`;
+    let query = `SELECT U."userId",FV."fieldId",FV."value", F."fieldAttributes" FROM public."Users" U 
+    LEFT JOIN public."FieldValues" FV
+    ON U."userId" = FV."itemId" 
+    LEFT JOIN public."Fields" F
+    ON F."fieldId" = FV."fieldId" 
+    where U."userId" =$1`;
+    
     let result = await this.usersRepository.query(query, [userId]);
     return result;
   }
@@ -297,24 +304,50 @@ export class PostgresUserService {
   async updateUser(userDto, response) {
     try {
       let updatedData = {};
+      let errorMessage;
       if (userDto.userData || Object.keys(userDto.userData).length > 0) {
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
         updatedData['basicDetails'] = userDto.userData;
       }
+      
       if (userDto?.customFields?.length > 0) {
+
+        const getFieldsAttributesQuery = `
+          SELECT * 
+          FROM "public"."Fields" 
+          WHERE "contextType"='STUDENT' AND "fieldAttributes"->>'isEditable' = $1 
+        `;
+        const getFieldsAttributesParams = ['true'];
+        const getFieldsAttributes = await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
+  
+      let isEditableFieldId = [];
+        for (let fieldDetails of getFieldsAttributes) {
+          isEditableFieldId.push(fieldDetails.fieldId);
+        }
+
+        // let errorMessage = [];
+        let unEditableIdes = [];
         for (let data of userDto.customFields) {
-          const result = await this.updateCustomFields(userDto.userId, data);
-          if (result) {
-            if (!updatedData['customFields'])
-              updatedData['customFields'] = [];
-            updatedData['customFields'].push(result);
+          if(isEditableFieldId.includes(data.fieldId)){
+            const result = await this.updateCustomFields(userDto.userId, data);
+            if (result) {
+              if (!updatedData['customFields'])
+                updatedData['customFields'] = [];
+              updatedData['customFields'].push(result);
+            }
+          }else{
+            unEditableIdes.push(data.fieldId)
           }
         }
+        if (unEditableIdes.length > 0) {
+          errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
+        }
       }
-      return new SuccessResponse({
+      return ({
         statusCode: 200,
-        message: "ok",
+        message: "User has been updated successfully.",
         data: updatedData,
+        error:errorMessage
       });
     } catch (e) {
       return new ErrorResponseTypeOrm({

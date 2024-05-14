@@ -16,7 +16,7 @@ export class CohortMembersSearchDto {
   @ApiProperty({
     type: Object,
     description: "Filters",
-    example: { cohortId: "", userId: "" }, // Adding example for Swagger
+    example: { cohortId: "", userId: "", role:"" }, // Adding example for Swagger
   })
   @ApiPropertyOptional()
   filters: { cohortId?: string; userId?: string }; // Define cohortId and userId properties

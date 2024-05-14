@@ -32,7 +32,6 @@ export class CohortMembersService {
     try {
       const cohortMembers = await this.cohortMembersRepository.find({
         where: {
-          tenantId: tenantId,
           cohortMembershipId: cohortMembershipId,
         },
       });
@@ -258,7 +257,6 @@ export class CohortMembersService {
     try {
       const cohortMember = await this.cohortMembersRepository.find({
         where: {
-          tenantId: tenantId,
           cohortMembershipId: cohortMembershipId,
         },
       });

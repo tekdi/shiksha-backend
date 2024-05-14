@@ -14,6 +14,8 @@ import { PostgresFieldsService } from "./fields-adapter";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
+import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entity";
+import { Role } from "src/rbac/role/entities/role.entity";
 
 
 @Module({
@@ -27,7 +29,9 @@ import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
             Fields,
             Cohort,
             UserTenantMapping,
-            Tenants
+            Tenants,
+            UserRoleMapping,
+            Role
         ])
     ],
     providers: [

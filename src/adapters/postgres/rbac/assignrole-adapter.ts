@@ -112,6 +112,7 @@ export class PostgresAssignroleService {
                     message: 'Please Enter Valid User ID',
                 });
             }
+
             let result = await this.checkExistingRole(userId);
             if (!result) {
                 return new SuccessResponse({
@@ -207,7 +208,6 @@ export class PostgresAssignroleService {
     async checkExistingRole(userId) {
         const result = await this.userRoleMappingRepository.findOne({
             where: { userId },
-            relations: ['user']
         })
         return result;
     }

@@ -144,126 +144,126 @@ export class HasuraUserService implements IServicelocator {
   // }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
-    try {
-      const decoded: any = jwt_decode(request.headers.authorization);
-      const altUserRoles =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+    // try {
+    //   const decoded: any = jwt_decode(request.headers.authorization);
+    //   const altUserRoles =
+    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      const userId =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      userDto.createdBy = userId;
-      userDto.updatedBy = userId;
+    //   const userId =
+    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+    //   userDto.createdBy = userId;
+    //   userDto.updatedBy = userId;
 
-      if (
-        !userDto.username ||
-        !userDto.password ||
-        !userDto.role ||
-        !userDto.name
-      ) {
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: "Name, username, password and role are required",
-        });
-      }
+    //   if (
+    //     !userDto.username ||
+    //     !userDto.password ||
+    //     !userDto.role ||
+    //     !userDto.name
+    //   ) {
+    //     return new ErrorResponse({
+    //       errorCode: "400",
+    //       errorMessage: "Name, username, password and role are required",
+    //     });
+    //   }
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
+    //   const keycloakResponse = await getKeycloakAdminToken();
+    //   const token = keycloakResponse.data.access_token;
 
-      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-        userDto.username,
-        token
-      );
-      if (usernameExistsInKeycloak?.data[0]?.username) {
-        const usernameExistsInDB: any = await this.getUserByUsername(
-          usernameExistsInKeycloak?.data[0]?.username,
-          request
-        );
-        if (usernameExistsInDB?.statusCode === 200) {
-          if (usernameExistsInDB?.data) {
-            return usernameExistsInDB;
-          } else {
-            const resetPasswordRes: any = await this.resetKeycloakPassword(
-              request,
-              token,
-              userDto.password,
-              usernameExistsInKeycloak?.data[0]?.id
-            );
+    //   const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+    //     userDto.username,
+    //     token
+    //   );
+    //   if (usernameExistsInKeycloak?.data[0]?.username) {
+    //     const usernameExistsInDB: any = await this.getUserByUsername(
+    //       usernameExistsInKeycloak?.data[0]?.username,
+    //       request
+    //     );
+    //     if (usernameExistsInDB?.statusCode === 200) {
+    //       if (usernameExistsInDB?.data) {
+    //         return usernameExistsInDB;
+    //       } else {
+    //         const resetPasswordRes: any = await this.resetKeycloakPassword(
+    //           request,
+    //           token,
+    //           userDto.password,
+    //           usernameExistsInKeycloak?.data[0]?.id
+    //         );
 
-            if (resetPasswordRes.statusCode !== 204) {
-              return new ErrorResponse({
-                errorCode: "400",
-                errorMessage: "Something went wrong in password reset",
-              });
-            }
+    //         if (resetPasswordRes.statusCode !== 204) {
+    //           return new ErrorResponse({
+    //             errorCode: "400",
+    //             errorMessage: "Something went wrong in password reset",
+    //           });
+    //         }
 
-            userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
-            const newlyCreatedDbUser = await this.createUserInDatabase(
-              request,
-              userDto
-            );
+    //         userDto.userId = usernameExistsInKeycloak?.data[0]?.id;
+    //         const newlyCreatedDbUser = await this.createUserInDatabase(
+    //           request,
+    //           userDto
+    //         );
 
-            return newlyCreatedDbUser;
-          }
-        } else {
-          return usernameExistsInDB;
-        }
-      } else {
-        return await this.createUser(request, userDto);
-      }
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
+    //         return newlyCreatedDbUser;
+    //       }
+    //     } else {
+    //       return usernameExistsInDB;
+    //     }
+    //   } else {
+    //     return await this.createUser(request, userDto);
+    //   }
+    // } catch (e) {
+    //   console.error(e);
+    //   return e;
+    // }
   }
 
   public async createUser(request: any, userCreateDto: UserCreateDto) {
     // It is considered that if user is not present in keycloak it is not present in database as well
-    try {
-      const decoded: any = jwt_decode(request.headers.authorization);
-      const userRoles =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
+    // try {
+    //   const decoded: any = jwt_decode(request.headers.authorization);
+    //   const userRoles =
+    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      const userId =
-        decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-      userCreateDto.createdBy = userId;
-      userCreateDto.updatedBy = userId;
+    //   const userId =
+    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
+    //   userCreateDto.createdBy = userId;
+    //   userCreateDto.updatedBy = userId;
 
-      userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
+    //   userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
 
-      const userSchema = new UserCreateDto(userCreateDto);
+    //   const userSchema = new UserCreateDto(userCreateDto);
 
-      let errKeycloak = "";
-      let resKeycloak = "";
+    //   let errKeycloak = "";
+    //   let resKeycloak = "";
 
-      // if (altUserRoles.includes("systemAdmin")) {
+    //   // if (altUserRoles.includes("systemAdmin")) {
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
+    //   const keycloakResponse = await getKeycloakAdminToken();
+    //   const token = keycloakResponse.data.access_token;
 
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
+    //   resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+    //     (error) => {
+    //       errKeycloak = error.response?.data.errorMessage;
 
-          return new ErrorResponse({
-            errorCode: "500",
-            errorMessage: "Someting went wrong",
-          });
-        }
-      );
-      // } else {
-      //   return new ErrorResponse({
-      //     errorCode: "401",
-      //     errorMessage: "Unauthorized",
-      //   });
-      // }
+    //       return new ErrorResponse({
+    //         errorCode: "500",
+    //         errorMessage: "Someting went wrong",
+    //       });
+    //     }
+    //   );
+    //   // } else {
+    //   //   return new ErrorResponse({
+    //   //     errorCode: "401",
+    //   //     errorMessage: "Unauthorized",
+    //   //   });
+    //   // }
 
-      // Add userId created in keycloak as user Id of ALT user
-      userCreateDto.userId = resKeycloak;
-      return await this.createUserInDatabase(request, userCreateDto);
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
+    //   // Add userId created in keycloak as user Id of ALT user
+    //   userCreateDto.userId = resKeycloak;
+    //   return await this.createUserInDatabase(request, userCreateDto);
+    // } catch (e) {
+    //   console.error(e);
+    //   return e;
+    // }
   }
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {

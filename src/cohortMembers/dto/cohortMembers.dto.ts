@@ -1,5 +1,6 @@
 import { Exclude, Expose } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNotEmpty, IsUUID } from "class-validator";
 
 export class CohortMembersDto {
   //generated fields
@@ -11,6 +12,10 @@ export class CohortMembersDto {
   createdAt: string;
   @Expose()
   updatedAt: string;
+  @Expose()
+  createdBy: string;
+  @Expose()
+  updatedBy: string;
 
   //cohortId
   @ApiProperty({
@@ -19,6 +24,8 @@ export class CohortMembersDto {
     default: "",
   })
   @Expose()
+  @IsNotEmpty()
+  @IsUUID(undefined, { message: 'Cohort Id must be a valid UUID' })
   cohortId: string;
 
   //userId
@@ -28,34 +35,9 @@ export class CohortMembersDto {
     default: "",
   })
   @Expose()
+  @IsNotEmpty()
+  @IsUUID(undefined, { message: 'User Id must be a valid UUID' })
   userId: string;
-
-  //role
-  @ApiProperty({
-    type: String,
-    description: "The role of the cohort members",
-    default: "",
-  })
-  @Expose()
-  role: string;
-
-  //createdBy
-  @ApiPropertyOptional({
-    type: String,
-    description: "The createdBy of the cohort members",
-    default: "",
-  })
-  @Expose()
-  createdBy: string;
-
-  //updatedBy
-  @ApiPropertyOptional({
-    type: String,
-    description: "The updatedBy of the cohort members",
-    default: "",
-  })
-  @Expose()
-  updatedBy: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

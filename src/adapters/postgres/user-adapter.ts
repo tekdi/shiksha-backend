@@ -22,7 +22,6 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { log } from 'console';
 
 @Injectable()
 export class PostgresUserService {
@@ -140,7 +139,6 @@ export class PostgresUserService {
       const customFields = await this.findCustomFields(userData)
       
       result.userData = userDetails;
-      console.log();
       
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {

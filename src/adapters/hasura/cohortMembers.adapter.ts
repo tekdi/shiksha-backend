@@ -83,64 +83,6 @@ export class HasuraCohortMembersService
     cohortMembersUpdateDto: CohortMembersUpdateDto,
     response: any
   ) {
-    // var axios = require("axios");
-
-    // let query = "";
-    // Object.keys(cohortMembersDto).forEach((e) => {
-    //   if (cohortMembersDto[e] && cohortMembersDto[e] != "") {
-    //     if (Array.isArray(cohortMembersDto[e])) {
-    //       query += `${e}: "${JSON.stringify(cohortMembersDto[e])}", `;
-    //     } else {
-    //       query += `${e}: "${cohortMembersDto[e]}", `;
-    //     }
-    //   }
-    // });
-
-    // var data = {
-    //   query: `
-    //   mutation UpdateCohortMembers($cohortMembershipId:uuid!) {
-    //     update_CohortMembers_by_pk(
-    //         pk_columns: {
-    //           cohortMembershipId: $cohortMembershipId
-    //         },
-    //         _set: {
-    //             ${query}
-    //         }
-    //     ) {
-    //         cohortMembershipId
-    //     }
-    // }
-    // `,
-    //   variables: {
-    //     cohortMembershipId: cohortMembershipId,
-    //   },
-    // };
-
-    // var config = {
-    //   method: "post",
-    //   url: process.env.REGISTRYHASURA,
-    //   headers: {
-    //     "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-    //     "Content-Type": "application/json",
-    //   },
-    //   data: data,
-    // };
-
-    // const response = await axios(config);
-
-    // if (response?.data?.errors) {
-    //   return new ErrorResponse({
-    //     errorCode: response?.data?.errors[0]?.extensions?.code,
-    //     errorMessage: response?.data?.errors[0]?.message,
-    //   });
-    // } else {
-    //   let result = response.data.data;
-    //   return new SuccessResponse({
-    //     statusCode: 200,
-    //     message: "Ok.",
-    //     data: result,
-    //   });
-    // }
   }
 
   public async mappedResponse(result: any) {

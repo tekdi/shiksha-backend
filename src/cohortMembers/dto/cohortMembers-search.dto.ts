@@ -19,7 +19,7 @@ export class CohortMembersSearchDto {
     example: { cohortId: "", userId: "", role:"" }, // Adding example for Swagger
   })
   @ApiPropertyOptional()
-  filters: { cohortId?: string; userId?: string }; // Define cohortId and userId properties
+  filters: { cohortId?: string; userId?: string; role?: string }; // Define cohortId and userId properties
 
   constructor(partial: Partial<CohortMembersSearchDto>) {
     Object.assign(this, partial);

@@ -97,7 +97,6 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto,
     @Res() response: Response
   ) {
-    // console.log(userCreateDto);
     const result = await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
     return response.status(result.statusCode).json(result);
   }

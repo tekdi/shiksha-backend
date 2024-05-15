@@ -613,7 +613,7 @@ export class HasuraUserService implements IServicelocator {
         url: process.env.REGISTRYHASURA,
         headers: {
           Authorization: request.headers.authorization,
-          "x-hasura-role": getUserRole(userRoles),
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
           "Content-Type": "application/json",
         },
         data: data,

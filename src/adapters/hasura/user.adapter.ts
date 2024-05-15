@@ -941,4 +941,7 @@ export class HasuraUserService implements IServicelocator {
       return e;
     }
   }
+
+  public async deleteUserById(userId){}
+
 }

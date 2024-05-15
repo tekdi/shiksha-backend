@@ -13,14 +13,15 @@ import {
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
 import { Field } from '../../user/entities/field-entity';
-import APIResponse from '../../utils/response';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { isUUID } from 'class-validator';
 import { UserSearchDto } from 'src/user/dto/user-search.dto';
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
+import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entity";
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
+import { Cohort } from "src/cohort/entities/cohort.entity";
+import { Role } from "src/rbac/role/entities/role.entity";
 
 @Injectable()
 export class PostgresUserService {
@@ -40,6 +41,12 @@ export class PostgresUserService {
     private userTenantMappingRepository: Repository<UserTenantMapping>,
     @InjectRepository(Tenants)
     private tenantsRepository: Repository<Tenants>,
+    @InjectRepository(UserRoleMapping)
+    private userRoleMappingRepository: Repository<UserRoleMapping>,
+    @InjectRepository(Cohort)
+    private cohortRepository: Repository<Cohort>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) { }
   async searchUser(tenantId: string,
     request: any,
@@ -89,7 +96,6 @@ export class PostgresUserService {
       skip: offset,
       take: parseInt(limit),
     });
-    console.log(results);
     return results;
   }
 
@@ -107,26 +113,33 @@ export class PostgresUserService {
       };
       let customFieldsArray = [];
 
-      const [filledValues, userDetails] = await Promise.all([
+      const [filledValues, userDetails, userRole] = await Promise.all([
         this.findFilledValues(userData.userId),
-        this.findUserDetails(userData.userId)
+        this.findUserDetails(userData.userId),
+        this.findUserRoles(userData.userId,userData.tenantId)
       ]);
+
+      if(userRole){
+        userDetails['role'] = userRole.title;
+      }
+
       if (!userDetails) {
         return new SuccessResponse({
           statusCode: HttpStatus.NOT_FOUND,
           message: 'User Not Found',
         });
-      }
+      }   
       if (!userData.fieldValue) {
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: 'Ok.',
           data: userDetails,
         });
-      }
-      const customFields = await this.findCustomFields(userData, userDetails.role)
-
+      }    
+      const customFields = await this.findCustomFields(userData)
+      
       result.userData = userDetails;
+      
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
         const fieldValue = filledValuesMap.get(data.fieldId);
@@ -134,16 +147,22 @@ export class PostgresUserService {
           fieldId: data.fieldId,
           label: data.label,
           value: fieldValue || '',
+          isRequired: data.fieldAttributes ? data.fieldAttributes['isRequired'] : '',
+          isEditable: data.fieldAttributes ? data.fieldAttributes['isEditable'] : '',
           options: data?.fieldParams?.['options'] || {},
           type: data.type || ''
         };
         customFieldsArray.push(customField);
       }
+
+
+      
       result.userData['customFields'] = customFieldsArray;
+      
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
-        message: 'Ok.',
+        message: 'User detais Fetched Succcessfully.',
         data: result,
       });
 
@@ -250,6 +269,26 @@ export class PostgresUserService {
     return result
   }
 
+  async findUserRoles(userId:string, tenantId:string) {
+    
+    const getRole = await this.userRoleMappingRepository.findOne({
+      where:{
+        userId:userId,
+        tenantId:tenantId
+      }
+    })
+    
+    let role
+
+      role = await this.roleRepository.findOne({
+        where:{
+          roleId:getRole.roleId,
+        },
+        select: ["title"]
+      })
+    return role
+  }
+
   async findUserDetails(userId, username?: any) {
     let whereClause: any = { userId: userId };
     if (username && userId === null) {
@@ -258,7 +297,7 @@ export class PostgresUserService {
     }
     let userDetails = await this.usersRepository.findOne({
       where: whereClause,
-      select: ["userId", "username", "name", "role", "district","state","mobile"]
+      select: ["userId", "username", "name", "district", "state", "mobile"]
     })
 
     const tenentDetails = await this.allUsersTenent(userDetails.userId)
@@ -267,7 +306,7 @@ export class PostgresUserService {
     return userDetails;
 
   }
-  async allUsersTenent(userId: string){
+  async allUsersTenent(userId: string) {
     const query = `
     SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId 
     FROM public."UserTenantMapping" UTM 
@@ -277,19 +316,23 @@ export class PostgresUserService {
     const result = await this.usersRepository.query(query, [userId]);
     return result;
   }
-  async findCustomFields(userData, role) {
+  async findCustomFields(userData) {
     let customFields = await this.fieldsRepository.find({
       where: {
         context: userData.context,
-        contextType: role.toUpperCase()
       }
     })
+
     return customFields;
   }
   async findFilledValues(userId: string) {
-    let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
-    LEFT JOIN public."FieldValues" F
-    ON U."userId" = F."itemId" where U."userId" =$1`;
+    let query = `SELECT U."userId",FV."fieldId",FV."value", F."fieldAttributes" FROM public."Users" U 
+    LEFT JOIN public."FieldValues" FV
+    ON U."userId" = FV."itemId" 
+    LEFT JOIN public."Fields" F
+    ON F."fieldId" = FV."fieldId" 
+    where U."userId" =$1`;
+
     let result = await this.usersRepository.query(query, [userId]);
     return result;
   }
@@ -297,24 +340,50 @@ export class PostgresUserService {
   async updateUser(userDto, response) {
     try {
       let updatedData = {};
+      let errorMessage;
       if (userDto.userData || Object.keys(userDto.userData).length > 0) {
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
         updatedData['basicDetails'] = userDto.userData;
       }
+
       if (userDto?.customFields?.length > 0) {
+
+        const getFieldsAttributesQuery = `
+          SELECT * 
+          FROM "public"."Fields" 
+          WHERE "contextType"='STUDENT' AND "fieldAttributes"->>'isEditable' = $1 
+        `;
+        const getFieldsAttributesParams = ['true'];
+        const getFieldsAttributes = await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
+
+        let isEditableFieldId = [];
+        for (let fieldDetails of getFieldsAttributes) {
+          isEditableFieldId.push(fieldDetails.fieldId);
+        }
+
+        // let errorMessage = [];
+        let unEditableIdes = [];
         for (let data of userDto.customFields) {
-          const result = await this.updateCustomFields(userDto.userId, data);
-          if (result) {
-            if (!updatedData['customFields'])
-              updatedData['customFields'] = [];
-            updatedData['customFields'].push(result);
+          if (isEditableFieldId.includes(data.fieldId)) {
+            const result = await this.updateCustomFields(userDto.userId, data);
+            if (result) {
+              if (!updatedData['customFields'])
+                updatedData['customFields'] = [];
+              updatedData['customFields'].push(result);
+            }
+          } else {
+            unEditableIdes.push(data.fieldId)
           }
         }
+        if (unEditableIdes.length > 0) {
+          errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
+        }
       }
-      return new SuccessResponse({
+      return ({
         statusCode: 200,
-        message: "ok",
+        message: "User has been updated successfully.",
         data: updatedData,
+        error: errorMessage
       });
     } catch (e) {
       return new ErrorResponseTypeOrm({
@@ -352,8 +421,6 @@ export class PostgresUserService {
     // It is considered that if user is not present in keycloak it is not present in database as well
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
-      let cohortId = userCreateDto.cohortId;
-      delete userCreateDto?.cohortId;
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
 
@@ -362,108 +429,122 @@ export class PostgresUserService {
         let field_value_array = userCreateDto.fieldValues.split("|");
         const validateField = await this.validateFieldValues(field_value_array);
 
-        if(validateField == false){
+        if (validateField == false) {
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.CONFLICT,
             errorMessage: "Duplicate fieldId found in fieldValues.",
           });
         }
       }
+      
+      // check and validate all fields
+      let validateBodyFields = await this.validateBodyFields(userCreateDto)
 
-      // Check if tenant array is not empty
-      const tenantIds = userCreateDto.tenantId;
-      const userId = userCreateDto.userId;
-      let errors = [];
+      if (validateBodyFields == true) {
+        userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
+        const userSchema = new UserCreateDto(userCreateDto);
 
-      if (!tenantIds || tenantIds.length === 0) {
-        return new SuccessResponse({
-          statusCode: HttpStatus.BAD_REQUEST,
-          message: "Tenants array cannot be empty.",
-        });
-      }
+        let errKeycloak = "";
+        let resKeycloak = "";
 
-      //Check tenent is exist or not
-      for (const tenantId of tenantIds) {
-        const validate = await this.validateUserTenantMapping(userId, tenantId);
-        if (validate == false) {
+        const keycloakResponse = await getKeycloakAdminToken();
+        const token = keycloakResponse.data.access_token;
+        let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+        let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
+        if (checkUserinKeyCloakandDb) {
           return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorMessage: `Tenant ${tenantId} does not exist.`,
+            statusCode: HttpStatus.FORBIDDEN,
+            errorMessage: "User Already Exist",
           });
         }
-      }
+        resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+          (error) => {
+            errKeycloak = error.response?.data.errorMessage;
 
-      userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
-      const userSchema = new UserCreateDto(userCreateDto);
+            return new ErrorResponseTypeOrm({
+              statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+              errorMessage: error,
+            });
+          }
+        );
+        userCreateDto.userId = resKeycloak;
 
-      let errKeycloak = "";
-      let resKeycloak = "";
+        let result = await this.createUserInDatabase(request, userCreateDto);
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
-      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
-      let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
-      if (checkUserinKeyCloakandDb) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.FORBIDDEN,
-          errorMessage: "User Already Exist",
-        });
-      }
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-
-          return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: error,
-          });
-        }
-      );
-      userCreateDto.userId = resKeycloak;
-       if (errors.length > 0) {
-        return {
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorCount: errors.length,
-          errors,
-        };
-      }
-
-
-      let result = await this.createUserInDatabase(request, userCreateDto, cohortId);
-
-      let fieldData = {};
-      if (userCreateDto.fieldValues) {
-        let field_value_array = userCreateDto.fieldValues.split("|");
-        if (result && field_value_array?.length > 0) {
-          let userId = result?.userId;
-          for (let i = 0; i < field_value_array?.length; i++) {
-            let fieldValues = field_value_array[i].split(":");
-            fieldData = {
-              fieldId: fieldValues[0],
-              value: fieldValues[1]
-            }
-            let result = await this.updateCustomFields(userId, fieldData);
-            if (!result) {
-              return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: `Error is ${result}`,
-              });
+        let fieldData = {};
+        if (userCreateDto.fieldValues) {
+          let field_value_array = userCreateDto.fieldValues.split("|");
+          if (result && field_value_array?.length > 0) {
+            let userId = result?.userId;
+            for (let i = 0; i < field_value_array?.length; i++) {
+              let fieldValues = field_value_array[i].split(":");
+              fieldData = {
+                fieldId: fieldValues[0],
+                value: fieldValues[1]
+              }
+              let result = await this.updateCustomFields(userId, fieldData);
+              if (!result) {
+                return new ErrorResponseTypeOrm({
+                  statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                  errorMessage: `Error is ${result}`,
+                });
+              }
             }
           }
         }
+        return new SuccessResponse({
+          statusCode: 200,
+          message: "User has been created successfully.",
+          data: result,
+        });
       }
-      return new SuccessResponse({
-        statusCode: 200,
-        message: "ok",
-        data: result,
-      });
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: `Error is ${e}`,
-      });
+      if (e instanceof ErrorResponseTypeOrm) {
+        return e;
+      } else {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          errorMessage: e.toString(), // or any custom error message you want
+        });
+      }
     }
   }
+
+  async validateBodyFields(userCreateDto) {
+    for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
+
+      const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
+
+      const [tenantExists, cohortExists, roleExists] = await Promise.all([
+        this.tenantsRepository.find({ where: { tenantId } }),
+        this.cohortRepository.find({ where: { tenantId, cohortId } }),
+        this.roleRepository.find({ where: { roleId } })
+      ]);
+
+      if (tenantExists.length === 0) {
+        throw new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `Tenant Id '${tenantId}' does not exist.`,
+        });
+      }
+
+      if (cohortExists.length === 0) {
+        throw new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`,
+        });
+      }
+
+      if (roleExists.length === 0) {
+        throw new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `Role Id '${roleId}' does not exist.`,
+        });
+      }
+    }
+    return true;
+  }
+
 
   // Can be Implemeneted after we know what are the unique entties
   async checkUserinKeyCloakandDb(userDto) {
@@ -479,60 +560,69 @@ export class PostgresUserService {
     return false;
   }
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto, cohortId) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
-    user.role = userCreateDto?.role
     user.mobile = Number(userCreateDto?.mobile) || null,
-    user.tenantId = null
     user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-    user.state = userCreateDto?.state,
-    user.district = userCreateDto?.district,
-    user.address = userCreateDto?.address,
-    user.pincode = userCreateDto?.pincode
+      user.state = userCreateDto?.state,
+      user.district = userCreateDto?.district,
+      user.address = userCreateDto?.address,
+      user.pincode = userCreateDto?.pincode
 
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
     }
-
+    
     let result = await this.usersRepository.save(user);
-    if (result) {
-      let cohortData = {
-        userId: result?.userId,
-        role: result?.role,
-        tenantId: result?.tenantId,
-        cohortId: cohortId
-      }
-      await this.addCohortMember(cohortData);
 
-      let tenantsData = {
-        userId: result?.userId,
-        tenantIds: userCreateDto?.tenantId,
+    if (result) {
+      for (let mapData of userCreateDto.tenantCohortRoleMapping) {
+        let cohortData = {
+          userId: result?.userId,
+          cohortId: mapData?.cohortId
+        }
+
+        await this.addCohortMember(cohortData);
+
+        let tenantRoleMappingData = {
+          userId: result?.userId,
+          tenantRoleMapping: mapData,
+        }
+        await this.assignUserToTenant(tenantRoleMappingData, request);
       }
-      await this.assignUserToTenant(tenantsData, request);
     }
     return result;
   }
 
   async assignUserToTenant(tenantsData, request) {
     try {
-      const tenantIds = tenantsData.tenantIds;
-      const userId = tenantsData.userId;
-      let result = [];
-      let errors = [];
+      const tenantId = tenantsData?.tenantRoleMapping?.tenantId;
+      const userId = tenantsData?.userId;
+      const roleId = tenantsData?.tenantRoleMapping?.roleId;
 
-      for (const tenantId of tenantIds) {
-        const data = await this.userTenantMappingRepository.save({
+      if (roleId) {
+        const data = await this.userRoleMappingRepository.save({
           userId: userId,
           tenantId: tenantId,
+          roleId: roleId,
           createdBy: request['user'].userId,
           updatedBy: request['user'].userId
         })
       }
+
+      const data = await this.userTenantMappingRepository.save({
+        userId: userId,
+        tenantId: tenantId,
+        createdBy: request['user'].userId,
+        updatedBy: request['user'].userId
+      })
+
+
     } catch (error) {
       throw new Error(error)
     }

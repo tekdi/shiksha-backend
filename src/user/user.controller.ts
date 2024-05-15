@@ -64,15 +64,20 @@ export class UserController {
     @Param("userId") userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
-    // const tenantId = headers["tenantid"];   Can be Used In future
+    const tenantId = headers["tenantid"]; 
+    if(!tenantId){
+      return response.status(400).json({ "statusCode": 400, error: "Please provide a tenantId." });
+    }
     // Context and ContextType can be taken from .env later
     let userData = {
       context: "USERS",
+      tenantId: tenantId,
       userId: userId,
       fieldValue: fieldvalue
     }
     let result;
     result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(userData, response);
+    
     return response.status(result.statusCode).json(result);
   }
 

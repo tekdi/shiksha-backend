@@ -121,7 +121,7 @@ export class AttendanceSearchDto {
 
   @ApiPropertyOptional({
     description: "Sort",
-    example: ["attendanceDate", "ascending"]
+    example: ["attendanceDate", "asc"]
   })
   @IsArray()
   @IsOptional()

@@ -41,7 +41,7 @@ import { Response } from "express";
 import { isUUID } from "class-validator";
 import { SuccessResponse } from "src/success-response";
 @ApiTags("User")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @Controller("users")
 export class UserController {
   constructor(

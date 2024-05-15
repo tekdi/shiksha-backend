@@ -314,47 +314,47 @@ export class HasuraUserService implements IServicelocator {
           errorMessage: response.data.errors[0].message,
         });
       } else {
-        const result = response.data.data.insert_Users_one;
+        // const result = response.data.data.insert_Users_one;
 
-        let fieldCreate = true;
-        let fieldError = null;
-        //create fields values
-        let userId = result?.userId;
-        let field_value_array = userCreateDto.fieldValues?.split("|");
+        // let fieldCreate = true;
+        // let fieldError = null;
+        // //create fields values
+        // let userId = result?.userId;
+        // let field_value_array = userCreateDto.fieldValues?.split("|");
 
-        if (field_value_array?.length > 0) {
-          let field_values = [];
-          for (let i = 0; i < field_value_array.length; i++) {
-            let fieldValues = field_value_array[i].split(":");
-            field_values.push({
-              value: fieldValues[1] ? fieldValues[1] : "",
-              itemId: userId,
-              fieldId: fieldValues[0] ? fieldValues[0] : "",
-              createdBy: userCreateDto?.createdBy,
-              updatedBy: userCreateDto?.updatedBy,
-            });
-          }
+        // if (field_value_array?.length > 0) {
+        //   let field_values = [];
+        //   for (let i = 0; i < field_value_array.length; i++) {
+        //     let fieldValues = field_value_array[i].split(":");
+        //     field_values.push({
+        //       value: fieldValues[1] ? fieldValues[1] : "",
+        //       itemId: userId,
+        //       fieldId: fieldValues[0] ? fieldValues[0] : "",
+        //       createdBy: userCreateDto?.createdBy,
+        //       updatedBy: userCreateDto?.updatedBy,
+        //     });
+        //   }
 
-          const response_field_values =
-            await this.fieldsService.createFieldValuesBulk(field_values);
-          if (response_field_values?.data?.errors) {
-            fieldCreate = false;
-            fieldError = response_field_values?.data;
-          }
-        }
+        //   const response_field_values =
+        //     await this.fieldsService.createFieldValuesBulk(field_values);
+        //   if (response_field_values?.data?.errors) {
+        //     fieldCreate = false;
+        //     fieldError = response_field_values?.data;
+        //   }
+        // }
 
-        if (fieldCreate) {
-          return new SuccessResponse({
-            statusCode: 200,
-            message: "Ok.",
-            data: result,
-          });
-        } else {
-          return new ErrorResponse({
-            errorCode: fieldError?.errors[0]?.extensions?.code,
-            errorMessage: fieldError?.errors[0]?.message,
-          });
-        }
+        // if (fieldCreate) {
+        //   return new SuccessResponse({
+        //     statusCode: 200,
+        //     message: "Ok.",
+        //     data: result,
+        //   });
+        // } else {
+        //   return new ErrorResponse({
+        //     errorCode: fieldError?.errors[0]?.extensions?.code,
+        //     errorMessage: fieldError?.errors[0]?.message,
+        //   });
+        // }
       }
     }catch (e) {
       console.error(e);
@@ -421,42 +421,42 @@ export class HasuraUserService implements IServicelocator {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      let result = response.data.update_Users_by_pk;
-      let fieldCreate = true;
-      let fieldError = [];
-      //update fields values
-      let field_value_array = userUpdateDto.fieldValues?.split("|");
-      if (field_value_array?.length > 0) {
-        for (let i = 0; i < field_value_array.length; i++) {
-          let fieldValues = field_value_array[i].split(":");
-          //update values
-          let fieldValuesUpdate = new FieldValuesDto({
-            value: fieldValues[1] ? fieldValues[1] : "",
-          });
+      // let result = response.data.update_Users_by_pk;
+      // let fieldCreate = true;
+      // let fieldError = [];
+      // //update fields values
+      // let field_value_array = userUpdateDto.fieldValues?.split("|");
+      // if (field_value_array?.length > 0) {
+      //   for (let i = 0; i < field_value_array.length; i++) {
+      //     let fieldValues = field_value_array[i].split(":");
+      //     //update values
+      //     let fieldValuesUpdate = new FieldValuesDto({
+      //       value: fieldValues[1] ? fieldValues[1] : "",
+      //     });
 
-          const response_field_values =
-            await this.fieldsService.updateFieldValues(
-              fieldValues[0] ? fieldValues[0] : "",
-              fieldValuesUpdate
-            );
-          if (response_field_values?.data?.errors) {
-            fieldCreate = false;
-            fieldError.push(response_field_values?.data);
-          }
-        }
-      }
-      if (fieldCreate) {
-        return new SuccessResponse({
-          statusCode: 200,
-          message: "User updated successfully ",
-          data: result,
-        });
-      } else {
-        return new ErrorResponse({
-          errorCode: "filed value update error",
-          errorMessage: JSON.stringify(fieldError),
-        });
-      }
+      //     const response_field_values =
+      //       await this.fieldsService.updateFieldValues(
+      //         fieldValues[0] ? fieldValues[0] : "",
+      //         fieldValuesUpdate
+      //       );
+      //     if (response_field_values?.data?.errors) {
+      //       fieldCreate = false;
+      //       fieldError.push(response_field_values?.data);
+      //     }
+      //   }
+      // }
+      // if (fieldCreate) {
+      //   return new SuccessResponse({
+      //     statusCode: 200,
+      //     message: "User updated successfully ",
+      //     data: result,
+      //   });
+      // } else {
+      //   return new ErrorResponse({
+      //     errorCode: "filed value update error",
+      //     errorMessage: JSON.stringify(fieldError),
+      //   });
+      // }
     }
   }
 

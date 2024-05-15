@@ -426,9 +426,9 @@ export class PostgresUserService {
 
       //Check duplicate field entry
       if (userCreateDto.fieldValues) {
-        let field_value_array = userCreateDto.fieldValues.split("|");
-        const validateField = await this.validateFieldValues(field_value_array);
-
+        let field_values = userCreateDto.fieldValues;
+        const validateField = await this.validateFieldValues(field_values);
+        
         if (validateField == false) {
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.CONFLICT,
@@ -436,6 +436,7 @@ export class PostgresUserService {
           });
         }
       }
+
       
       // check and validate all fields
       let validateBodyFields = await this.validateBodyFields(userCreateDto)
@@ -473,14 +474,14 @@ export class PostgresUserService {
 
         let fieldData = {};
         if (userCreateDto.fieldValues) {
-          let field_value_array = userCreateDto.fieldValues.split("|");
-          if (result && field_value_array?.length > 0) {
+
+          if (result && userCreateDto.fieldValues?.length > 0) {
             let userId = result?.userId;
-            for (let i = 0; i < field_value_array?.length; i++) {
-              let fieldValues = field_value_array[i].split(":");
+            for (let fieldValues of userCreateDto.fieldValues) {
+
               fieldData = {
-                fieldId: fieldValues[0],
-                value: fieldValues[1]
+                fieldId: fieldValues['fieldId'],
+                value: fieldValues['value']
               }
               let result = await this.updateCustomFields(userId, fieldData);
               if (!result) {
@@ -492,6 +493,7 @@ export class PostgresUserService {
             }
           }
         }
+        
         return new SuccessResponse({
           statusCode: 200,
           message: "User has been created successfully.",
@@ -762,16 +764,17 @@ export class PostgresUserService {
     }
   }
 
-  public async validateFieldValues(field_value_array: string[]) {
-    let encounteredKeys = []
-    for (const fieldValue of field_value_array) {
-      const [fieldId] = fieldValue.split(":").map(value => value.trim());
+  public async validateFieldValues(field_values) {
 
+    
+    let encounteredKeys = []
+    for (const fieldValue of field_values) {
+      const fieldId = fieldValue['fieldId'];
+      // const [fieldId] = fieldValue.split(":").map(value => value.trim());
       if (encounteredKeys.includes(fieldId)) {
         return false
       }
       encounteredKeys.push(fieldId);
-
     };
   }
 

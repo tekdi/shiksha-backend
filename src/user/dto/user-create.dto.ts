@@ -51,13 +51,6 @@ export class fieldValuesDto{
   @IsUUID(undefined, { message: 'Field Id must be a valid UUID' })
   fieldId: string;
 
-  // @ApiPropertyOptional({
-  //   type: String,
-  //   description: "Field type",
-  // })
-  // @Expose()
-  // fieldType: string;
-
   @ApiPropertyOptional({
     type: String,
     description: "Field values",

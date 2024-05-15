@@ -31,117 +31,6 @@ export class HasuraUserService implements IServicelocator {
   }
   public async getUsersDetailsById(userData: Record<string, string>, response:any) {}
   public async getUsersDetailsByCohortId(userData: Record<string, string>, response:any) {}
-  // public async getUser(
-  //   userData?:Record<string,string>,
-  //   res?: any,
-  //   tenantId?: string,
-  //   userId?: string,
-  //   accessRole?: string,
-  //   request?: any,
-  // ) {
-  //   try {
-  //     const decoded: any = jwt_decode(request.headers.authorization);
-  //     const userRoles =
-  //       decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
-
-  //     const data = {
-  //       query: `query GetUser($userId: uuid!, $tenantId: uuid!, $context: String!, $contextId: uuid!, $access : String!) {
-  //         Users(where: {tenantId: {_eq: $tenantId}, userId: {_eq: $userId}}) {
-  //           username
-  //           userId
-  //           name
-  //           email
-  //           district
-  //           state
-  //           address
-  //           pincode
-  //           mobile
-  //           dob
-  //           role
-  //           tenantId
-  //           updatedAt
-  //           updatedBy
-  //           createdBy
-  //           createdAt
-  //           fields: UsersFieldsTenants(where: {_or: [{contextId: {_is_null: true}}, {contextId: {_eq: $contextId}}], context: {_eq: $context}, _and: {_or: [{access: {_is_null: true}}, {access: {_eq: $access}}]}}) {
-  //             tenantId
-  //             fieldId
-  //             assetId
-  //             context
-  //             contextId
-  //             groupId
-  //             name
-  //             label
-  //             defaultValue
-  //             type
-  //             note
-  //             description
-  //             state
-  //             required
-  //             ordering
-  //             metadata
-  //             access
-  //             onlyUseInSubform
-  //             updatedAt
-  //             updatedBy
-  //             createdAt
-  //             createdBy
-  //             fieldValues: FieldValues(where: {itemId: {_eq: $contextId}}) {
-  //               value
-  //               itemId
-  //               fieldId
-  //               fieldValuesId
-  //               updatedBy
-  //               updatedAt
-  //               createdBy
-  //               createdAt
-  //             }
-  //           }
-  //         }
-  //       }`,
-  //       variables: {
-  //         userId: userId,
-  //         tenantId: tenantId,
-  //         context: "Users",
-  //         contextId: userId,
-  //         access: accessRole,
-  //       },
-  //     };
-
-  //     const config = {
-  //       method: "post",
-  //       url: process.env.REGISTRYHASURA,
-  //       headers: {
-  //         Authorization: request.headers.authorization,
-  //         "x-hasura-role": getUserRole(userRoles),
-  //         "Content-Type": "application/json",
-  //       },
-  //       data: data,
-  //     };
-
-  //     const response = await this.axios(config);
-
-  //     if (response?.data?.errors) {
-  //       return res.status(400).send({
-  //         errorCode: response?.data?.errors[0]?.extensions?.code,
-  //         errorMessage: response?.data?.errors[0]?.message,
-  //       });
-  //     } else {
-  //       const result = response.data.data.Users;
-  //       return res.status(200).send({
-  //         statusCode: 200,
-  //         message: "Ok.",
-  //         data: result,
-  //       });
-  //     }
-  //   } catch (e) {
-  //     console.error(e);
-  //     return new ErrorResponse({
-  //       errorCode: "400",
-  //       errorMessage: e,
-  //     });
-  //   }
-  // }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     // try {
@@ -217,53 +106,6 @@ export class HasuraUserService implements IServicelocator {
   }
 
   public async createUser(request: any, userCreateDto: UserCreateDto) {
-    // It is considered that if user is not present in keycloak it is not present in database as well
-    // try {
-    //   const decoded: any = jwt_decode(request.headers.authorization);
-    //   const userRoles =
-    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
-
-    //   const userId =
-    //     decoded["https://hasura.io/jwt/claims"]["x-hasura-user-id"];
-    //   userCreateDto.createdBy = userId;
-    //   userCreateDto.updatedBy = userId;
-
-    //   userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
-
-    //   const userSchema = new UserCreateDto(userCreateDto);
-
-    //   let errKeycloak = "";
-    //   let resKeycloak = "";
-
-    //   // if (altUserRoles.includes("systemAdmin")) {
-
-    //   const keycloakResponse = await getKeycloakAdminToken();
-    //   const token = keycloakResponse.data.access_token;
-
-    //   resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-    //     (error) => {
-    //       errKeycloak = error.response?.data.errorMessage;
-
-    //       return new ErrorResponse({
-    //         errorCode: "500",
-    //         errorMessage: "Someting went wrong",
-    //       });
-    //     }
-    //   );
-    //   // } else {
-    //   //   return new ErrorResponse({
-    //   //     errorCode: "401",
-    //   //     errorMessage: "Unauthorized",
-    //   //   });
-    //   // }
-
-    //   // Add userId created in keycloak as user Id of ALT user
-    //   userCreateDto.userId = resKeycloak;
-    //   return await this.createUserInDatabase(request, userCreateDto);
-    // } catch (e) {
-    //   console.error(e);
-    //   return e;
-    // }
   }
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
@@ -314,47 +156,6 @@ export class HasuraUserService implements IServicelocator {
           errorMessage: response.data.errors[0].message,
         });
       } else {
-        // const result = response.data.data.insert_Users_one;
-
-        // let fieldCreate = true;
-        // let fieldError = null;
-        // //create fields values
-        // let userId = result?.userId;
-        // let field_value_array = userCreateDto.fieldValues?.split("|");
-
-        // if (field_value_array?.length > 0) {
-        //   let field_values = [];
-        //   for (let i = 0; i < field_value_array.length; i++) {
-        //     let fieldValues = field_value_array[i].split(":");
-        //     field_values.push({
-        //       value: fieldValues[1] ? fieldValues[1] : "",
-        //       itemId: userId,
-        //       fieldId: fieldValues[0] ? fieldValues[0] : "",
-        //       createdBy: userCreateDto?.createdBy,
-        //       updatedBy: userCreateDto?.updatedBy,
-        //     });
-        //   }
-
-        //   const response_field_values =
-        //     await this.fieldsService.createFieldValuesBulk(field_values);
-        //   if (response_field_values?.data?.errors) {
-        //     fieldCreate = false;
-        //     fieldError = response_field_values?.data;
-        //   }
-        // }
-
-        // if (fieldCreate) {
-        //   return new SuccessResponse({
-        //     statusCode: 200,
-        //     message: "Ok.",
-        //     data: result,
-        //   });
-        // } else {
-        //   return new ErrorResponse({
-        //     errorCode: fieldError?.errors[0]?.extensions?.code,
-        //     errorMessage: fieldError?.errors[0]?.message,
-        //   });
-        // }
       }
     }catch (e) {
       console.error(e);
@@ -421,42 +222,6 @@ export class HasuraUserService implements IServicelocator {
         errorMessage: response?.data?.errors[0]?.message,
       });
     } else {
-      // let result = response.data.update_Users_by_pk;
-      // let fieldCreate = true;
-      // let fieldError = [];
-      // //update fields values
-      // let field_value_array = userUpdateDto.fieldValues?.split("|");
-      // if (field_value_array?.length > 0) {
-      //   for (let i = 0; i < field_value_array.length; i++) {
-      //     let fieldValues = field_value_array[i].split(":");
-      //     //update values
-      //     let fieldValuesUpdate = new FieldValuesDto({
-      //       value: fieldValues[1] ? fieldValues[1] : "",
-      //     });
-
-      //     const response_field_values =
-      //       await this.fieldsService.updateFieldValues(
-      //         fieldValues[0] ? fieldValues[0] : "",
-      //         fieldValuesUpdate
-      //       );
-      //     if (response_field_values?.data?.errors) {
-      //       fieldCreate = false;
-      //       fieldError.push(response_field_values?.data);
-      //     }
-      //   }
-      // }
-      // if (fieldCreate) {
-      //   return new SuccessResponse({
-      //     statusCode: 200,
-      //     message: "User updated successfully ",
-      //     data: result,
-      //   });
-      // } else {
-      //   return new ErrorResponse({
-      //     errorCode: "filed value update error",
-      //     errorMessage: JSON.stringify(fieldError),
-      //   });
-      // }
     }
   }
 

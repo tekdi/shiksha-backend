@@ -167,7 +167,7 @@ export class UserController {
    @Delete("/:userId")
 
    @ApiBasicAuth("access-token")
-   @ApiCreatedResponse({ description: "User deleted successfully" })
+   @ApiOkResponse({ description: "User deleted successfully" })
    @ApiNotFoundResponse({ description: "Data not found" })
    @SerializeOptions({
      strategy: "excludeAll",

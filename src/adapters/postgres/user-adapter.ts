@@ -776,6 +776,66 @@ export class PostgresUserService {
     };
   }
 
+  public async deleteUserById(userId){
+    const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
+     // Validate userId format
+     if (!isUUID(userId)) {
+      return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: "Please enter a valid UUID for userId",
+      });
+  }
+  
+      try {
+    // Check if user exists in usersRepository
+    const user = await this.usersRepository.findOne({ where :{userId:userId}});
+    if (!user) {
+        return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.NOT_FOUND,
+            errorMessage: "User not found in user table.",
+        });
+    }  
+  
+  
+       // Delete from User table
+        const userResult = await this.usersRepository.delete(userId);
+  
+        // Delete from CohortMembers table
+        const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
+  
+        // Delete from UserTenantMapping table
+        const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
+  
+        // Delete from UserRoleMapping table
+        const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
+  
+      // Delete from FieldValues table where ItemId matches userId
+        const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
+  
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+  
+        await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }});
+  
+  
+        return new SuccessResponse({
+          statusCode: HttpStatus.OK,
+          message: "User and related entries deleted Successfully.",
+          data: {
+            user: userResult
+          },
+        });
+      } catch (e) {
+          return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          errorMessage: e,
+        });
+      }
+    }
+
 }
 
 

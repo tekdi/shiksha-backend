@@ -23,4 +23,6 @@ export interface IServicelocator {
     userSearchDto: UserSearchDto
   );
   resetUserPassword(request: any, username: string, newPassword: string);
+  deleteUserById(userId: string): Promise<any>;
+
 }

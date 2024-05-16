@@ -14,6 +14,7 @@ import {
   UsePipes,
   ValidationPipe,
   HttpStatus,
+  Delete,
 } from "@nestjs/common";
 
 import { Request } from "@nestjs/common";
@@ -161,4 +162,27 @@ export class UserController {
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
   }
+
+   //delete
+   @Delete("/:userId")
+
+   @ApiBasicAuth("access-token")
+   @ApiOkResponse({ description: "User deleted successfully" })
+   @ApiNotFoundResponse({ description: "Data not found" })
+   @SerializeOptions({
+     strategy: "excludeAll",
+   })
+
+   public async deleteUserById(
+     @Headers() headers,
+     @Param("userId") userId: string,
+     @Req() request: Request,
+     @Res() response: Response
+   ) {
+
+     const result = await this.userAdapter
+       .buildUserAdapter()
+       .deleteUserById(userId);
+     return response.status(result.statusCode).json(result);
+   }
 }

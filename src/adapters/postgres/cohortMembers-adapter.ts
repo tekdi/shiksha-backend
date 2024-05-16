@@ -331,8 +331,6 @@ export class PostgresCohortMembersService {
     let whereCase = ``;
     let optionsCase = ``;
     let isRoleCondition = 0;
-    console.log("WHERE ",where)
-    console.log("LENGTH ",where.length);
     if (where.length > 0) {
       whereCase = `where `;
       where.forEach((value,index) => {
@@ -355,12 +353,16 @@ export class PostgresCohortMembersService {
     }
 
     if(isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
-      ON CM."userId" = U."userId" ${whereCase} ${optionsCase}`;
+      ON CM."userId" = U."userId"
+      INNER JOIN public."UserRolesMapping" UR
+      ON UR."userId" = U."userId"
+      INNER JOIN public."Roles" R
+      ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
     }
     else {
-      query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR

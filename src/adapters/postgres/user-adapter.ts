@@ -765,8 +765,6 @@ export class PostgresUserService {
   }
 
   public async validateFieldValues(field_values) {
-
-    
     let encounteredKeys = []
     for (const fieldValue of field_values) {
       const fieldId = fieldValue['fieldId'];

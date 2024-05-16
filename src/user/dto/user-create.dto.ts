@@ -42,7 +42,7 @@ export class tenantRoleMappingDto{
   roleId: string;
 }
 
-export class fieldValuesDto{
+export class FieldValuesDto{
   @ApiPropertyOptional({
     type: String,
     description: "Field Id",
@@ -144,13 +144,13 @@ export class UserCreateDto {
   updatedBy: string;
 
   //fieldValues
-  @ApiProperty({
-    type: [fieldValuesDto],
+  @ApiPropertyOptional({
+    type: [FieldValuesDto],
     description: "The fieldValues Object",
   })
   @ValidateNested({ each: true })
-  @Type(() => fieldValuesDto)
-  fieldValues: fieldValuesDto[];
+  @Type(() => FieldValuesDto)
+  fieldValues: FieldValuesDto[];
 
   @ApiProperty({
     type: [tenantRoleMappingDto],

@@ -62,9 +62,9 @@ export class PostgresAttendanceService {
                         } else {
                             whereClause[key] = value;
                         }
-                    } else if (key === 'fromDate' && filters.toDate) {
+                    } else if (filters.fromDate && filters.toDate) {
                         // Convert fromDate and toDate strings to Date objects
-                        const fromDate = new Date(value);
+                        const fromDate = new Date(filters.fromDate);
                         const toDate = new Date(filters.toDate);
 
                         // Construct the whereClause with the date range using Between

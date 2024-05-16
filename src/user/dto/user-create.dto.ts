@@ -42,8 +42,24 @@ export class tenantRoleMappingDto{
   roleId: string;
 }
 
-export class UserCreateDto {
+export class FieldValuesDto{
+  @ApiPropertyOptional({
+    type: String,
+    description: "Field Id",
+  })
+  @Expose()
+  @IsUUID(undefined, { message: 'Field Id must be a valid UUID' })
+  fieldId: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    description: "Field values",
+  })
+  @Expose()
+  value: string;
+}
+
+export class UserCreateDto {
   @Expose()
   userId: string;
 
@@ -128,12 +144,13 @@ export class UserCreateDto {
   updatedBy: string;
 
   //fieldValues
-  @ApiProperty({
-    type: String,
+  @ApiPropertyOptional({
+    type: [FieldValuesDto],
     description: "The fieldValues Object",
   })
-  @Expose()
-  fieldValues: string;
+  @ValidateNested({ each: true })
+  @Type(() => FieldValuesDto)
+  fieldValues: FieldValuesDto[];
 
   @ApiProperty({
     type: [tenantRoleMappingDto],

@@ -42,7 +42,6 @@ import { Response } from "express";
 import { isUUID } from "class-validator";
 import { SuccessResponse } from "src/success-response";
 @ApiTags("User")
-@UseGuards(JwtAuthGuard)
 @Controller("users")
 export class UserController {
   constructor(
@@ -50,6 +49,7 @@ export class UserController {
   ) {}
 
   @Get('/:userId')
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detais Fetched Succcessfully" })
   @ApiNotFoundResponse({ description: "User Not Found" })
@@ -125,6 +125,7 @@ export class UserController {
   }
 
   @Post("/search")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User list." })
   @ApiBody({ type: UserSearchDto })
@@ -146,6 +147,7 @@ export class UserController {
   }
 
   @Post("/reset-password")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Password reset successfully." })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -161,6 +163,15 @@ export class UserController {
     return await this.userAdapter
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword);
+  }
+
+  @Post("/check")
+  async checkUser(
+    @Body() body,
+    @Res() response: Response
+  ) {
+    const result = await this.userAdapter.buildUserAdapter().checkUser(body,response)
+    return response.status(result.statusCode).json(result);
   }
 
    //delete

@@ -23,4 +23,5 @@ export interface IServicelocator {
     userSearchDto: UserSearchDto
   );
   resetUserPassword(request: any, username: string, newPassword: string);
+  checkUser(body:any,response);
 }

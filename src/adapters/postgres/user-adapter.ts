@@ -9,6 +9,7 @@ import {
   getKeycloakAdminToken,
   createUserInKeyCloak,
   checkIfUsernameExistsInKeycloak,
+  checkIfEmailExistsInKeycloak
 } from "../../common/utils/keycloak.adapter.util"
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
@@ -89,7 +90,6 @@ export class PostgresUserService {
       skip: offset,
       take: parseInt(limit),
     });
-    console.log(results);
     return results;
   }
 
@@ -125,11 +125,13 @@ export class PostgresUserService {
         });
       }
       const customFields = await this.findCustomFields(userData, userDetails.role)
-
       result.userData = userDetails;
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
-        const fieldValue = filledValuesMap.get(data.fieldId);
+        let fieldValue:any = filledValuesMap.get(data.fieldId);
+        if(data.type === 'checkbox'){
+          fieldValue=fieldValue.split(',')
+        }
         const customField = {
           fieldId: data.fieldId,
           label: data.label,
@@ -158,7 +160,7 @@ export class PostgresUserService {
   async getUsersDetailsByCohortId(userData: Record<string, string>, response: any) {
     let apiId = 'api.users.getAllUsersDetails'
     try {
-      if (userData.fieldValue) {
+      if (userData?.fieldValue) {
         let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
         let result = {
           userDetails: [],
@@ -201,7 +203,6 @@ export class PostgresUserService {
             customField: [],
           }
           const fieldValues = await this.getFieldandFieldValues(data.userId)
-
           userDetails.customField.push(fieldValues);
 
           result.userDetails.push(userDetails);
@@ -214,7 +215,6 @@ export class PostgresUserService {
         });
 
       }
-
     } catch (e) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -306,7 +306,7 @@ export class PostgresUserService {
           const result = await this.updateCustomFields(userDto.userId, data);
           if (result) {
             if (!updatedData['customFields'])
-              updatedData['customFields'] = [];
+            updatedData['customFields'] = [];
             updatedData['customFields'].push(result);
           }
         }
@@ -427,8 +427,6 @@ export class PostgresUserService {
           errors,
         };
       }
-
-
       let result = await this.createUserInDatabase(request, userCreateDto, cohortId);
 
       let fieldData = {};
@@ -465,19 +463,47 @@ export class PostgresUserService {
     }
   }
 
+  async checkUser(body){
+    let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(body);
+    if(checkUserinKeyCloakandDb){
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "User Exists. Proceed with Sending Email ",
+        data: {data:true},
+      });
+    }
+    return new SuccessResponse({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: "Invalid Username Or Email",
+      data: {data:false},
+    });
+  }
+
   // Can be Implemeneted after we know what are the unique entties
   async checkUserinKeyCloakandDb(userDto) {
     const keycloakResponse = await getKeycloakAdminToken();
     const token = keycloakResponse.data.access_token;
-    const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
-      userDto.username,
-      token
-    );
-    if (usernameExistsInKeycloak.data.length > 0) {
-      return usernameExistsInKeycloak;
+    if(userDto?.username){
+      const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
+        userDto?.username,
+        token
+      );
+      if (usernameExistsInKeycloak?.data?.length > 0) {
+        return usernameExistsInKeycloak;
+      }
+      return false;
+    }else{
+      const usernameExistsInKeycloak = await checkIfEmailExistsInKeycloak(
+        userDto?.email,
+        token
+      );
+      if (usernameExistsInKeycloak.data.length > 0) {
+        return usernameExistsInKeycloak;
+      }
+      return false;
     }
-    return false;
-  }
+}
+ 
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto, cohortId) {
     const user = new User()

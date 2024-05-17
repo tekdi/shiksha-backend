@@ -26,6 +26,9 @@ export class HasuraUserService implements IServicelocator {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) {}
+  checkUser(body: any, response: any) {
+    throw new Error("Method not implemented.");
+  }
   public async findUserDetails(userID: any, username: String) {
     
   }

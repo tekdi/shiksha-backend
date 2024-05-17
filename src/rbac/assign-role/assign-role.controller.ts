@@ -38,14 +38,14 @@ export class AssignRoleController {
     return response.status(result.statusCode).json(result);
   }
 
-  @Get("/:id")
+  @Get("/:userId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Role Detail." })
   @ApiHeader({ name: "tenantid" })
   @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({strategy: "excludeAll",})
   public async getRole(
-    @Param("id") userId: string,
+    @Param("userId") userId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {

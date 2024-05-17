@@ -12,9 +12,6 @@ export class User {
   @Column()
   name: string;
 
-  @Column()
-  role: string;
-
   @Column({ type: "date", nullable: true })
   dob: Date;
 
@@ -47,9 +44,6 @@ export class User {
 
   @Column({ nullable: true })
   updatedBy: string;
-
-  @Column({ type: "uuid" })
-  tenantId: string;
 
   @Column({ default: "active" })
   status: string;

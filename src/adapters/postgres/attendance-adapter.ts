@@ -35,7 +35,7 @@ export class PostgresAttendanceService {
 
     async searchAttendance(tenantId: string, request: any, attendanceSearchDto: AttendanceSearchDto) {
         try {
-            let { limit, page, filters, facets } = attendanceSearchDto;
+            let { limit, page, filters, facets, sort } = attendanceSearchDto;
             // Set default limit to 0 if not provided
             if (!limit) {
                 limit = 20;
@@ -59,21 +59,17 @@ export class PostgresAttendanceService {
                         if (key === "attendanceDate") {
                             // For attendanceDate, consider NULL values as well
                             whereClause[key] = In([value, null]);
+                        } else {
+                            whereClause[key] = value;
                         }
-                        whereClause[key] = value;
-                    }
-
-                    else if (filters.fromDate && filters.toDate) {
-
-
+                    } else if (filters.fromDate && filters.toDate) {
                         // Convert fromDate and toDate strings to Date objects
                         const fromDate = new Date(filters.fromDate);
                         const toDate = new Date(filters.toDate);
 
                         // Construct the whereClause with the date range using Between
                         whereClause["attendanceDate"] = Between(fromDate, toDate);
-                    }
-                    else {
+                    } else {
                         // If filter key is invalid, return a BadRequest response
                         return new ErrorResponseTypeOrm({
                             statusCode: HttpStatus.BAD_REQUEST,
@@ -81,17 +77,44 @@ export class PostgresAttendanceService {
                         });
                     }
                 }
-
             }
 
-            // Fetch data from the database
-            const attendanceList = await this.attendanceRepository.find({
-                where: whereClause
-            });
+            let attendanceList;
 
-            const paginatedAttendanceList = attendanceList.slice(offset, offset + (limit));
+            if (!facets) {
+                let orderOption: any = {};
+                if (sort && Array.isArray(sort) && sort.length === 2) {
+                    const [column, order] = sort;
+                    if (attendanceKeys.includes(column)) {
+                        orderOption[column] = order.toUpperCase();;
+                    } else {
+                        // If sort key is invalid, return a BadRequest response
+                        return new ErrorResponseTypeOrm({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            errorMessage: `${column} Invalid sort key`,
+                        });
+                    }
+                }
+
+                attendanceList = await this.attendanceRepository.find({
+                    where: whereClause,
+                    order: orderOption, // Apply sorting option
+                });
+                const paginatedAttendanceList = attendanceList.slice(offset, offset + (limit));
+                return new SuccessResponse({
+                    statusCode: HttpStatus.OK,
+                    message: 'Ok.',
+                    data: {
+                        attendanceList: paginatedAttendanceList
+                    },
+                });
+            }
 
             if (facets && facets.length > 0) {
+                attendanceList = await this.attendanceRepository.find({
+                    where: whereClause // Apply sorting option
+                });
+
                 let facetFields = [];
                 // Check for invalid facets
                 for (const facet of facets) {
@@ -105,21 +128,17 @@ export class PostgresAttendanceService {
                     facetFields.push({ name: facet, field: facet });
                 }
 
-
-
-
-                // Process the data to calculate counts based on facets
-                const tree = await this.facetedSearch({ data: attendanceList, facets: facetFields });
-
                 let result = {};
                 // Process the data to calculate counts based on facets
                 for (const facet of facetFields) {
                     const { field } = facet;
-                    const tree = await this.facetedSearch({ data: attendanceList, facets: [facet] });
+                    const tree = await this.facetedSearch({ data: attendanceList, facets: [facet], sort });
+
+                    if (tree instanceof ErrorResponseTypeOrm) {
+                        return tree
+                    }
                     result[field] = tree[field];
                 }
-
-
 
                 // Return success response with counts
                 return new SuccessResponse({
@@ -130,18 +149,7 @@ export class PostgresAttendanceService {
                     },
                 });
             }
-            else {
 
-                return new SuccessResponse({
-                    statusCode: HttpStatus.OK,
-                    message: 'Ok.',
-                    data: {
-                        attendanceList: paginatedAttendanceList
-                    },
-                });
-
-
-            }
         } catch (error) {
             if (error.code === "22P02") {
                 // Handle invalid input value error
@@ -159,8 +167,18 @@ export class PostgresAttendanceService {
     }
 
 
-    async facetedSearch({ data, facets }) {
-        const tree = [];
+    async facetedSearch({ data, facets, sort }) {
+        const tree = {};
+        const attendanceKeys = new Set<string>();
+
+        // Populate attendanceKeys with distinct attendance values
+        data.forEach(item => {
+            const attendanceValue = item.attendance;
+            if (attendanceValue) {
+                attendanceKeys.add(attendanceValue);
+            }
+        });
+
         // Iterate over facets
         for (const facet of facets) {
             const { field } = facet;
@@ -186,8 +204,7 @@ export class PostgresAttendanceService {
                 }
             }
 
-            // Calculate percentage for each contextId
-            // Calculate percentage for each contextId
+            // Calculate percentage for each value
             for (const value in tree[field]) {
                 const counts = tree[field][value];
                 const totalCount = Object.values(counts).reduce((acc: number, curr: unknown) => acc + (curr as number), 0);
@@ -195,14 +212,86 @@ export class PostgresAttendanceService {
                 for (const key in counts) {
                     const count = counts[key];
                     const percentage = (count / Number(totalCount)) * 100; // Convert totalCount to a number
-                    // counts[key + "_count"] = count;
                     counts[key + "_percentage"] = percentage.toFixed(2); // Round percentage to two decimal places
                 }
             }
 
+            // Assign default values for sorting
+            for (const value in tree[field]) {
+                for (const attendanceValue of attendanceKeys) {
+                    const percentageKey = `${attendanceValue}_percentage`;
+                    if (!tree[field][value].hasOwnProperty(percentageKey)) {
+                        tree[field][value][percentageKey] = "0.00"; // Set default value internally
+                    }
+                }
+            }
+
+            // Validate sort keys
+            if (sort) {
+                const [sortField, sortOrder] = sort;
+                if (!attendanceKeys.has(sortField.replace("_percentage", "")) && sortField !== 'present_percentage' && sortField !== 'absent_percentage') {
+                    return new ErrorResponseTypeOrm({
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        errorMessage: `Invalid sort[0]: ${sortField}`,
+                    });
+                }
+
+                // Sort the tree based on the provided sort parameter
+                tree[field] = await this.sortTree(tree[field], sortField, sortOrder);
+            }
         }
+
+        // Remove default values from the response
+        for (const field in tree) {
+            for (const value in tree[field]) {
+                for (const attendanceValue of attendanceKeys) {
+                    const percentageKey = `${attendanceValue}_percentage`;
+                    if (tree[field][value][percentageKey] === "0.00") {
+                        delete tree[field][value][percentageKey]; // Remove default value from response
+                    }
+                }
+            }
+        }
+
         return tree;
     }
+
+    // Helper function to sort the tree based on the provided sortField and sortOrder
+    async sortTree(tree, sortField, sortOrder) {
+        const sortedTree = {};
+
+        // Convert the object keys (values of the sortField) into an array
+        const keys = Object.keys(tree);
+
+        // Sort the keys based on the sortField and sortOrder
+        keys.sort((a, b) => {
+            const valueA = parseFloat(tree[a][sortField] || "0.00"); // Convert string to float
+            const valueB = parseFloat(tree[b][sortField] || "0.00"); // Convert string to float
+
+            if (sortOrder === 'asc') {
+                return valueA - valueB;
+            } else {
+                return valueB - valueA;
+            }
+        });
+
+        // Populate the sortedTree with sorted data
+        keys.forEach(key => {
+            sortedTree[key] = tree[key];
+        });
+
+        return sortedTree;
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -444,7 +533,6 @@ export class PostgresAttendanceService {
         try {
 
             const Isvalid = await this.validateUserForCohort(attendanceDto.userId, attendanceDto.contextId)
-
             if (!Isvalid) {
 
                 return new ErrorResponseTypeOrm({

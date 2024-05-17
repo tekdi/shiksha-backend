@@ -1,4 +1,4 @@
-import {Expose } from "class-transformer";
+import {Expose, Type } from "class-transformer";
 import {
   MaxLength,
   IsNotEmpty,
@@ -7,12 +7,59 @@ import {
   IsNumber,
   IsArray,
   IsUUID,
+  ValidateNested,
+  IsOptional,
 } from "class-validator";
 import { User } from "../entities/user-entity";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
-export class UserCreateDto {
+export class tenantRoleMappingDto{
+  @ApiProperty({
+    type: String,
+    description: "Tenant Id",
+  })
+  @Expose()
+  @IsUUID(undefined, { message: 'Tenant Id must be a valid UUID' })
+  @IsNotEmpty()
+  tenantId: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    description: "The cohort id of the user",
+  })
+  @Expose()
+  @IsUUID(undefined, { message: 'Cohort Id must be a valid UUID' })
+  @IsNotEmpty()
+  cohortId: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "User Role",
+  })
+  @IsOptional()
+  @Expose()
+  @IsUUID(undefined, { message: 'Role Id must be a valid UUID' })
+  roleId: string;
+}
+
+export class FieldValuesDto{
+  @ApiPropertyOptional({
+    type: String,
+    description: "Field Id",
+  })
+  @Expose()
+  @IsUUID(undefined, { message: 'Field Id must be a valid UUID' })
+  fieldId: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "Field values",
+  })
+  @Expose()
+  value: string;
+}
+
+export class UserCreateDto {
   @Expose()
   userId: string;
 
@@ -21,21 +68,9 @@ export class UserCreateDto {
   @IsNotEmpty()
   username: string;
 
-  // @ApiProperty({
-  //   type: String,
-  //   description: "The name of the user",
-  // })
   @ApiProperty({ type: () => String })
   @Expose()
   name: string;
-
-  @ApiProperty({
-    type: String,
-    description: "The role of the user",
-  })
-  @Expose()
-  @IsNotEmpty()
-  role: string;
 
   @ApiPropertyOptional({
     type: String,
@@ -108,34 +143,27 @@ export class UserCreateDto {
   @Expose()
   updatedBy: string;
 
-  @ApiPropertyOptional({
-    type: String,
-    description: "The cohort id of the user",
-  })
-  @Expose()
-  @IsNotEmpty()
-  cohortId: string;
-
   //fieldValues
-  @ApiProperty({
-    type: String,
+  @ApiPropertyOptional({
+    type: [FieldValuesDto],
     description: "The fieldValues Object",
   })
-  @Expose()
-  fieldValues: string;
+  @ValidateNested({ each: true })
+  @Type(() => FieldValuesDto)
+  fieldValues: FieldValuesDto[];
 
   @ApiProperty({
-    type: String,
-    description: "Tenant Id",
-    default: [],
+    type: [tenantRoleMappingDto],
+    description: 'List of user attendance details',
   })
-  @Expose()
-  @IsArray()
-  @IsUUID(undefined, { each: true })
-  @IsNotEmpty({ each: true })
-  tenantId: string;
+  @ValidateNested({ each: true })
+  @Type(() => tenantRoleMappingDto)
+  tenantCohortRoleMapping: tenantRoleMappingDto[];
 
   constructor(partial: Partial<UserCreateDto>) {
     Object.assign(this, partial);
   }
 }
+
+
+

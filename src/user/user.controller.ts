@@ -14,6 +14,7 @@ import {
   UsePipes,
   ValidationPipe,
   HttpStatus,
+  Delete,
 } from "@nestjs/common";
 
 import { Request } from "@nestjs/common";
@@ -64,15 +65,20 @@ export class UserController {
     @Param("userId") userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
-    // const tenantId = headers["tenantid"];   Can be Used In future
+    const tenantId = headers["tenantid"]; 
+    if(!tenantId){
+      return response.status(400).json({ "statusCode": 400, error: "Please provide a tenantId." });
+    }
     // Context and ContextType can be taken from .env later
     let userData = {
       context: "USERS",
+      tenantId: tenantId,
       userId: userId,
       fieldValue: fieldvalue
     }
     let result;
     result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(userData, response);
+    
     return response.status(result.statusCode).json(result);
   }
 
@@ -168,4 +174,26 @@ export class UserController {
     return response.status(result.statusCode).json(result);
   }
 
+   //delete
+   @Delete("/:userId")
+
+   @ApiBasicAuth("access-token")
+   @ApiOkResponse({ description: "User deleted successfully" })
+   @ApiNotFoundResponse({ description: "Data not found" })
+   @SerializeOptions({
+     strategy: "excludeAll",
+   })
+
+   public async deleteUserById(
+     @Headers() headers,
+     @Param("userId") userId: string,
+     @Req() request: Request,
+     @Res() response: Response
+   ) {
+
+     const result = await this.userAdapter
+       .buildUserAdapter()
+       .deleteUserById(userId);
+     return response.status(result.statusCode).json(result);
+   }
 }

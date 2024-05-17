@@ -24,4 +24,6 @@ export interface IServicelocator {
   );
   resetUserPassword(request: any, username: string, newPassword: string);
   checkUser(body:any,response);
+  deleteUserById(userId: string): Promise<any>;
+
 }

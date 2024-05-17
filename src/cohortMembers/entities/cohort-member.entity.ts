@@ -13,12 +13,6 @@ export class CohortMembers {
   @PrimaryGeneratedColumn("uuid")
   cohortMembershipId: string;
 
-  @Column({ type: "varchar", length: 255 })
-  role: string;
-
-  @Column({ type: "uuid" })
-  tenantId: string;
-
   @Column({ type: "uuid", nullable: true })
   cohortId: string | null;
 

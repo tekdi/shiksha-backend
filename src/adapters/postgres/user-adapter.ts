@@ -549,6 +549,21 @@ export class PostgresUserService {
     return true;
   }
 
+  async checkUser(body){
+    let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(body);
+    if(checkUserinKeyCloakandDb){
+      return new SuccessResponse({
+        statusCode: 200,
+        message: "User Exists. Proceed with Sending Email ",
+        data: {data:true},
+      });
+    }
+    return new SuccessResponse({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: "Invalid Username Or Email",
+      data: {data:false},
+    });
+  }
 
   // Can be Implemeneted after we know what are the unique entties
   async checkUserinKeyCloakandDb(userDto) {

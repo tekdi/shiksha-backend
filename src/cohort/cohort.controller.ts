@@ -129,7 +129,6 @@ export class CohortController {
   @ApiOkResponse({ description: "Cohort list" })
   @ApiBadRequestResponse({ description: "Bad request." })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe())
   @SerializeOptions({
     strategy: "excludeAll",
@@ -144,6 +143,9 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
+    if(tenantid === ''){
+      return response.status(400).json({"statusCode": 400, "errorMessage": "TenantId required."});
+    }
     const result = await this.cohortAdapter.buildCohortAdapter().searchCohort(
       tenantid,
       request,

@@ -549,7 +549,7 @@ export class PostgresCohortService {
         if(userTenantMapExist.length == 0){
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.NOT_FOUND,
-            errorMessage: "User is not map for this tenant.",
+            errorMessage: "User is not mapped for this tenant.",
           });
         }
         const [cohortData] = await this.cohortMembersRepository.findAndCount({

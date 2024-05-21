@@ -23,7 +23,7 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { maskMobileNumber, maskEmail, maskDateOfBirth } from "src/utils/mask-data";
+import { maskMobileNumber, maskEmail, maskDateOfBirth, EncryptionService } from "src/utils/mask-data";
 
 @Injectable()
 export class PostgresUserService {
@@ -609,6 +609,7 @@ export class PostgresUserService {
 
     if (userCreateDto?.email) {
       user.email = maskEmail(user.email)
+      user.email = EncryptionService.
     }
     if (userCreateDto?.mobile) {
       user.mobile = maskMobileNumber(user.mobile)

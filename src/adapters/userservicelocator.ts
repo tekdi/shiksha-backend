@@ -11,7 +11,7 @@ export interface IServicelocator {
   //   accessRole?: string,
   //   request?: any,
   // );
-  getUsersDetailsById(userData: Record<string, string>, response:any);
+  getUsersDetailsById(userData: any, response:any);
   getUsersDetailsByCohortId(userData: Record<string, string>, response:any);
   updateUser(userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);

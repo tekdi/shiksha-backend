@@ -23,6 +23,7 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
+import { CourseController } from 'src/course/course.controller';
 
 @Injectable()
 export class PostgresUserService {
@@ -100,36 +101,36 @@ export class PostgresUserService {
     return results;
   }
 
-  async getUsersDetailsById(userData: Record<string, string>, response: any) {
+  async getUsersDetailsById(userData: any, response: any) {
     try {
       if (!isUUID(userData.userId)) {
         return new SuccessResponse({
           statusCode: HttpStatus.BAD_REQUEST,
-          message: 'Please Enter Valid User ID',
+          message: 'Please Enter Valid  UUID',
         });
       }
       const result = {
         userData: {
         }
       };
+      let filledValues:any;
       let customFieldsArray = [];
-
-      const [filledValues, userDetails, userRole] = await Promise.all([
-        this.findFilledValues(userData.userId),
+      if(userData?.fieldValue){
+        filledValues =  await this.findFilledValues(userData.userId)
+      }
+      let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
         this.findUserRoles(userData.userId,userData.tenantId)
       ]);
-
       if(userRole){
         userDetails['role'] = userRole.title;
       }
-
       if (!userDetails) {
         return new SuccessResponse({
           statusCode: HttpStatus.NOT_FOUND,
           message: 'User Not Found',
         });
-      }   
+      } 
       if (!userData.fieldValue) {
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
@@ -138,15 +139,14 @@ export class PostgresUserService {
         });
       }    
       const customFields = await this.findCustomFields(userData)
-      
       result.userData = userDetails;
-      
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
         let fieldValue:any = filledValuesMap.get(data.fieldId);
-        if(data.type === 'checkbox'){
-          fieldValue=fieldValue.split(',')
-        }
+        // if(data.type === 'checkbox' && fieldValue){
+        //   console.log("Hi",fieldValue);
+        //   fieldValue=fieldValue.split(',')
+        // }
         const customField = {
           fieldId: data.fieldId,
           label: data.label,
@@ -158,15 +158,11 @@ export class PostgresUserService {
         };
         customFieldsArray.push(customField);
       }
-
-
       
       result.userData['customFields'] = customFieldsArray;
-      
-
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
-        message: 'User detais Fetched Succcessfully.',
+        message: 'User details Fetched Successfully.',
         data: result,
       });
 
@@ -279,10 +275,11 @@ export class PostgresUserService {
         tenantId:tenantId
       }
     })
-    
-    let role
-
-      role = await this.roleRepository.findOne({
+    if(!getRole) {
+      return false;
+    }
+    let role;
+    role = await this.roleRepository.findOne({
         where:{
           roleId:getRole.roleId,
         },
@@ -301,12 +298,12 @@ export class PostgresUserService {
       where: whereClause,
       select: ["userId", "username", "name", "district", "state", "mobile"]
     })
-
+    if(!userDetails){
+      return false;
+    }
     const tenentDetails = await this.allUsersTenent(userDetails.userId)
-
     userDetails['tenantData'] = tenentDetails;
     return userDetails;
-
   }
   async allUsersTenent(userId: string) {
     const query = `

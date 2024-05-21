@@ -69,12 +69,13 @@ export class UserController {
     if(!tenantId){
       return response.status(400).json({ "statusCode": 400, error: "Please provide a tenantId." });
     }
+    const fieldValueBoolean = fieldvalue === 'true';
     // Context and ContextType can be taken from .env later
     let userData = {
       context: "USERS",
       tenantId: tenantId,
       userId: userId,
-      fieldValue: fieldvalue
+      fieldValue: fieldValueBoolean
     }
     let result;
     result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(userData, response);

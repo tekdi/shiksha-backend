@@ -7,6 +7,7 @@ import jwt_decode from "jwt-decode";
 import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { ErrorResponse } from "src/error-response";
 import { FieldsService } from "./services/fields.service";
+import { UserData } from "src/user/user.controller";
 // import { UserUpdateDto } from "src/user/dto/user-update.dto";
 import {
   getUserRole,
@@ -32,7 +33,7 @@ export class HasuraUserService implements IServicelocator {
   public async findUserDetails(userID: any, username: String) {
     
   }
-  public async getUsersDetailsById(userData: Record<string, string>, response:any) {}
+  public async getUsersDetailsById(userData: UserData, response:any) {}
   public async getUsersDetailsByCohortId(userData: Record<string, string>, response:any) {}
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {

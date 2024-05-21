@@ -12,12 +12,6 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ type: "date", nullable: true })
-  dob: Date;
-
-  @Column({ nullable: true })
-  email: string;
-
   @Column({ nullable: true })
   district: string;
 
@@ -37,7 +31,22 @@ export class User {
   updatedAt: Date;
 
   @Column()
-  mobile: number;
+  mobile: string;
+
+  @Column()
+  encryptedMobile: string;
+
+  @Column({ nullable: true })
+  dob: string;
+
+  @Column()
+  encryptedDob: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column()
+  encryptedEmail: string;
 
   @Column({ nullable: true })
   createdBy: string;

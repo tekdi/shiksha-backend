@@ -23,10 +23,11 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
+import { maskMobileNumber, maskEmail, maskDateOfBirth } from "src/utils/mask-data";
 
 @Injectable()
 export class PostgresUserService {
-  axios = require("axios");
+  axios = require("axios");maskEmail
 
   constructor(
     // private axiosInstance: AxiosInstance,
@@ -117,10 +118,10 @@ export class PostgresUserService {
       const [filledValues, userDetails, userRole] = await Promise.all([
         this.findFilledValues(userData.userId),
         this.findUserDetails(userData.userId),
-        this.findUserRoles(userData.userId,userData.tenantId)
+        this.findUserRoles(userData.userId, userData.tenantId)
       ]);
 
-      if(userRole){
+      if (userRole) {
         userDetails['role'] = userRole.title;
       }
 
@@ -129,23 +130,23 @@ export class PostgresUserService {
           statusCode: HttpStatus.NOT_FOUND,
           message: 'User Not Found',
         });
-      }   
+      }
       if (!userData.fieldValue) {
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: 'Ok.',
           data: userDetails,
         });
-      }    
+      }
       const customFields = await this.findCustomFields(userData)
-      
+
       result.userData = userDetails;
-      
+
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
-        let fieldValue:any = filledValuesMap.get(data.fieldId);
-        if(data.type === 'checkbox'){
-          fieldValue=fieldValue.split(',')
+        let fieldValue: any = filledValuesMap.get(data.fieldId);
+        if (data.type === 'checkbox') {
+          fieldValue = fieldValue.split(',')
         }
         const customField = {
           fieldId: data.fieldId,
@@ -160,9 +161,9 @@ export class PostgresUserService {
       }
 
 
-      
+
       result.userData['customFields'] = customFieldsArray;
-      
+
 
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
@@ -271,23 +272,23 @@ export class PostgresUserService {
     return result
   }
 
-  async findUserRoles(userId:string, tenantId:string) {
-    
+  async findUserRoles(userId: string, tenantId: string) {
+
     const getRole = await this.userRoleMappingRepository.findOne({
-      where:{
-        userId:userId,
-        tenantId:tenantId
+      where: {
+        userId: userId,
+        tenantId: tenantId
       }
     })
-    
+
     let role
 
-      role = await this.roleRepository.findOne({
-        where:{
-          roleId:getRole.roleId,
-        },
-        select: ["title"]
-      })
+    role = await this.roleRepository.findOne({
+      where: {
+        roleId: getRole.roleId,
+      },
+      select: ["title"]
+    })
     return role
   }
 
@@ -430,7 +431,7 @@ export class PostgresUserService {
       if (userCreateDto.fieldValues) {
         let field_values = userCreateDto.fieldValues;
         const validateField = await this.validateFieldValues(field_values);
-        
+
         if (validateField == false) {
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.CONFLICT,
@@ -439,7 +440,7 @@ export class PostgresUserService {
         }
       }
 
-      
+
       // check and validate all fields
       let validateBodyFields = await this.validateBodyFields(userCreateDto)
 
@@ -495,7 +496,7 @@ export class PostgresUserService {
             }
           }
         }
-        
+
         return new SuccessResponse({
           statusCode: 200,
           message: "User has been created successfully.",
@@ -549,19 +550,19 @@ export class PostgresUserService {
     return true;
   }
 
-  async checkUser(body){
+  async checkUser(body) {
     let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(body);
-    if(checkUserinKeyCloakandDb){
+    if (checkUserinKeyCloakandDb) {
       return new SuccessResponse({
         statusCode: 200,
         message: "User Exists. Proceed with Sending Email ",
-        data: {data:true},
+        data: { data: true },
       });
     }
     return new SuccessResponse({
       statusCode: HttpStatus.BAD_REQUEST,
       message: "Invalid Username Or Email",
-      data: {data:false},
+      data: { data: false },
     });
   }
 
@@ -569,7 +570,7 @@ export class PostgresUserService {
   async checkUserinKeyCloakandDb(userDto) {
     const keycloakResponse = await getKeycloakAdminToken();
     const token = keycloakResponse.data.access_token;
-    if(userDto?.username){
+    if (userDto?.username) {
       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
         userDto?.username,
         token
@@ -578,7 +579,7 @@ export class PostgresUserService {
         return usernameExistsInKeycloak;
       }
       return false;
-    }else{
+    } else {
       const usernameExistsInKeycloak = await checkIfEmailExistsInKeycloak(
         userDto?.email,
         token
@@ -588,27 +589,34 @@ export class PostgresUserService {
       }
       return false;
     }
-}
- 
+  }
+
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
-    user.mobile = Number(userCreateDto?.mobile) || null,
+    user.mobile = userCreateDto?.mobile,
+    user.dob = userCreateDto?.dob,
     user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-      user.state = userCreateDto?.state,
-      user.district = userCreateDto?.district,
-      user.address = userCreateDto?.address,
-      user.pincode = userCreateDto?.pincode
+    user.state = userCreateDto?.state,
+    user.district = userCreateDto?.district,
+    user.address = userCreateDto?.address,
+    user.pincode = userCreateDto?.pincode
 
-    if (userCreateDto?.dob) {
-      user.dob = new Date(userCreateDto.dob);
+    if (userCreateDto?.email) {
+      user.email = maskEmail(user.email)
     }
-    
+    if (userCreateDto?.mobile) {
+      user.mobile = maskMobileNumber(user.mobile)
+    }
+    if (userCreateDto?.dob) {
+      user.dob = maskDateOfBirth(user.dob);
+    }
+
     let result = await this.usersRepository.save(user);
 
     if (result) {
@@ -805,65 +813,68 @@ export class PostgresUserService {
     };
   }
 
-  public async deleteUserById(userId){
+  public async deleteUserById(userId) {
     const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
-     // Validate userId format
-     if (!isUUID(userId)) {
+    // Validate userId format
+    if (!isUUID(userId)) {
       return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please enter a valid UUID for userId",
+        statusCode: HttpStatus.BAD_REQUEST,
+        errorMessage: "Please enter a valid UUID for userId",
       });
-  }
-  
-      try {
-    // Check if user exists in usersRepository
-    const user = await this.usersRepository.findOne({ where :{userId:userId}});
-    if (!user) {
+    }
+
+    try {
+      // Check if user exists in usersRepository
+      const user = await this.usersRepository.findOne({ where: { userId: userId } });
+      if (!user) {
         return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.NOT_FOUND,
-            errorMessage: "User not found in user table.",
-        });
-    }  
-  
-  
-       // Delete from User table
-        const userResult = await this.usersRepository.delete(userId);
-  
-        // Delete from CohortMembers table
-        const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
-  
-        // Delete from UserTenantMapping table
-        const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
-  
-        // Delete from UserRoleMapping table
-        const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
-  
-      // Delete from FieldValues table where ItemId matches userId
-        const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
-  
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
-  
-        await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }});
-  
-  
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: "User and related entries deleted Successfully.",
-          data: {
-            user: userResult
-          },
-        });
-      } catch (e) {
-          return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          errorMessage: e,
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "User not found in user table.",
         });
       }
+
+
+      // Delete from User table
+      const userResult = await this.usersRepository.delete(userId);
+
+      // Delete from CohortMembers table
+      const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
+
+      // Delete from UserTenantMapping table
+      const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
+
+      // Delete from UserRoleMapping table
+      const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
+
+      // Delete from FieldValues table where ItemId matches userId
+      const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
+
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+
+      await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: "User and related entries deleted Successfully.",
+        data: {
+          user: userResult
+        },
+      });
+    } catch (e) {
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+      });
     }
+  }
+
+
 
 }
 

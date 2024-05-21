@@ -25,6 +25,8 @@ import {
   CacheInterceptor,
   Query,
   Headers,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 import { AttendanceDto } from "./dto/attendance.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -86,6 +88,7 @@ export class AttendanceController {
   @ApiHeader({
     name: "tenantid",
   })
+  @UsePipes(new ValidationPipe())
   public async createAttendace(
     @Headers() headers,
     @Req() request: Request,

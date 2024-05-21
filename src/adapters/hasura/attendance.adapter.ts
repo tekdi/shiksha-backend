@@ -17,7 +17,7 @@ export const ShikshaAttendanceToken = "ShikshaAttendance";
 export class AttendanceHasuraService implements IServicelocator {
   axios = require("axios");
 
-  constructor(private httpService: HttpService) {}
+  constructor(private httpService: HttpService) { }
 
   public async getAttendance(
     tenantId: string,
@@ -45,6 +45,9 @@ export class AttendanceHasuraService implements IServicelocator {
             updatedAt
             createdBy
             updatedBy
+            lateMark
+            scope
+            
         }
       }
       `,
@@ -73,7 +76,75 @@ export class AttendanceHasuraService implements IServicelocator {
   }
 
   public async createAttendance(request: any, attendanceDto: AttendanceDto) {
-    try{
+    try {
+      attendanceDto = new AttendanceDto(attendanceDto);
+
+      const cohortData = {
+        query: `query MyQuery {
+          Cohort(where: {cohortId: {_eq: "${attendanceDto.contextId}"}}) {
+            createdBy
+            image
+            metadata
+            parentId
+            programId
+            referenceId
+            updatedBy
+            name
+            status
+            tenantId
+            type
+            updatedAt
+            params
+          }
+        }
+        `
+      }
+      const config = {
+        method: "post",
+        url: process.env.REGISTRYHASURA,
+        headers: {
+          Authorization: request.headers.authorization,
+          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
+          "Content-Type": "application/json",
+        },
+        data: cohortData,
+      };
+
+      const cohortresponse = await this.axios(config);
+      const selfAttendanceEnd = cohortresponse.data.data.Cohort[0].params.self_attendance_end;
+      const allowFlag = cohortresponse.data.data.Cohort[0].params.allow_late_marking;
+
+
+      // Parse the self_attendance_start time
+      const [endHours, endMinutes] = selfAttendanceEnd.split(":").map(Number);
+      if (isNaN(endHours) || isNaN(endMinutes)) {
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: "Invalid self_attendance_start time format.",
+        });
+      }
+
+      const currentTimeIST = new Date(Date.now() + (5.5 * 60 * 60 * 1000));
+      const currentHours = currentTimeIST.getUTCHours();
+      const currentMinutes = currentTimeIST.getUTCMinutes();
+
+      // Format the current time and end time in HH:MM format
+      const formatTime = (hours: number, minutes: number) => {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      };
+
+      const currentTimeFormatted = formatTime(currentHours, currentMinutes);
+      const endTimeFormatted = formatTime(endHours, endMinutes);
+      if (currentTimeFormatted > endTimeFormatted && attendanceDto.scope==="self" ) {
+        if(allowFlag===0){
+
+        return new ErrorResponse({
+          errorCode: "400",
+          errorMessage: "You cannot mark attendance for the time",
+        });
+      }
+      attendanceDto.lateMark=true
+      }
       let query = "";
       Object.keys(attendanceDto).forEach((e) => {
         if (attendanceDto[e] && attendanceDto[e] != "") {
@@ -91,7 +162,7 @@ export class AttendanceHasuraService implements IServicelocator {
         variables: {},
       };
 
-      const config = {
+      const configNew = {
         method: "post",
         url: process.env.REGISTRYHASURA,
         headers: {
@@ -102,7 +173,7 @@ export class AttendanceHasuraService implements IServicelocator {
         data: data,
       };
 
-      const response = await this.axios(config);
+      const response = await this.axios(configNew);
 
       if (response?.data?.errors) {
         return new ErrorResponse({
@@ -118,8 +189,7 @@ export class AttendanceHasuraService implements IServicelocator {
         message: "Ok.",
         data: result,
       });
-    }catch (e) {
-      console.error(e);
+    } catch (e) {
       return e;
     }
   }
@@ -129,23 +199,29 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceDto: AttendanceDto
   ) {
-    try{
+    try {
+      // Validate attendanceDto here if needed
+
       const attendanceSchema = new AttendanceDto(attendanceDto);
 
-      let query = "";
-      Object.keys(attendanceDto).forEach((e) => {
+      const setObj: any = {}; // Initialize an empty object to hold _set values
+      Object.keys(attendanceDto).forEach((key) => {
         if (
-          attendanceDto[e] &&
-          attendanceDto[e] != "" &&
-          Object.keys(attendanceSchema).includes(e)
+          attendanceDto[key] !== undefined &&
+          attendanceDto[key] !== "" &&
+          Object.keys(attendanceSchema).includes(key)
         ) {
-          query += `${e}: "${attendanceDto[e]}", `;
+          setObj[key] = attendanceDto[key];
         }
       });
 
-      const data = {
-        query: `mutation UpdateAttendance($attendanceId:uuid) {
-            update_Attendance(where: {attendanceId: {_eq: $attendanceId}}, _set: {${query}}) {
+
+      const data: any = {
+        query: `mutation UpdateAttendance($attendanceId: uuid, $set: Attendance_set_input) {
+          update_Attendance(
+            where: {attendanceId: {_eq: $attendanceId}},
+            _set: $set
+          ) {
             affected_rows
             returning {
               attendanceId
@@ -154,8 +230,10 @@ export class AttendanceHasuraService implements IServicelocator {
         }`,
         variables: {
           attendanceId: attendanceId,
+          set: setObj, // Pass the _set object constructed above
         },
       };
+
 
       const config = {
         method: "post",
@@ -184,18 +262,22 @@ export class AttendanceHasuraService implements IServicelocator {
         message: "Ok. Updated Successfully",
         data: result,
       });
-    }catch (e) {
-      console.error(e);
-      return e;
+    } catch (e) {
+      return new ErrorResponse({
+        errorCode: "500",
+        errorMessage: "Internal Server Error",
+      });
     }
   }
+
+
 
   public async searchAttendance(
     tenantId: string,
     request: any,
     attendanceSearchDto: AttendanceSearchDto
   ) {
-    try{
+    try {
       let offset = 0;
       if (attendanceSearchDto.page > 1) {
         offset =
@@ -230,8 +312,10 @@ export class AttendanceHasuraService implements IServicelocator {
               latitude
               longitude
               image
+              lateMark
               metaData
               remark
+              scope
               syncTime
               session
               contextId
@@ -282,8 +366,7 @@ export class AttendanceHasuraService implements IServicelocator {
         data: mappedResponse,
       });
 
-    }catch (e) {
-      console.error(e);
+    } catch (e) {
       return e;
     }
 
@@ -294,7 +377,7 @@ export class AttendanceHasuraService implements IServicelocator {
     request: any,
     attendanceSearchDto: AttendanceDateDto
   ) {
-    try{
+    try {
       let offset = 0;
       if (attendanceSearchDto.page > 1) {
         offset =
@@ -336,6 +419,8 @@ export class AttendanceHasuraService implements IServicelocator {
             updatedAt
             createdBy
             updatedBy
+            scope
+            lateMark
           }
         }`,
         variables: {
@@ -376,8 +461,7 @@ export class AttendanceHasuraService implements IServicelocator {
         totalCount: mappedResponse?.length,
         data: mappedResponse,
       });
-    }catch (e) {
-      console.error(e);
+    } catch (e) {
       return e;
     }
   }
@@ -388,6 +472,7 @@ export class AttendanceHasuraService implements IServicelocator {
   ) {
     // Api Checks attendance by date and userId , that is daywise attendance
     try {
+
       const decoded: any = jwt_decode(request.headers.authorization);
 
       const userId =
@@ -429,7 +514,6 @@ export class AttendanceHasuraService implements IServicelocator {
         return await this.createAttendance(request, attendanceDto);
       }
     } catch (e) {
-      console.error(e);
       return e;
     }
   }
@@ -459,7 +543,6 @@ export class AttendanceHasuraService implements IServicelocator {
         }
       }
     } catch (e) {
-      console.error(e);
       return e;
     }
     return {
@@ -492,6 +575,8 @@ export class AttendanceHasuraService implements IServicelocator {
         updatedAt: item?.updatedAt ? `${item.updatedAt}` : "",
         createdBy: item?.createdBy ? `${item.createdBy}` : "",
         updatedBy: item?.updatedBy ? `${item.updatedBy}` : "",
+        lateMark: item?.lateMark ? `${item.lateMark}` : "",
+        scope: item?.scope ? `${item.scope}` : "",
       };
 
       return new AttendanceDto(attendanceMapping);

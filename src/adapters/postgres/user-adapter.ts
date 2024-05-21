@@ -24,6 +24,7 @@ import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
 import { CourseController } from 'src/course/course.controller';
+import { UserData } from 'src/user/user.controller';
 
 @Injectable()
 export class PostgresUserService {
@@ -101,7 +102,7 @@ export class PostgresUserService {
     return results;
   }
 
-  async getUsersDetailsById(userData: any, response: any) {
+  async getUsersDetailsById(userData: UserData, response: any) {
     try {
       if (!isUUID(userData.userId)) {
         return new SuccessResponse({

@@ -1,6 +1,6 @@
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { UserSearchDto } from "src/user/dto/user-search.dto";
-import { UserDto } from "src/user/dto/user.dto";
+import { UserData } from "src/user/user.controller";
 
 export interface IServicelocator {
   // getUser(
@@ -11,7 +11,7 @@ export interface IServicelocator {
   //   accessRole?: string,
   //   request?: any,
   // );
-  getUsersDetailsById(userData: any, response:any);
+  getUsersDetailsById(userData: UserData, response:any);
   getUsersDetailsByCohortId(userData: Record<string, string>, response:any);
   updateUser(userDto?: any,response?: any);
   createUser(request: any, userDto: UserCreateDto);

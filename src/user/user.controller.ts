@@ -41,6 +41,15 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
 import { isUUID } from "class-validator";
 import { SuccessResponse } from "src/success-response";
+
+
+export interface UserData {
+  context: string;
+  tenantId: string;
+  userId: string;
+  fieldValue: boolean;
+}
+
 @ApiTags("User")
 @Controller("users")
 export class UserController {
@@ -71,7 +80,7 @@ export class UserController {
     }
     const fieldValueBoolean = fieldvalue === 'true';
     // Context and ContextType can be taken from .env later
-    let userData = {
+    let userData:UserData = {
       context: "USERS",
       tenantId: tenantId,
       userId: userId,

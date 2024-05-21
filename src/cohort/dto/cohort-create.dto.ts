@@ -1,13 +1,33 @@
-import { Exclude, Expose } from "class-transformer";
+import { Exclude, Expose, Type } from "class-transformer";
 import {
   MaxLength,
   IsNotEmpty,
   IsEmail,
   IsString,
   IsNumber,
+  IsOptional,
+  ValidateNested,
+  IsObject,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { FieldValuesCreateDto } from "src/fields/dto/field-values-create.dto";
+
+class ParamsDto {
+  @ApiProperty({ type: String, description: "Self attendance start time", example: "12:10" })
+  @IsString()
+  @IsNotEmpty()
+  self_attendance_start: string;
+
+  @ApiProperty({ type: String, description: "Self attendance end time", example: "12:20" })
+  @IsString()
+  @IsNotEmpty()
+  self_attendance_end: string;
+
+  @ApiProperty({ type: Number, description: "Allow late marking", example: 1 })
+  @IsNumber()
+  @IsNotEmpty()
+  allow_late_marking: number;
+}
 
 export class CohortCreateDto {
   //generated fields
@@ -122,6 +142,18 @@ export class CohortCreateDto {
   })
   @Expose()
   fieldValues: string;
+
+
+  @ApiPropertyOptional({
+    type: ParamsDto,
+    description: "The params object containing additional settings",
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ParamsDto)
+  @IsObject()
+  @Expose()
+  params: ParamsDto;
 
   constructor(partial: Partial<CohortCreateDto>) {
     Object.assign(this, partial);

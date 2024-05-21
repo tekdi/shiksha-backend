@@ -1,5 +1,12 @@
 import { Exclude, Expose } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsBoolean, IsEnum, IsOptional } from "class-validator";
+
+
+enum Scope {
+  self = 'self',
+  student = 'student',
+}
 
 export class AttendanceDto {
   @Expose()
@@ -109,7 +116,30 @@ export class AttendanceDto {
   @Expose()
   updatedBy: string;
 
+  @Expose()
+  @ApiPropertyOptional({
+    type: String,
+    description: "The scope of the attendance",
+    enum: Scope,
+    default: Scope.self,
+  })
+  @IsOptional()
+  @IsEnum(Scope, { message: "Please enter valid enum values for scope: [self, student]" })
+  scope: string = Scope.student;
+
+
+  @Expose()
+  @IsOptional()
+  @IsBoolean({message:"Please enter valid lateMark value as true or false"})
+  @ApiPropertyOptional()
+  lateMark: boolean = false;
+
   constructor(obj: any) {
-    Object.assign(this, obj);
+    Object.assign(this, {
+      scope: Scope.student, // Ensure default value
+      lateMark: false, // Ensure default value
+      ...obj, // Override with provided values
+    });
   }
+
 }

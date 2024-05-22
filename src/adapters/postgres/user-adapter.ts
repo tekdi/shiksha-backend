@@ -23,7 +23,7 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { maskMobileNumber, maskEmail, maskDateOfBirth, EncryptionService } from "src/utils/mask-data";
+import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "src/utils/mask-data";
 
 @Injectable()
 export class PostgresUserService {
@@ -145,9 +145,9 @@ export class PostgresUserService {
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
         let fieldValue: any = filledValuesMap.get(data.fieldId);
-        if (data.type === 'checkbox') {
-          fieldValue = fieldValue.split(',')
-        }
+        // if (data.type === 'checkbox') {
+        //   fieldValue = fieldValue.split(',')
+        // }
         const customField = {
           fieldId: data.fieldId,
           label: data.label,
@@ -609,13 +609,15 @@ export class PostgresUserService {
 
     if (userCreateDto?.email) {
       user.email = maskEmail(user.email)
-      user.email = EncryptionService.
+      user.encryptedEmail = encrypt(user.email)
     }
     if (userCreateDto?.mobile) {
       user.mobile = maskMobileNumber(user.mobile)
+      user.encryptedMobile = encrypt(user.mobile)
     }
     if (userCreateDto?.dob) {
       user.dob = maskDateOfBirth(user.dob);
+      user.encryptedDob = encrypt(user.dob)
     }
 
     let result = await this.usersRepository.save(user);

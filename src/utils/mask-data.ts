@@ -1,22 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { createCipheriv, createDecipheriv } from 'crypto';
 
-@Injectable()
-export class EncryptionService {
-  private readonly secretKey = Buffer.from(process.env.SECRET_KEY, 'base64');
 
-  encrypt(data: string): string {
-    const cipher = createCipheriv('aes-256-ecb', this.secretKey, null);
+const secretKey = Buffer.from(process.env.SECRET_KEY, 'base64');
+
+export function encrypt(data: string): string {
+    const cipher = createCipheriv('aes-256-ecb', secretKey, null);
     const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]).toString('base64');
     return encrypted;
   }
 
-  decrypt(encryptedData: string): string {
-    const decipher = createDecipheriv('aes-256-ecb', this.secretKey, null);
+  export function decrypt(encryptedData: string): string {
+    const decipher = createDecipheriv('aes-256-ecb', secretKey, null);
     const decrypted = Buffer.concat([decipher.update(Buffer.from(encryptedData, 'base64')), decipher.final()]).toString('utf8');
     return decrypted;
   }
-}
+
 
 export function maskMobileNumber(mobileNumber: any): string {
     const mobileNumberStr = String(mobileNumber);

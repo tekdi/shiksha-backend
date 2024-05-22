@@ -78,7 +78,6 @@ export class AttendanceHasuraService implements IServicelocator {
   public async createAttendance(request: any, attendanceDto: AttendanceDto) {
     try {
       attendanceDto = new AttendanceDto(attendanceDto);
-
       const cohortData = {
         query: `query MyQuery {
           Cohort(where: {cohortId: {_eq: "${attendanceDto.contextId}"}}) {
@@ -111,9 +110,8 @@ export class AttendanceHasuraService implements IServicelocator {
       };
 
       const cohortresponse = await this.axios(config);
-      const selfAttendanceEnd = cohortresponse.data.data.Cohort[0].params.self_attendance_end;
+      const selfAttendanceEnd = cohortresponse.data.data.Cohort[0].params.self_attendace_end;
       const allowFlag = cohortresponse.data.data.Cohort[0].params.allow_late_marking;
-
 
       // Parse the self_attendance_start time
       const [endHours, endMinutes] = selfAttendanceEnd.split(":").map(Number);
@@ -136,13 +134,13 @@ export class AttendanceHasuraService implements IServicelocator {
       const currentTimeFormatted = formatTime(currentHours, currentMinutes);
       const endTimeFormatted = formatTime(endHours, endMinutes);
       if (currentTimeFormatted > endTimeFormatted && attendanceDto.scope==="self" ) {
-        if(allowFlag=="true"){
+      //   if(allowFlag=="true"){
 
-        return new ErrorResponse({
-          errorCode: "400",
-          errorMessage: "You cannot mark attendance for the time",
-        });
-      }
+      //   return new ErrorResponse({
+      //     errorCode: "400",
+      //     errorMessage: "You cannot mark attendance for the time",
+      //   });
+      // }
       attendanceDto.lateMark=true
       }
       let query = "";

@@ -136,7 +136,7 @@ export class AttendanceHasuraService implements IServicelocator {
       const currentTimeFormatted = formatTime(currentHours, currentMinutes);
       const endTimeFormatted = formatTime(endHours, endMinutes);
       if (currentTimeFormatted > endTimeFormatted && attendanceDto.scope==="self" ) {
-        if(allowFlag===0){
+        if(allowFlag=="true"){
 
         return new ErrorResponse({
           errorCode: "400",

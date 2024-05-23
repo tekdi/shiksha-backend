@@ -3,26 +3,6 @@ import { IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, 
 import { CohortDto } from "./cohort.dto";
 import { Expose } from "class-transformer";
 
-// Custom decorator to check if the object is not empty
-function IsNotEmptyObject(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
-    registerDecorator({
-      name: 'isNotEmptyObject',
-      target: object.constructor,
-      propertyName: propertyName,
-      options: validationOptions,
-      validator: {
-        validate(value: any, args: ValidationArguments) {
-          return value && Object.keys(value).length > 0;
-        },
-        defaultMessage(args: ValidationArguments) {
-          return `${args.property} should not be an empty object`;
-        },
-      },
-    });
-  };
-}
-
 export class setFilters {
   //userIdBy
   @ApiProperty({
@@ -81,7 +61,6 @@ export class CohortSearchDto {
     description: "Filters",
   })
   @IsObject()
-  @IsNotEmptyObject({ message: 'Filters should not be an empty object' })
   filters: setFilters;
 
   constructor(partial: Partial<CohortSearchDto>) {

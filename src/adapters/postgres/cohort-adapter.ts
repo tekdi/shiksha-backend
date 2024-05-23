@@ -461,15 +461,15 @@ export class PostgresCohortService {
       let { limit, page, filters } = cohortSearchDto;
 
       let offset = 0;
-
-      if (limit == 0 || page == 0) {
-        limit = 20;
-      } else {
+      if (limit > 0 && page > 0) {
         offset = (limit) * (page - 1);
       }
+      limit = 200;
+      const emptyValueKeys = {};
+      let emptyKeysString = '';
 
-      const MAX_LIMIT = 20;
-      const PAGE_LIMIT = 100000;
+      const MAX_LIMIT = 200;
+      const PAGE_LIMIT = 10000000;
 
       // Validate the limit parameter
       if (limit > MAX_LIMIT) {
@@ -498,32 +498,27 @@ export class PostgresCohortService {
             });
           } else {
             if (value === '') {
-              throw new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.BAD_REQUEST,
-                errorMessage: `Blank value for key '${key}'. Please provide a valid value.`,
-              });
+              emptyValueKeys[key] = value;
+              emptyKeysString += (emptyKeysString ? ', ' : '') + key;
+            } else {
+              whereClause[key] = value;
             }
-            whereClause[key] = value;
           }
         });
       }
 
-      if (whereClause['userId']) {
-        if (!isUUID(whereClause['userId'])) {
-          throw new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorMessage: 'Invalid User ID format. It must be a valid UUID.',
-          });
-        }
+      if (whereClause['userId'] && !isUUID(whereClause['userId'])) {
+        throw new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: 'Invalid User ID format. It must be a valid UUID.',
+        });
       }
 
-      if (whereClause['cohortId']) {
-        if (!isUUID(whereClause['cohortId'])) {
-          throw new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.BAD_REQUEST,
-            errorMessage: 'Invalid Cohort ID format. It must be a valid UUID.',
-          });
-        }
+      if (whereClause['cohortId'] && !isUUID(whereClause['cohortId'])) {
+        throw new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: 'Invalid Cohort ID format. It must be a valid UUID.',
+        });
       }
 
       let results = {
@@ -541,12 +536,12 @@ export class PostgresCohortService {
         }
 
         let userTenantMapExist = await this.UserTenantMappingRepository.find({
-          where:{
-            tenantId:tenantId,
-            userId:whereClause['userId']
+          where: {
+            tenantId: tenantId,
+            userId: whereClause['userId']
           }
         })
-        if(userTenantMapExist.length == 0){
+        if (userTenantMapExist.length == 0) {
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.NOT_FOUND,
             errorMessage: "User is not mapped for this tenant.",
@@ -568,7 +563,7 @@ export class PostgresCohortService {
           skip: offset,
           take: limit,
         });
-        
+
         for (let data of cohortData) {
           let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
           results.cohortDetails.push(cohortDetails);

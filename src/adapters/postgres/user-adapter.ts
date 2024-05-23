@@ -116,13 +116,17 @@ export class PostgresUserService {
       };
       let filledValues:any;
       let customFieldsArray = [];
-      if(userData?.fieldValue){
-        filledValues =  await this.findFilledValues(userData.userId)
-      }
+
       let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
         this.findUserRoles(userData.userId,userData.tenantId)
       ]);
+
+      const roleInUpper = (userRole.title).toUpperCase();
+      if(userData?.fieldValue){
+        filledValues =  await this.findFilledValues(userData.userId,roleInUpper)
+      }
+
       if(userRole){
         userDetails['role'] = userRole.title;
       }
@@ -139,7 +143,7 @@ export class PostgresUserService {
           data: userDetails,
         });
       }    
-      const customFields = await this.findCustomFields(userData)
+      const customFields = await this.findCustomFields(userData,roleInUpper)
       result.userData = userDetails;
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
       for (let data of customFields) {
@@ -316,24 +320,25 @@ export class PostgresUserService {
     const result = await this.usersRepository.query(query, [userId]);
     return result;
   }
-  async findCustomFields(userData) {
+  async findCustomFields(userData, role) {
     let customFields = await this.fieldsRepository.find({
       where: {
         context: userData.context,
+        contextType: role,
       }
     })
 
     return customFields;
   }
-  async findFilledValues(userId: string) {
+  async findFilledValues(userId: string, role: string) {
     let query = `SELECT U."userId",FV."fieldId",FV."value", F."fieldAttributes" FROM public."Users" U 
     LEFT JOIN public."FieldValues" FV
     ON U."userId" = FV."itemId" 
     LEFT JOIN public."Fields" F
     ON F."fieldId" = FV."fieldId" 
-    where U."userId" =$1`;
+    where U."userId" =$1 AND F."contextType" = $2`;
 
-    let result = await this.usersRepository.query(query, [userId]);
+    let result = await this.usersRepository.query(query, [userId,role]);
     return result;
   }
 

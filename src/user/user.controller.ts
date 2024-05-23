@@ -60,7 +60,7 @@ export class UserController {
   @Get('/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "User detais Fetched Succcessfully" })
+  @ApiOkResponse({ description: "User details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "User Not Found" })
   @ApiInternalServerErrorResponse({description:"Internal Server Error" })
   @ApiBadRequestResponse({description:"Bad Request"})

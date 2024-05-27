@@ -155,6 +155,7 @@ export class PostgresUserService {
         const customField = {
           fieldId: data.fieldId,
           label: data.label,
+          order: data.ordering,
           value: fieldValue || '',
           isRequired: data.fieldAttributes ? data.fieldAttributes['isRequired'] : '',
           isEditable: data.fieldAttributes ? data.fieldAttributes['isEditable'] : '',

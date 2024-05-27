@@ -233,7 +233,13 @@ export class PostgresCohortMembersService {
           "true",
           options
         );
-
+        
+        if(results['userDetails'].length == 0){
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.NOT_FOUND,
+            errorMessage: "No data found.",
+          });
+        }
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: "Ok.",

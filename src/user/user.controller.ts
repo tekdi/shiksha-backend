@@ -13,11 +13,11 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
-  HttpStatus,
   Delete,
+  ParseUUIDPipe,
+  UseFilters,
 } from "@nestjs/common";
 
-import { Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -38,11 +38,9 @@ import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { UserUpdateDTO } from "./dto/user-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { Response } from "express";
-import { isUUID } from "class-validator";
-import { SuccessResponse } from "src/success-response";
-
-
+import { Request, Response } from "express";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { Reflector } from "@nestjs/core";
 export interface UserData {
   context: string;
   tenantId: string;
@@ -55,8 +53,10 @@ export interface UserData {
 export class UserController {
   constructor(
     private userAdapter: UserAdapter,
+    private reflector: Reflector,
   ) {}
 
+  @UseFilters(new AllExceptionsFilter('get.user.byid'))
   @Get('/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
@@ -71,7 +71,7 @@ export class UserController {
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
-    @Param("userId") userId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     const tenantId = headers["tenantid"]; 

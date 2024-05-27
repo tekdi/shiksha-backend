@@ -96,13 +96,10 @@ export class CohortMembersController {
     @Res() response: Response,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
-    let tenantid = headers["tenantid"];
-
+    const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .getCohortMembers(cohortId, fieldvalue);
-
-    return response.status(result.statusCode).json(result);
+      .getCohortMembers(cohortId,tenantId, fieldvalue, response);
   }
 
   // search;
@@ -124,11 +121,11 @@ export class CohortMembersController {
     @Res() response: Response,
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
-    let tenantid = headers["tenantid"];
+    const tenantId = headers["tenantid"];
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .searchCohortMembers(cohortMembersSearchDto);
+      .searchCohortMembers(cohortMembersSearchDto, tenantId, response);
     return response.status(result.statusCode).json(result);
   }
 

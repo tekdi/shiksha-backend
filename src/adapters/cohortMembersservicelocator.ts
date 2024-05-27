@@ -1,15 +1,15 @@
 import { CohortMembersSearchDto } from "src/cohortMembers/dto/cohortMembers-search.dto";
 import { CohortMembersDto } from "src/cohortMembers/dto/cohortMembers.dto";
 import { CohortMembersUpdateDto } from "src/cohortMembers/dto/cohortMember-update.dto";
-
+import { Response } from "express";
 export interface IServicelocatorcohortMembers {
   createCohortMembers(
     loginUser: any,
     cohortMembersDto: CohortMembersDto,
     response: any
   );
-  getCohortMembers(cohortMemberId: string, fieldvalue);
-  searchCohortMembers(cohortMembersSearchDto: CohortMembersSearchDto);
+  getCohortMembers(cohortMemberId: string,tenantId:string, fieldvalue:string, response:Response);
+  searchCohortMembers(cohortMembersSearchDto: CohortMembersSearchDto, tenantId:string, response:Response);
   updateCohortMembers(
     cohortMembershipId: string,
     loginUser: any,

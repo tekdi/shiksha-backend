@@ -31,8 +31,6 @@ import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
 import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
-import { CohortMembersService } from "./cohortMember.service";
-// import { Response } from "@nestjs/common";
 import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
@@ -42,12 +40,11 @@ import { Response } from "express";
 @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
   constructor(
-    private readonly cohortMembersService: CohortMembersService,
     private readonly cohortMemberAdapter: CohortMembersAdapter
-  ) {}
+  ) { }
 
   //create cohort members
-  @Post()
+  @Post("/:create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
@@ -64,20 +61,15 @@ export class CohortMembersController {
     @Res() response: Response
   ) {
     const loginUser = request.user.userId;
-    let tenantid = headers["tenantid"];
-    const payload = {
-      tenantId: tenantid,
-    };
-    Object.assign(cohortMembersDto, payload);
-
+    const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .createCohortMembers(loginUser, cohortMembersDto, response);
+      .createCohortMembers(loginUser, cohortMembersDto, response, tenantId);
     return response.status(result.statusCode).json(result);
   }
 
   //get cohort members
-  @Get("/:cohortId")
+  @Get("/get/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort Members detail" })
   @ApiNotFoundResponse({ description: "Data not found" })
@@ -99,7 +91,7 @@ export class CohortMembersController {
     const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .getCohortMembers(cohortId,tenantId, fieldvalue, response);
+      .getCohortMembers(cohortId, tenantId, fieldvalue, response);
   }
 
   // search;
@@ -126,11 +118,10 @@ export class CohortMembersController {
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .searchCohortMembers(cohortMembersSearchDto, tenantId, response);
-    return response.status(result.statusCode).json(result);
   }
 
   //update
-  @Put("/:id")
+  @Put("/update/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Cohort Members has been updated successfully.",
@@ -154,11 +145,10 @@ export class CohortMembersController {
         cohortMemberUpdateDto,
         response
       );
-    return response.status(result.statusCode).json(result);
   }
 
   //delete
-  @Delete("/:id")
+  @Delete("/delete/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort member deleted successfully" })
   @ApiNotFoundResponse({ description: "Data not found" })
@@ -178,7 +168,6 @@ export class CohortMembersController {
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .deleteCohortMemberById(tenantid, cohortMembershipId, response, request);
-    return response.status(result.statusCode).json(result);
+      .deleteCohortMemberById(tenantid, cohortMembershipId, response);
   }
 }

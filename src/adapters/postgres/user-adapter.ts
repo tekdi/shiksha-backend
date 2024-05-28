@@ -344,19 +344,26 @@ export class PostgresUserService {
 
   async updateUser(userDto, response) {
     try {
+      console.log("hiii1");
       let updatedData = {};
+      console.log("hiii2");
       let errorMessage;
+      console.log("hiii3");
       if (userDto.userData || Object.keys(userDto.userData).length > 0) {
+        console.log("hiii");
+        
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
         updatedData['basicDetails'] = userDto.userData;
       }
+
+      console.log("hii");
 
       if (userDto?.customFields?.length > 0) {
 
         const getFieldsAttributesQuery = `
           SELECT * 
           FROM "public"."Fields" 
-          WHERE "contextType"='STUDENT' AND "fieldAttributes"->>'isEditable' = $1 
+          WHERE "fieldAttributes"->>'isEditable' = $1 
         `;
         const getFieldsAttributesParams = ['true'];
         const getFieldsAttributes = await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
@@ -365,7 +372,7 @@ export class PostgresUserService {
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
         }
-
+        console.log("hi");
         // let errorMessage = [];
         let unEditableIdes = [];
         for (let data of userDto.customFields) {
@@ -407,6 +414,7 @@ export class PostgresUserService {
 
     return this.usersRepository.save(user);
   }
+
 
   async updateCustomFields(itemId, data) {
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });

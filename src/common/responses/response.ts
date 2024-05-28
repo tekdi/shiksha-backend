@@ -1,13 +1,12 @@
 import { v4 } from 'uuid';
 import { Params } from './response-interface';
 import { Response } from 'express';
-
 export default class APIResponse {
     public static success<Type>(
         response: Response,
         id: string,
         result: Type,
-        statusCode: string,
+        statusCode: number,
         successmessage: string
     ) {
         try {
@@ -18,7 +17,6 @@ export default class APIResponse {
                 errmsg: null,
                 successmessage: successmessage
             };
-
             const resObj = {
                 id,
                 ver: '1.0',
@@ -27,18 +25,17 @@ export default class APIResponse {
                 responseCode: statusCode,
                 result,
             };
-            return response.status(Number(statusCode)).json(resObj);
+            return response.status(statusCode).json(resObj);
         } catch (e) {
             return e;
         }
     }
-
     public static error(
         response: Response,
         id: string,
         errmsg: string,
         error: string,
-        statusCode: string,
+        statusCode: number,
     ) {
         try {
             const params: Params = {
@@ -47,7 +44,6 @@ export default class APIResponse {
                 err: error,
                 errmsg: errmsg,
             };
-
             const resObj = {
                 id,
                 ver: '1.0',
@@ -56,7 +52,7 @@ export default class APIResponse {
                 responseCode: statusCode,
                 result: {},
             };
-            return response.status(Number(statusCode)).json(resObj);
+            return response.status(statusCode).json(resObj);
         } catch (e) {
             return e;
         }

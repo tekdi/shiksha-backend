@@ -13,6 +13,8 @@ import {
   Headers,
   Delete,
   UseGuards,
+  UseFilters,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -31,7 +33,8 @@ import { RoleSearchDto } from "./dto/role-search.dto";
 import { Response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { RoleAdapter } from "./roleadapter"
-
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from 'src/common/utils/api-id.config';
 @ApiTags("rbac")
 @Controller("rbac/roles")
 @UseGuards(JwtAuthGuard)
@@ -39,6 +42,7 @@ export class RoleController {
   constructor(private readonly roleAdapter: RoleAdapter) { }
 
   //Get role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_GET))
   @Get("read/:id")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Role Detail." })
@@ -46,14 +50,15 @@ export class RoleController {
   @ApiForbiddenResponse({ description: "Forbidden" })
   @SerializeOptions({ strategy: "excludeAll", })
   public async getRole(
-    @Param("id") roleId: string,
+    @Param("id", ParseUUIDPipe) roleId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    await this.roleAdapter.buildRbacAdapter().getRole(roleId, request, response);
+    return await this.roleAdapter.buildRbacAdapter().getRole(roleId, request, response);
   }
 
   //Create role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_CREATE))
   @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
@@ -66,10 +71,11 @@ export class RoleController {
     @Body() createRolesDto: CreateRolesDto,
     @Res() response: Response
   ) {
-    await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto, response);
+    return await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto, response);
   }
 
   //Update Role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_UPDATE))
   @Put("update/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role updated successfully." })
@@ -82,10 +88,11 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto, response)
+    return await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto, response)
   }
 
   // search Role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_SEARCH))
   @Post("list/roles")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role List." })
@@ -101,10 +108,11 @@ export class RoleController {
     @Res() response: Response
   ) {
     // let tenantid = headers["tenantid"];
-    await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto, response);
+    return await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto, response);
   }
 
   //delete role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_DELETE))
   @Delete("delete/:roleId")
   @ApiBasicAuth("access-token")
   @ApiHeader({ name: "tenantid" })
@@ -115,6 +123,6 @@ export class RoleController {
     @Param("roleId") roleId: string,
     @Res() response: Response
   ) {
-    await this.roleAdapter.buildRbacAdapter().deleteRole(roleId, response);
+    return await this.roleAdapter.buildRbacAdapter().deleteRole(roleId, response);
   }
 }

@@ -64,10 +64,10 @@ export class PostgresCohortService {
         result.cohortData.push(cohortData);
       }
 
-     return APIResponse.success(res, apiId, result,(HttpStatus.OK), "Cohort list fetched successfully");
+      return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort list fetched successfully");
 
     } catch (error) {
-     return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
   }
@@ -90,7 +90,7 @@ export class PostgresCohortService {
 
       if (checkData === true) {
         const result = await this.getCohortDataWithCustomfield(cohortId);
-        return APIResponse.success(res, apiId, result,(HttpStatus.OK), "Cohort details fetched succcessfully.");
+        return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched succcessfully.");
 
       } else {
         return APIResponse.error(
@@ -103,7 +103,7 @@ export class PostgresCohortService {
       }
 
     } catch (error) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`,(HttpStatus.INTERNAL_SERVER_ERROR));
+      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -213,8 +213,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           res,
           apiId,
-          `Duplicate fieldId`,
           `Duplicate fieldId '${valid.fieldId}' found in fieldValues.`,
+          `Duplicate fieldId`,
           (HttpStatus.CONFLICT)
         )
       }
@@ -242,8 +242,8 @@ export class PostgresCohortService {
             return APIResponse.error(
               res,
               apiId,
-              `Cohort already exist`,
               `Cohort name already exist for this parent.`,
+              `Cohort already exists`,
               (HttpStatus.CONFLICT)
             )
           }
@@ -265,8 +265,8 @@ export class PostgresCohortService {
             return APIResponse.error(
               res,
               apiId,
-              `Cohort already exist`,
-              `Cohort name already exists.`,
+              `Cohort name already exists`,
+              `Duplicate Cohort name`,
               (HttpStatus.CONFLICT)
             )
           }
@@ -295,7 +295,7 @@ export class PostgresCohortService {
 
 
       response = new ReturnResponseBody(response);
-      return APIResponse.success(res, apiId, response,(HttpStatus.CREATED), "Cohort Created Successfully.");
+      return APIResponse.success(res, apiId, response, (HttpStatus.CREATED), "Cohort Created Successfully.");
 
 
     } catch (e) {
@@ -318,8 +318,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           res,
           apiId,
+          `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
           `Duplicate fieldId`,
-          `Duplicate fieldId '${valid.fieldId}' found in fieldValues.`,
           (HttpStatus.CONFLICT)
         )
       }
@@ -334,8 +334,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           res,
           apiId,
-          `Invalid cohortId`,
           `Please Enter valid cohortId(UUID)`,
+          `Invalid cohortId`,
           (HttpStatus.CONFLICT)
         )
       }
@@ -374,11 +374,11 @@ export class PostgresCohortService {
               const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
               response = cohortData[0];
             } else {
-              return  APIResponse.error(
+              return APIResponse.error(
                 res,
                 apiId,
-                `Cohort name already exist`,
-                `Cohort name already exist for this parent please choose another name.`,
+                `Cohort name already exist for this parent please choose another name`,
+                `Duplicate cohort name`,
                 (HttpStatus.CONFLICT),
               )
             }
@@ -398,11 +398,11 @@ export class PostgresCohortService {
               const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
               response = cohortData[0];
             } else {
-              return  APIResponse.error(
+              return APIResponse.error(
                 res,
                 apiId,
-                `Cohort name already exist`,
-                `Cohort name already exists please choose another name.`,
+                `Cohort name already exists please choose another name`,
+                `Duplicate cohort name`,
                 (HttpStatus.CONFLICT)
               )
             }
@@ -442,7 +442,7 @@ export class PostgresCohortService {
           }
         }
 
-        return APIResponse.success(res, apiId, response.affected,(HttpStatus.OK), "Cohort updated successfully.");
+        return APIResponse.success(res, apiId, response.affected, (HttpStatus.OK), "Cohort updated successfully.");
 
       } else {
         return APIResponse.error(
@@ -450,11 +450,11 @@ export class PostgresCohortService {
           apiId,
           `Cohort not found`,
           `Cohort not found`,
-        (HttpStatus.NOT_FOUND)
+          (HttpStatus.NOT_FOUND)
         )
       }
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`,(HttpStatus.INTERNAL_SERVER_ERROR));
+      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
   }
@@ -485,8 +485,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
-          `Limit exceeded`,
           `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
+          `Limit exceeded`,
           (HttpStatus.BAD_REQUEST)
         )
       }
@@ -495,8 +495,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
-          `Page Limit exceeded`,
           `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
+          `Page limit exceeded`,
           (HttpStatus.BAD_REQUEST)
         )
       }
@@ -510,8 +510,8 @@ export class PostgresCohortService {
             return APIResponse.error(
               response,
               apiId,
-              `Invalid key in filter`,
               `${key} Invalid key`,
+              `Invalid filter key`,
               (HttpStatus.BAD_REQUEST)
             )
           } else {
@@ -529,8 +529,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
+          `Invalid User ID format. It must be a valid UUID`,
           `Invalid userId`,
-          `Invalid User ID format. It must be a valid UUID.`,
           (HttpStatus.BAD_REQUEST)
         )
       }
@@ -539,8 +539,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
-          `Invalid cohortId`,
-          `Invalid Cohort ID format. It must be a valid UUID.`,
+          `Invalid Cohort ID format. It must be a valid UUID`,
+          `Invalid cohortID`,
           (HttpStatus.BAD_REQUEST)
         )
       }
@@ -556,8 +556,8 @@ export class PostgresCohortService {
           return APIResponse.error(
             response,
             apiId,
-            `Invalid filters`,
-            'When filtering by userId, do not include additional fields.',
+            `When filtering by userId, do not include additional fields`,
+            'Invalid filters',
             (HttpStatus.BAD_REQUEST)
           )
         }
@@ -572,8 +572,8 @@ export class PostgresCohortService {
           return APIResponse.error(
             response,
             apiId,
-            `Invalid combination of userId and tenantId`,
-            'User is not mapped for this tenant.',
+            `User is not mapped for this tenant`,
+            'Invalid combination of userId and tenantId',
             (HttpStatus.BAD_REQUEST)
           )
         }
@@ -601,7 +601,7 @@ export class PostgresCohortService {
       }
 
       if (results.cohortDetails.length > 0) {
-        return APIResponse.success(response, apiId, results,(HttpStatus.OK), "Cohort details fetched successfully");
+        return APIResponse.success(response, apiId, results, (HttpStatus.OK), "Cohort details fetched successfully");
 
       } else {
         return APIResponse.error(
@@ -635,8 +635,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
-          `Invalid cohortId`,
-          'Invalid Cohort Id format. It must be a valid UUID.',
+          `Invalid Cohort Id format. It must be a valid UUID`,
+          'Invalid cohortId',
           (HttpStatus.BAD_REQUEST)
         )
       }
@@ -662,8 +662,8 @@ export class PostgresCohortService {
         return APIResponse.error(
           response,
           apiId,
-          `Invalid cohortId`,
-          'Cohort not found',
+          `Cohort not found`,
+          'Invalid cohortId',
           (HttpStatus.BAD_REQUEST)
         )
       }

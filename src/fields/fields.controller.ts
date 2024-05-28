@@ -106,12 +106,12 @@ export class FieldsController {
     @Body() fieldValuesDto: FieldValuesDto,
     @Res() response: Response
   ) {
-    const result = await this.fieldsAdapter.buildFieldsAdapter().createFieldValues(
+    return await this.fieldsAdapter.buildFieldsAdapter().createFieldValues(
       request,
       fieldValuesDto,
       response
     );  
-    return result;
+    
   }
 
   //search fields values

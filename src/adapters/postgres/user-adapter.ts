@@ -81,7 +81,6 @@ export class PostgresUserService {
       //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       //   errorMessage: e,
       // });
-      console.log(e,"eer");
       return APIResponse.error(response, apiId, "Internal Server Error", `Error is : ${e}`, String(HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
@@ -146,9 +145,6 @@ export class PostgresUserService {
         this.findUserDetails(userData.userId),
         this.findUserRoles(userData.userId, userData.tenantId)
       ]);
-
-      console.log(userRole,"uerrple");
-
       const roleInUpper = (userRole.title).toUpperCase();
 
       if (userData?.fieldValue) {
@@ -208,7 +204,6 @@ export class PostgresUserService {
       return await APIResponse.success(response, apiId, {...result},
         String(HttpStatus.OK), 'User details Fetched Successfully.')
     } catch (e) {
-      console.log("err",e)
       // new ErrorResponseTypeOrm({
       //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       //   errorMessage: e,
@@ -311,7 +306,6 @@ export class PostgresUserService {
   }
 
   async findUserRoles(userId: string, tenantId: string) {
-    console.log(userId, tenantId);
 
     const getRole = await this.userRoleMappingRepository.findOne({
       where: {
@@ -366,9 +360,6 @@ export class PostgresUserService {
         contextType: role,
       }
     })
-    console.log("customFields", customFields);
-
-
     return customFields;
   }
   async findFilledValues(userId: string, role: string) {

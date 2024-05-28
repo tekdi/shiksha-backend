@@ -41,7 +41,7 @@ async function bootstrap() {
     process.env.IMAGEPATH,
     express.static(join(__dirname, "..", "uploads"))
   );
-  app.setGlobalPrefix("api/v1", {
+  app.setGlobalPrefix("user/v1", {
     exclude: [{ path: "health", method: RequestMethod.GET }],
   });
 

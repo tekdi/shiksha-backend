@@ -108,9 +108,10 @@ export class FieldsController {
   ) {
     const result = await this.fieldsAdapter.buildFieldsAdapter().createFieldValues(
       request,
-      fieldValuesDto
-    );
-    return response.status(result.statusCode).json(result);
+      fieldValuesDto,
+      response
+    );  
+    return result;
   }
 
   //search fields values

@@ -10,8 +10,8 @@ import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { SuccessResponse } from "src/success-response";
-import APIResponse from "src/utils/response";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
+import APIResponse from "src/common/responses/response";
 
 @Injectable()
 export class PostgresFieldsService {
@@ -58,7 +58,7 @@ export class PostgresFieldsService {
     async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto) {
         try {
 
-            const getConditionalData = APIResponse.search(fieldsSearchDto)
+            const getConditionalData = await this.search(fieldsSearchDto)
             const offset = getConditionalData.offset;
             const limit = getConditionalData.limit;
             const whereClause = getConditionalData.whereClause;
@@ -101,33 +101,34 @@ export class PostgresFieldsService {
         return { mappedResponse, totalCount };
     }
 
-    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
+    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res) {
+        let apiId = 'api.post.createFieldValues';
+
+
         try {
-            const checkFieldValueExist = await this.fieldsValuesRepository.find({
-                where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId },
-            });
-            
-            if (checkFieldValueExist.length == 0) {
-                
-                let result = await this.fieldsValuesRepository.save(fieldValuesDto);
-                return new SuccessResponse({
-                    statusCode: HttpStatus.CREATED,
-                    message: "Ok.",
-                    data: result,
-                });
-            }
+                let result = await this.findAndSaveFieldValues(fieldValuesDto);
+                if(!result){
+                    APIResponse.error(
+                        res,
+                        apiId,
+                        `Fields not found`,
+                        `Fields not found`,
+                        (HttpStatus.NOT_FOUND)
+                      )
+
+                }
+               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
+
 
         } catch (e) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: e,
-            });
+           return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));   
+
         }
     }
 
     async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto) {
         try {
-            const getConditionalData = APIResponse.search(fieldValuesSearchDto)
+            const getConditionalData = await this.search(fieldValuesSearchDto)
             const offset = getConditionalData.offset;
             const limit = getConditionalData.limit;
             const whereClause = getConditionalData.whereClause;
@@ -264,5 +265,40 @@ export class PostgresFieldsService {
 
         return fieldResponse;
     }
+
+    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto){
+
+        const checkFieldValueExist = await this.fieldsValuesRepository.find({
+            where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId },
+        });
+        
+        if (checkFieldValueExist.length == 0) {
+            let result = await this.fieldsValuesRepository.save(fieldValuesDto);
+            return result
+        }
+        return false;
+    }
+
+
+    public async search(dtoFileName){
+        let { limit, page, filters } = dtoFileName;
+    
+        let offset = 0;
+        if (page > 1) {
+            offset = parseInt(limit) * (page - 1);
+        }
+        
+        if (limit.trim() === '') {
+            limit = '0';
+        }
+    
+        const whereClause = {};
+        if (filters && Object.keys(filters).length > 0) {
+            Object.entries(filters).forEach(([key, value]) => {
+                whereClause[key] = value;
+            });
+        }
+        return {offset,limit,whereClause};
+      }
 
 }

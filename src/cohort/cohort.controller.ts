@@ -35,20 +35,20 @@ import { Request } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { diskStorage } from "multer";
-import { Response, response } from "express";
+import { Response } from "express";
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortUpdateDto } from "./dto/cohort-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 
 @ApiTags("Cohort")
-@Controller("cohorts")
+@Controller("cohort")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
-  //Get Cohort Details
-  @Get("/:cohortId")
+
+  @Get("/read/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "Cohort Not Found" })
@@ -63,12 +63,12 @@ export class CohortController {
     @Res() response: Response
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
-    const result = await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(cohortId);
-    return response.status(result.statusCode).json(result);
+    return await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(cohortId, response);
+
   }
 
-  //create cohort
-  @Post()
+
+  @Post("/create")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort has been created successfully." })
@@ -97,28 +97,21 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
-    const expectedFields = ['programId', 'parentId', 'name', 'type', 'fieldValues' ]; 
-    const unexpectedFields = Object.keys(cohortCreateDto).filter(field => !expectedFields.includes(field));
-    if (unexpectedFields.length > 0) {
-      throw new BadRequestException(`Unexpected fields found: ${unexpectedFields.join(', ')}`);
-    }
-
     let tenantid = headers["tenantid"];
     const payload = {
       image: image?.filename,
       tenantId: tenantid,
     };
     Object.assign(cohortCreateDto, payload);
-    const result = await this.cohortAdapter.buildCohortAdapter().createCohort(
+    return await this.cohortAdapter.buildCohortAdapter().createCohort(
       request,
-      cohortCreateDto
+      cohortCreateDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 
 
 
-  // search
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiBody({ type: CohortSearchDto })
@@ -139,19 +132,16 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    if(tenantid === ''){
-      return response.status(400).json({"statusCode": 400, "errorMessage": "TenantId required."});
-    }
-    const result = await this.cohortAdapter.buildCohortAdapter().searchCohort(
+    return await this.cohortAdapter.buildCohortAdapter().searchCohort(
       tenantid,
       request,
-      cohortSearchDto
+      cohortSearchDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 
   //update
-  @Put("/:cohortId")
+  @Put("/update/:cohortId")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @UseInterceptors(
@@ -175,22 +165,17 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
-    const expectedFields = ['cohortId','programId', 'parentId', 'name', 'type', 'fieldValues' ]; 
-    const unexpectedFields = Object.keys(cohortUpdateDto).filter(field => !expectedFields.includes(field));
-    if (unexpectedFields.length > 0) {
-      throw new BadRequestException(`Unexpected fields found: ${unexpectedFields.join(', ')}`);
-    }
-    const result = await this.cohortAdapter.buildCohortAdapter().updateCohort(
+    return await this.cohortAdapter.buildCohortAdapter().updateCohort(
       cohortId,
       request,
-      cohortUpdateDto
+      cohortUpdateDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 
 
   //delete cohort
-  @Delete("/:cohortId")
+  @Delete("/delete/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort has been deleted successfully." })
   @ApiBadRequestResponse({ description: "Bad request." })
@@ -200,7 +185,6 @@ export class CohortController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId, request);
-    return response.status(result.statusCode).json(result);
+    return await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId, request, response);
   }
 }

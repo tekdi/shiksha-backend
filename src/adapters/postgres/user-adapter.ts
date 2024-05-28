@@ -110,48 +110,67 @@ export class PostgresUserService {
           message: 'Please Enter Valid  UUID',
         });
       }
+      const checkExistUser = await this.usersRepository.find({
+        where: {
+          userId: userData.userId
+        }
+      })
+
+      if (checkExistUser.length == 0) {
+        return new ErrorResponseTypeOrm({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorMessage: `User Id '${userData.userId}' does not exist.`,
+        });
+      }
+
       const result = {
         userData: {
         }
       };
-      let filledValues:any;
+      let filledValues: any;
       let customFieldsArray = [];
 
       let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
-        this.findUserRoles(userData.userId,userData.tenantId)
+        this.findUserRoles(userData.userId, userData.tenantId)
       ]);
 
       const roleInUpper = (userRole.title).toUpperCase();
-      if(userData?.fieldValue){
-        filledValues =  await this.findFilledValues(userData.userId,roleInUpper)
+
+      if (userData?.fieldValue) {
+        filledValues = await this.findFilledValues(userData.userId, roleInUpper)
       }
 
-      if(userRole){
+      if (userRole) {
         userDetails['role'] = userRole.title;
       }
+
       if (!userDetails) {
         return new SuccessResponse({
           statusCode: HttpStatus.NOT_FOUND,
           message: 'User Not Found',
         });
-      } 
+      }
       if (!userData.fieldValue) {
         return new SuccessResponse({
           statusCode: HttpStatus.OK,
           message: 'Ok.',
           data: userDetails,
         });
-      }    
-      const customFields = await this.findCustomFields(userData,roleInUpper)
+      }
+
+      const customFields = await this.findCustomFields(userData, roleInUpper)
+
       result.userData = userDetails;
       const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+
       for (let data of customFields) {
-        let fieldValue:any = filledValuesMap.get(data.fieldId);
-        // if(data.type === 'checkbox' && fieldValue){
-        //   console.log("Hi",fieldValue);
-        //   fieldValue=fieldValue.split(',')
-        // }
+        let fieldValue: any = filledValuesMap.get(data.fieldId);
+
+        if (fieldValue) {
+          fieldValue = fieldValue.split(',')
+        }
+
         const customField = {
           fieldId: data.fieldId,
           label: data.label,
@@ -164,7 +183,7 @@ export class PostgresUserService {
         };
         customFieldsArray.push(customField);
       }
-      
+
       result.userData['customFields'] = customFieldsArray;
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
@@ -273,24 +292,25 @@ export class PostgresUserService {
     return result
   }
 
-  async findUserRoles(userId:string, tenantId:string) {
-    
+  async findUserRoles(userId: string, tenantId: string) {
+    console.log(userId, tenantId);
+
     const getRole = await this.userRoleMappingRepository.findOne({
-      where:{
-        userId:userId,
-        tenantId:tenantId
+      where: {
+        userId: userId,
+        tenantId: tenantId
       }
     })
-    if(!getRole) {
+    if (!getRole) {
       return false;
     }
     let role;
     role = await this.roleRepository.findOne({
-        where:{
-          roleId:getRole.roleId,
-        },
-        select: ["title"]
-      })
+      where: {
+        roleId: getRole.roleId,
+      },
+      select: ["title"]
+    })
     return role
   }
 
@@ -304,7 +324,7 @@ export class PostgresUserService {
       where: whereClause,
       select: ["userId", "username", "name", "district", "state", "mobile"]
     })
-    if(!userDetails){
+    if (!userDetails) {
       return false;
     }
     const tenentDetails = await this.allUsersTenent(userDetails.userId)
@@ -328,6 +348,8 @@ export class PostgresUserService {
         contextType: role,
       }
     })
+    console.log("customFields", customFields);
+
 
     return customFields;
   }
@@ -339,7 +361,7 @@ export class PostgresUserService {
     ON F."fieldId" = FV."fieldId" 
     where U."userId" =$1 AND F."contextType" = $2`;
 
-    let result = await this.usersRepository.query(query, [userId,role]);
+    let result = await this.usersRepository.query(query, [userId, role]);
     return result;
   }
 
@@ -347,7 +369,8 @@ export class PostgresUserService {
     try {
       let updatedData = {};
       let errorMessage;
-      if (userDto.userData || Object.keys(userDto.userData).length > 0) {
+
+      if (userDto.userData) {
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
         updatedData['basicDetails'] = userDto.userData;
       }
@@ -357,7 +380,7 @@ export class PostgresUserService {
         const getFieldsAttributesQuery = `
           SELECT * 
           FROM "public"."Fields" 
-          WHERE "contextType"='STUDENT' AND "fieldAttributes"->>'isEditable' = $1 
+          WHERE "fieldAttributes"->>'isEditable' = $1 
         `;
         const getFieldsAttributesParams = ['true'];
         const getFieldsAttributes = await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
@@ -409,7 +432,17 @@ export class PostgresUserService {
     return this.usersRepository.save(user);
   }
 
+
   async updateCustomFields(itemId, data) {
+
+    if (Array.isArray(data.value) === true) {
+      let dataArray = [];
+      for (let value of data.value) {
+        dataArray.push(value.toLowerCase().replace(/ /g, '_'));
+      }
+      data.value = dataArray.join(', ');
+    }
+
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
     let newResult;
     if (result.affected === 0) {
@@ -434,7 +467,7 @@ export class PostgresUserService {
       if (userCreateDto.fieldValues) {
         let field_values = userCreateDto.fieldValues;
         const validateField = await this.validateFieldValues(field_values);
-        
+
         if (validateField == false) {
           return new ErrorResponseTypeOrm({
             statusCode: HttpStatus.CONFLICT,
@@ -443,7 +476,7 @@ export class PostgresUserService {
         }
       }
 
-      
+
       // check and validate all fields
       let validateBodyFields = await this.validateBodyFields(userCreateDto)
 
@@ -499,7 +532,7 @@ export class PostgresUserService {
             }
           }
         }
-        
+
         return new SuccessResponse({
           statusCode: 200,
           message: "User has been created successfully.",
@@ -553,19 +586,19 @@ export class PostgresUserService {
     return true;
   }
 
-  async checkUser(body){
+  async checkUser(body) {
     let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(body);
-    if(checkUserinKeyCloakandDb){
+    if (checkUserinKeyCloakandDb) {
       return new SuccessResponse({
         statusCode: 200,
         message: "User Exists. Proceed with Sending Email ",
-        data: {data:true},
+        data: { data: true },
       });
     }
     return new SuccessResponse({
       statusCode: HttpStatus.BAD_REQUEST,
       message: "Invalid Username Or Email",
-      data: {data:false},
+      data: { data: false },
     });
   }
 
@@ -573,7 +606,7 @@ export class PostgresUserService {
   async checkUserinKeyCloakandDb(userDto) {
     const keycloakResponse = await getKeycloakAdminToken();
     const token = keycloakResponse.data.access_token;
-    if(userDto?.username){
+    if (userDto?.username) {
       const usernameExistsInKeycloak = await checkIfUsernameExistsInKeycloak(
         userDto?.username,
         token
@@ -582,7 +615,7 @@ export class PostgresUserService {
         return usernameExistsInKeycloak;
       }
       return false;
-    }else{
+    } else {
       const usernameExistsInKeycloak = await checkIfEmailExistsInKeycloak(
         userDto?.email,
         token
@@ -592,8 +625,8 @@ export class PostgresUserService {
       }
       return false;
     }
-}
- 
+  }
+
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
     const user = new User()
@@ -601,7 +634,7 @@ export class PostgresUserService {
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
     user.mobile = Number(userCreateDto?.mobile) || null,
-    user.createdBy = userCreateDto?.createdBy
+      user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
       user.state = userCreateDto?.state,
@@ -612,7 +645,7 @@ export class PostgresUserService {
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
     }
-    
+
     let result = await this.usersRepository.save(user);
 
     if (result) {
@@ -809,65 +842,66 @@ export class PostgresUserService {
     };
   }
 
-  public async deleteUserById(userId){
+  public async deleteUserById(userId) {
     const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
-     // Validate userId format
-     if (!isUUID(userId)) {
+    // Validate userId format
+    if (!isUUID(userId)) {
       return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please enter a valid UUID for userId",
+        statusCode: HttpStatus.BAD_REQUEST,
+        errorMessage: "Please enter a valid UUID for userId",
       });
-  }
-  
-      try {
-    // Check if user exists in usersRepository
-    const user = await this.usersRepository.findOne({ where :{userId:userId}});
-    if (!user) {
+    }
+
+    try {
+      // Check if user exists in usersRepository
+      const user = await this.usersRepository.findOne({ where: { userId: userId } });
+      if (!user) {
         return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.NOT_FOUND,
-            errorMessage: "User not found in user table.",
-        });
-    }  
-  
-  
-       // Delete from User table
-        const userResult = await this.usersRepository.delete(userId);
-  
-        // Delete from CohortMembers table
-        const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
-  
-        // Delete from UserTenantMapping table
-        const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
-  
-        // Delete from UserRoleMapping table
-        const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
-  
-      // Delete from FieldValues table where ItemId matches userId
-        const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
-  
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
-  
-        await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }});
-  
-  
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: "User and related entries deleted Successfully.",
-          data: {
-            user: userResult
-          },
-        });
-      } catch (e) {
-          return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          errorMessage: e,
+          statusCode: HttpStatus.NOT_FOUND,
+          errorMessage: "User not found in user table.",
         });
       }
+
+
+      // Delete from User table
+      const userResult = await this.usersRepository.delete(userId);
+
+      // Delete from CohortMembers table
+      const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
+
+      // Delete from UserTenantMapping table
+      const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
+
+      // Delete from UserRoleMapping table
+      const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
+
+      // Delete from FieldValues table where ItemId matches userId
+      const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
+
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+
+      await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+
+      return new SuccessResponse({
+        statusCode: HttpStatus.OK,
+        message: "User and related entries deleted Successfully.",
+        data: {
+          user: userResult
+        },
+      });
+    } catch (e) {
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: e,
+      });
     }
+  }
 
 }
 

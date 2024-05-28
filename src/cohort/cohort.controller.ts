@@ -1,7 +1,6 @@
 import {
   ApiTags,
   ApiBody,
-  ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiConsumes,
@@ -29,7 +28,6 @@ import {
   UseGuards,
   ValidationPipe,
   UsePipes,
-  Query,
   BadRequestException,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
@@ -41,20 +39,18 @@ import { Response, response } from "express";
 import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortUpdateDto } from "./dto/cohort-update.dto";
-
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { QueryParamsDto } from "./dto/query-params.dto";
 
 @ApiTags("Cohort")
 @Controller("cohorts")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
   //Get Cohort Details
   @Get("/:cohortId")
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "Cohort detais Fetched Succcessfully" })
+  @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "Cohort Not Found" })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
   @ApiBadRequestResponse({ description: "Bad Request" })
@@ -129,7 +125,6 @@ export class CohortController {
   @ApiOkResponse({ description: "Cohort list" })
   @ApiBadRequestResponse({ description: "Bad request." })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe())
   @SerializeOptions({
     strategy: "excludeAll",
@@ -144,6 +139,9 @@ export class CohortController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
+    if(tenantid === ''){
+      return response.status(400).json({"statusCode": 400, "errorMessage": "TenantId required."});
+    }
     const result = await this.cohortAdapter.buildCohortAdapter().searchCohort(
       tenantid,
       request,

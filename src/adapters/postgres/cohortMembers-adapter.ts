@@ -216,6 +216,7 @@ export class PostgresCohortMembersService {
 
       // console.log("USER DATA ",userData)
       let results = {};
+<<<<<<< HEAD
       let where = [];
       if (whereClause["cohortId"]) {
         where.push(["cohortId", whereClause["cohortId"]]);
@@ -240,6 +241,38 @@ export class PostgresCohortMembersService {
         options
       );
 
+=======
+        let where = [];
+        if (whereClause["cohortId"]) {
+          where.push(["cohortId", whereClause["cohortId"]]);
+        }
+        if (whereClause["userId"]) {
+          where.push(["userId", whereClause["userId"]]);
+        }
+        if (whereClause["role"]) {
+          where.push(["role", whereClause["role"]]);
+        }
+        let options = [];
+        if (limit) {
+          options.push(['limit',limit]);
+        } 
+        if (offset) {
+          options.push(['offset',offset]);
+        }
+        
+        results = await this.getCohortMemberUserDetails(
+          where,
+          "true",
+          options
+        );
+        
+        if(results['userDetails'].length == 0){
+          return new ErrorResponseTypeOrm({
+            statusCode: HttpStatus.NOT_FOUND,
+            errorMessage: "No data found.",
+          });
+        }
+>>>>>>> d9cc1bbd10ce416d996565065010bc59c66260c2
       return new SuccessResponse({
         statusCode: HttpStatus.OK,
         message: "Ok.",

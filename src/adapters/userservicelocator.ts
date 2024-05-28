@@ -1,3 +1,4 @@
+import { Response } from "express";
 import { UserCreateDto } from "src/user/dto/user-create.dto";
 import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { UserData } from "src/user/user.controller";
@@ -14,7 +15,7 @@ export interface IServicelocator {
   getUsersDetailsById(userData: UserData, response:any);
   getUsersDetailsByCohortId(userData: Record<string, string>, response:any);
   updateUser(userDto?: any,response?: any);
-  createUser(request: any, userDto: UserCreateDto);
+  createUser(request: any, userDto: UserCreateDto, response: Response);
   findUserDetails(userID:any,username:String)
   searchUser(
     tenantId: string,
@@ -22,8 +23,8 @@ export interface IServicelocator {
     response: any,
     userSearchDto: UserSearchDto
   );
-  resetUserPassword(request: any, username: string, newPassword: string);
+  resetUserPassword(request: any, username: string, newPassword: string, response: Response);
   checkUser(body:any,response);
-  deleteUserById(userId: string): Promise<any>;
+  deleteUserById(userId: string, response: Response): Promise<any>;
 
 }

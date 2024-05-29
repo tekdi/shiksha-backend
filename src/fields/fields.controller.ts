@@ -15,6 +15,7 @@ import {
   Headers,
   UseGuards,
   Res,
+  UseFilters,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -27,6 +28,8 @@ import { FieldValuesDto } from "./dto/field-values.dto";
 import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 import { FieldsService } from "./fields.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from "src/common/utils/api-id.config";
 
 @ApiTags("Fields")
 @Controller("fields")
@@ -93,6 +96,7 @@ export class FieldsController {
 
   //field values
   //create fields values
+  @UseFilters(new AllExceptionsFilter(APIID.FIELDVALUES_CREATE))
   @Post("/values")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({

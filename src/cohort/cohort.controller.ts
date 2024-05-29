@@ -29,6 +29,7 @@ import {
   ValidationPipe,
   UsePipes,
   BadRequestException,
+  UseFilters,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -40,6 +41,8 @@ import { CohortAdapter } from "./cohortadapter";
 import { CohortCreateDto } from "./dto/cohort-create.dto";
 import { CohortUpdateDto } from "./dto/cohort-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from "src/common/utils/api-id.config";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -47,7 +50,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
-
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_READ))
   @Get("/read/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
@@ -67,7 +70,7 @@ export class CohortController {
 
   }
 
-
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_CREATE))
   @Post("/create")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -111,7 +114,7 @@ export class CohortController {
   }
 
 
-
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_LIST))
   @Post("/search")
   @ApiBasicAuth("access-token")
   @ApiBody({ type: CohortSearchDto })
@@ -140,7 +143,7 @@ export class CohortController {
     );
   }
 
-  //update
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_UPDATE))
   @Put("/update/:cohortId")
   @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
@@ -174,7 +177,7 @@ export class CohortController {
   }
 
 
-  //delete cohort
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_DELETE))
   @Delete("/delete/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort has been deleted successfully." })

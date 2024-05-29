@@ -5,7 +5,6 @@ import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { HasuraModule } from "src/adapters/hasura/hasura.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { CohortMembers } from "./entities/cohort-member.entity";
-import { CohortMembersService } from "./cohortMember.service";
 import { PostgresModule } from "src/adapters/postgres/potsgres-module";
 import { PostgresCohortMembersService } from "src/adapters/postgres/cohortMembers-adapter";
 import { HasuraCohortMembersService } from "src/adapters/hasura/cohortMembers.adapter";
@@ -23,9 +22,8 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
   controllers: [CohortMembersController],
   providers: [
     CohortMembersAdapter,
-    CohortMembersService,
     PostgresCohortMembersService,
     HasuraCohortMembersService,
   ],
 })
-export class CohortMembersModule {}
+export class CohortMembersModule { }

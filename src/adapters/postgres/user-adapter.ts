@@ -125,7 +125,6 @@ export class PostgresUserService {
         this.findUserRoles(userData.userId, userData.tenantId)
       ]);
       const roleInUpper = (userRole.title).toUpperCase();
-
       if (userData?.fieldValue) {
         filledValues = await this.findFilledValues(userData.userId, roleInUpper)
       }
@@ -347,7 +346,6 @@ export class PostgresUserService {
       }
 
       if (userDto?.customFields?.length > 0) {
-
         const getFieldsAttributesQuery = `
           SELECT * 
           FROM "public"."Fields" 

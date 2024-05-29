@@ -74,7 +74,8 @@ export class PostgresRoleService {
         roles.push(new RolesResponseDto(response));
       }
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return APIResponse.success(response, apiId, { successCount: roles.length, errorCount: errors.length, roles, errors },
       HttpStatus.OK, 'Role successfully Created')
@@ -88,7 +89,8 @@ export class PostgresRoleService {
       });
       return APIResponse.success(response, apiId, { roles, totalCount }, HttpStatus.OK, 'Roles fetched successfully')
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -100,7 +102,8 @@ export class PostgresRoleService {
       const result = await this.roleRepository.update(roleId, roleDto);
       return APIResponse.success(response, apiId, { rowCount: result.affected, }, HttpStatus.OK, 'Roles Updated successful')
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -188,7 +191,8 @@ export class PostgresRoleService {
         )
       }
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -233,7 +237,8 @@ export class PostgresRoleService {
         });
       return APIResponse.success(res, apiId, { rowCount: response.affected }, HttpStatus.OK, 'Role deleted successfully.')
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

@@ -21,7 +21,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             this.apiId,
             detailedErrorMessage,
             exception instanceof HttpException ? exception.name : 'InternalServerError', // error
-            status.toString()
+            status
         );
     }
 }

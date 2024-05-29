@@ -1,11 +1,12 @@
 import {HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { SuccessResponse } from 'src/success-response';
-import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { CreatePrivilegeRoleDto } from 'src/rbac/assign-privilege/dto/create-assign-privilege.dto';
 import { RolePrivilegeMapping } from 'src/rbac/assign-privilege/entities/assign-privilege.entity';
 import { isUUID } from 'class-validator';
+import APIResponse from 'src/common/responses/response';
+import { Response } from 'express';
+import { APIID } from 'src/common/utils/api-id.config';
 
 @Injectable()
 export class PostgresAssignPrivilegeService {
@@ -13,7 +14,8 @@ export class PostgresAssignPrivilegeService {
     @InjectRepository(RolePrivilegeMapping)
     private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>
    ){}
-   public async createPrivilegeRole(request: Request,createPrivilegeRoleDto:CreatePrivilegeRoleDto){
+   public async createPrivilegeRole(request: Request,createPrivilegeRoleDto:CreatePrivilegeRoleDto,response:Response){
+    const apiId = APIID.ASSIGNPRIVILEGE_CREATE;
     try {
         let result ;
         if (createPrivilegeRoleDto.deleteOld) {
@@ -37,22 +39,14 @@ export class PostgresAssignPrivilegeService {
         for (let data of newPrivileges) {
             result = await this.rolePrivilegeMappingRepository.save(data);
         }
-        return new SuccessResponse({
-            statusCode: HttpStatus.CREATED,
-            message: "Privileges assigned successfully.",
-            data: result,
-        });
+
+        return await APIResponse.success(response, apiId, result,HttpStatus.CREATED, "Privileges assigned successfully.")
     } catch (error) {
-        if(error.code === '23503'){
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.NOT_FOUND,
-                errorMessage: `Privilege Id or Role Id Doesn't Exist in Database `
-            }); 
+        if(error.code === '23503') {
+           return APIResponse.error(response, apiId, "Not Found",`Privilege Id or Role Id Doesn't Exist in Database.`, HttpStatus.NOT_FOUND);
         }
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: JSON.stringify(error)
-        });
+
+        return APIResponse.error(response, apiId, "Not Found",`Error is: ${error}.`, HttpStatus.NOT_FOUND);
     }
    }
 
@@ -63,43 +57,31 @@ export class PostgresAssignPrivilegeService {
         throw error;
     }
 }
-//    public async createPrivilegeRole(){
 
-//    }
-   public async getPrivilegeRole(userId:string,request: Request){
+
+   public async getPrivilegeRole(roleId:string,request: Request,response:Response){
+    const apiId = APIID.ASSIGNPRIVILEGE_GET;
     try {
-        if (!isUUID(userId)) {
-            return new SuccessResponse({
-                statusCode: HttpStatus.BAD_REQUEST,
-                message: 'Please Enter Valid User ID',
-            });
+        if (!isUUID(roleId)) {
+            return APIResponse.error(response, apiId, "Bad Request","Please Enter Valid User ID.", HttpStatus.BAD_REQUEST);
           }
-        let result = await this.checkExistingRole(userId);
+        let result = await this.checkExistingRole(roleId);
+
         if(!result){
-            return new SuccessResponse({
-                statusCode: HttpStatus.NOT_FOUND,
-                message: 'No Role assigned to user',
-                data: result,
-            });
+            return APIResponse.error(response, apiId, "Not Found","No Role Found.", HttpStatus.NOT_FOUND);
         }
-        return new SuccessResponse({
-            statusCode: HttpStatus.OK,
-            message: 'Ok.',
-            data: result,
-        });
+
+        return await APIResponse.success(response, apiId, result,HttpStatus.OK, "Privileges for role fetched successfully.")
+
     } catch (error) {
-        return new ErrorResponseTypeOrm({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            errorMessage: error,
-        });
+        return APIResponse.error(response, apiId, "Internal Server Error",`Something went wrong.`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     
    } 
 
-   async checkExistingRole(privilegeId){
-    const result= await this.rolePrivilegeMappingRepository.findOne({
-        where: { privilegeId},
-        relations:['user']
+   async checkExistingRole(roleId){
+    const result= await this.rolePrivilegeMappingRepository.find({
+        where: { roleId }
     })
     return result;
    }

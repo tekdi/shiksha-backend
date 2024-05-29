@@ -75,8 +75,8 @@ export class HasuraCohortMembersService
     }
   }
 
-  public async searchCohortMembers(cohortMembersSearchDto) {}
-  public async getCohortMembers(cohortMemberId, fieldvalue) {}
+  public async searchCohortMembers(cohortMembersSearchDto, tenantId, res) {}
+  public async getCohortMembers(cohortMemberId, tenantId, fieldvalue, res) {}
   public async updateCohortMembers(
     cohortMembershipId: string,
     request: any,

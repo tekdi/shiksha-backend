@@ -21,6 +21,7 @@ import { isUUID } from "class-validator";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import APIResponse from "src/common/responses/response";
 import { Response } from "express";
+import { APIID } from 'src/common/utils/api-id.config';
 @Injectable()
 export class PostgresCohortMembersService {
   constructor(
@@ -35,16 +36,16 @@ export class PostgresCohortMembersService {
   ) { }
 
   async getCohortMembers(cohortId: any, tenantId: any, fieldvalue: any, res: Response) {
-    const apiId = 'api.get.cohortMembers';
+    const apiId = APIID.COHORT_MEMBER_GET
     try {
       const fieldvalues = fieldvalue?.toLowerCase()
 
       if (!tenantId) {
-        return APIResponse.error(res, apiId, "Bad Request", `TenantId required`, HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", `TenantId required`, HttpStatus.BAD_REQUEST);
       }
 
       if (!isUUID(cohortId)) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: CohortId must be a valid UUID.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: CohortId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
 
 
@@ -55,7 +56,7 @@ export class PostgresCohortMembersService {
         }
       })
       if (!cohortTenantMap) {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort not found for the provided tenant.", HttpStatus.NOT_FOUND;
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort not found for the provided tenant.", HttpStatus.NOT_FOUND);
       }
       const userDetails = await this.findcohortData(cohortId);
       if (userDetails === true) {
@@ -72,10 +73,11 @@ export class PostgresCohortMembersService {
 
         return APIResponse.success(res, apiId, results, HttpStatus.OK, "Cohort members details fetched successfully.");
       } else {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort Member not exist.", HttpStatus.NOT_FOUND;
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort Member not exist.", HttpStatus.NOT_FOUND);
       }
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is: ${e}`, HttpStatus.INTERNAL_SERVER_ERROR;
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
   async getUserDetails(searchId: any, searchKey: any, fieldShowHide: any) {
@@ -165,10 +167,10 @@ export class PostgresCohortMembersService {
     tenantId: string,
     res: Response
   ) {
-    const apiId = 'api.post.searchCohortMembers';
+    const apiId = APIID.COHORT_MEMBER_SEARCH;
     try {
       if (!isUUID(tenantId)) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: TenantId must be a valid UUID.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: TenantId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
 
       let { limit, page, filters } = cohortMembersSearchDto;
@@ -186,10 +188,10 @@ export class PostgresCohortMembersService {
 
       // Validate cohortId and userId format
       if (whereClause["cohortId"] && !isUUID(whereClause["cohortId"])) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: CohortId must be a valid UUID.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: CohortId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
       if (whereClause["userId"] && !isUUID(whereClause["userId"])) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: UserId must be a valid UUID.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: UserId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
       // Check if cohortId exists
       if (whereClause["cohortId"]) {
@@ -197,7 +199,7 @@ export class PostgresCohortMembersService {
           where: { cohortId: whereClause["cohortId"] },
         });
         if (!cohortExists) {
-          return APIResponse.error(res, apiId, "Not Found", "Invalid input: No member found for this cohortId.", HttpStatus.NOT_FOUND;
+          return APIResponse.error(res, apiId, "Not Found", "Invalid input: No member found for this cohortId.", HttpStatus.NOT_FOUND);
         }
       }
 
@@ -207,7 +209,7 @@ export class PostgresCohortMembersService {
           where: { userId: whereClause["userId"] },
         });
         if (!userExists) {
-          return APIResponse.error(res, apiId, "Not Found", "Invalid input: No member found for this userId and cohort combination.", HttpStatus.NOT_FOUND;
+          return APIResponse.error(res, apiId, "Not Found", "Invalid input: No member found for this userId and cohort combination.", HttpStatus.NOT_FOUND);
         }
       }
 
@@ -240,15 +242,15 @@ export class PostgresCohortMembersService {
 
 
       if (results['userDetails'].length == 0) {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND;
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
       }
 
       return APIResponse.success(res, apiId, { totalCount, results }, HttpStatus.OK, "Cohort members details fetched successfully.");
 
 
     } catch (e) {
-      console.log(e)
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is: ${e}`, HttpStatus.INTERNAL_SERVER_ERROR;
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -288,7 +290,7 @@ export class PostgresCohortMembersService {
     res: Response,
     tenantId: string
   ) {
-    const apiId = 'api.post.createCohortMembers';
+    const apiId = APIID.COHORT_MEMBER_CREATE;
     try {
       cohortMembers.createdBy = loginUser;
       cohortMembers.updatedBy = loginUser;
@@ -299,7 +301,7 @@ export class PostgresCohortMembersService {
         }
       })
       if (existCohort.length == 0) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Cohort Id does not exist.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Cohort Id does not exist.", HttpStatus.BAD_REQUEST);
       }
 
       const existUser = await this.usersRepository.find({
@@ -308,7 +310,7 @@ export class PostgresCohortMembersService {
         }
       })
       if (existUser.length == 0) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: User Id does not exist.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: User Id does not exist.", HttpStatus.BAD_REQUEST);
       }
 
       const existrole = await this.cohortMembersRepository.find({
@@ -318,7 +320,7 @@ export class PostgresCohortMembersService {
         }
       })
       if (existrole.length > 0) {
-        return APIResponse.error(res, apiId, "CONFLICT", `User '${cohortMembers.userId}' is already assigned to cohort '${cohortMembers.cohortId}'.`, HttpStatus.CONFLICT;
+        return APIResponse.error(res, apiId, "CONFLICT", `User '${cohortMembers.userId}' is already assigned to cohort '${cohortMembers.cohortId}'.`, HttpStatus.CONFLICT);
       }
 
       // Create a new CohortMembers entity and populate it with cohortMembers data
@@ -329,7 +331,8 @@ export class PostgresCohortMembersService {
       return APIResponse.success(res, apiId, savedCohortMember, HttpStatus.OK, "Cohort member has been successfully assigned.");
 
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is: ${e}`, HttpStatus.INTERNAL_SERVER_ERROR;
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -389,12 +392,12 @@ export class PostgresCohortMembersService {
     cohortMembersUpdateDto: CohortMembersUpdateDto,
     res: Response,
   ) {
-    const apiId = "api.cohortMember.updateCohortMembers";
+    const apiId = APIID.COHORT_MEMBER_UPDATE;
 
     try {
       cohortMembersUpdateDto.updatedBy = loginUser;
       if (!isUUID(cohortMembershipId)) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Please Enter a valid UUID for cohortMemberId.", HttpStatus.BAD_REQUEST;
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Please Enter a valid UUID for cohortMemberId.", HttpStatus.BAD_REQUEST);
       }
 
       const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
@@ -402,7 +405,7 @@ export class PostgresCohortMembersService {
       });
 
       if (!cohortMemberToUpdate) {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort member not found.", HttpStatus.NOT_FOUND;
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort member not found.", HttpStatus.NOT_FOUND);
       }
 
       Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
@@ -414,7 +417,8 @@ export class PostgresCohortMembersService {
       return APIResponse.success(res, apiId, updatedCohortMember, HttpStatus.OK, "Cohort Member Updated successfully.");
 
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is: ${e}`, HttpStatus.INTERNAL_SERVER_ERROR;
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -424,7 +428,7 @@ export class PostgresCohortMembersService {
     cohortMembershipId: any,
     res: any
   ) {
-    const apiId = "api.cohortMember.deleteCohortMemberById";
+    const apiId = APIID.COHORT_MEMBER_DELETE;
 
     try {
       const cohortMember = await this.cohortMembersRepository.find({
@@ -434,7 +438,7 @@ export class PostgresCohortMembersService {
       });
 
       if (!cohortMember || cohortMember.length === 0) {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort member not found.", HttpStatus.NOT_FOUND;
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort member not found.", HttpStatus.NOT_FOUND);
       }
 
       const result = await this.cohortMembersRepository.delete(
@@ -443,7 +447,8 @@ export class PostgresCohortMembersService {
 
       return APIResponse.success(res, apiId, result, HttpStatus.OK, "Cohort Member deleted Successfully.");
     } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is: ${e}`, HttpStatus.INTERNAL_SERVER_ERROR;
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

@@ -26,6 +26,7 @@ import {
   UsePipes,
   ValidationPipe,
   Query,
+  UseFilters,
 } from "@nestjs/common";
 import { CohortMembersSearchDto } from "./dto/cohortMembers-search.dto";
 import { Request } from "@nestjs/common";
@@ -34,9 +35,11 @@ import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from "src/common/utils/api-id.config";
 
-@ApiTags("Cohort Members")
-@Controller("cohortmembers")
+@ApiTags("Cohort Member")
+@Controller("cohortmember")
 @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
   constructor(
@@ -44,11 +47,12 @@ export class CohortMembersController {
   ) { }
 
   //create cohort members
-  @Post("/:create")
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_CREATE))
+  @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
-    description: "Cohort Members has been created successfully.",
+    description: "Cohort Member has been created successfully.",
   })
   @ApiBody({ type: CohortMembersDto })
   @ApiHeader({
@@ -69,9 +73,10 @@ export class CohortMembersController {
   }
 
   //get cohort members
-  @Get("/get/:cohortId")
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_GET))
+  @Get("/read/:cohortId")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort Members detail" })
+  @ApiCreatedResponse({ description: "Cohort Member detail" })
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
   @SerializeOptions({ strategy: "excludeAll" })
@@ -95,9 +100,10 @@ export class CohortMembersController {
   }
 
   // search;
-  @Post("/search")
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_SEARCH))
+  @Post("/list")
   @ApiBasicAuth("access-token")
-  @ApiCreatedResponse({ description: "Cohort Members list." })
+  @ApiCreatedResponse({ description: "Cohort Member list." })
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersSearchDto })
@@ -121,10 +127,11 @@ export class CohortMembersController {
   }
 
   //update
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_UPDATE))
   @Put("/update/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
-    description: "Cohort Members has been updated successfully.",
+    description: "Cohort Member has been updated successfully.",
   })
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
@@ -148,6 +155,7 @@ export class CohortMembersController {
   }
 
   //delete
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_DELETE))
   @Delete("/delete/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort member deleted successfully" })

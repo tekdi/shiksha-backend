@@ -63,25 +63,12 @@ export class PostgresUserService {
     try {
       let findData = await this.findAllUserDetails(userSearchDto);
       if (!findData.length) {
-        // return new SuccessResponse({
-        //   statusCode: HttpStatus.BAD_REQUEST,
-        //   message: 'Either Filter is wrong or No Data Found For the User',
-        // });
         return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
       }
-      // return new SuccessResponse({
-      //   statusCode: HttpStatus.OK,
-      //   message: 'Ok.',
-      //   data: findData,
-      // });
       return await APIResponse.success(response, apiId, findData,
         HttpStatus.OK, 'User List fetched.')
     } catch (e) {
-      // return new ErrorResponseTypeOrm({
-      //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      //   errorMessage: e,
-      // });
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is : ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -115,10 +102,6 @@ export class PostgresUserService {
     const apiId = APIID.USER_GET;
     try {
       if (!isUUID(userData.userId)) {
-        // new SuccessResponse({
-        //   statusCode: HttpStatus.BAD_REQUEST,
-        //   message: 'Please Enter Valid  UUID',
-        // });
         return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid  UUID`, HttpStatus.BAD_REQUEST);
       }
       const checkExistUser = await this.usersRepository.find({
@@ -128,10 +111,7 @@ export class PostgresUserService {
       })
 
       if (checkExistUser.length == 0) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `User Id '${userData.userId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Not Found",`User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
       }
 
       const result = {
@@ -156,18 +136,9 @@ export class PostgresUserService {
       }
 
       if (!userDetails) {
-        // return new SuccessResponse({
-        //   statusCode: HttpStatus.NOT_FOUND,
-        //   message: 'User Not Found',
-        // });
         return APIResponse.error(response, apiId, "Not Found", `User Not Found`, HttpStatus.NOT_FOUND);
       }
       if (!userData.fieldValue) {
-        // new SuccessResponse({
-        //   statusCode: HttpStatus.OK,
-        //   message: 'Ok.',
-        //   data: userDetails,
-        // });
         return await APIResponse.success(response, apiId, { userData: userDetails },
           HttpStatus.OK, 'User details Fetched Successfully.')
       }
@@ -196,19 +167,10 @@ export class PostgresUserService {
       }
 
       result.userData['customFields'] = customFieldsArray;
-      // new SuccessResponse({
-      //   statusCode: HttpStatus.OK,
-      //   message: 'User details Fetched Successfully.',
-      //   data: result,
-      // });
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
-    } catch (e) {
-      // new ErrorResponseTypeOrm({
-      //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      //   errorMessage: e,
-      // });
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    } catch (e) {;
+      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -418,20 +380,10 @@ export class PostgresUserService {
           errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
         }
       }
-      // return ({
-      //   statusCode: 200,
-      //   message: "User has been updated successfully.",
-      //   data: updatedData,
-      //   error: errorMessage
-      // });
       return await APIResponse.success(response, apiId, updatedData,
         HttpStatus.OK, "User has been updated successfully.")
     } catch (e) {
-      // return new ErrorResponseTypeOrm({
-      //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      //   errorMessage: e,
-      // });
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is : ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -483,10 +435,6 @@ export class PostgresUserService {
         const validateField = await this.validateFieldValues(field_values);
 
         if (validateField == false) {
-          // return new ErrorResponseTypeOrm({
-          //   statusCode: HttpStatus.CONFLICT,
-          //   errorMessage: "Duplicate fieldId found in fieldValues.",
-          // });
           return APIResponse.error(response, apiId, "Conflict", `Duplicate fieldId found in fieldValues.`, HttpStatus.CONFLICT);
         }
       }
@@ -506,19 +454,11 @@ export class PostgresUserService {
         let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
         // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
         if (checkUserinKeyCloakandDb) {
-          // return new ErrorResponseTypeOrm({
-          //   statusCode: HttpStatus.FORBIDDEN,
-          //   errorMessage: "User Already Exist",
-          // });
           return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
         }
         resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
           (error) => {
             errKeycloak = error.response?.data.errorMessage;
-            // return new ErrorResponseTypeOrm({
-            //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            //   errorMessage: error,
-            // });
             return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
           }
         );
@@ -539,21 +479,12 @@ export class PostgresUserService {
               }
               let result = await this.updateCustomFields(userId, fieldData);
               if (!result) {
-                // return new ErrorResponseTypeOrm({
-                //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                //   errorMessage: `Error is ${result}`,
-                // });
                 return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${result}`, HttpStatus.INTERNAL_SERVER_ERROR);
               }
             }
           }
         }
 
-        // return new SuccessResponse({
-        //   statusCode: 200,
-        //   message: "User has been created successfully.",
-        //   data: result,
-        // });
         APIResponse.success(response, apiId, { userData: result },
           HttpStatus.CREATED, "User has been created successfully.")
       }
@@ -561,11 +492,7 @@ export class PostgresUserService {
       if (e instanceof ErrorResponseTypeOrm) {
         return e;
       } else {
-        // return new ErrorResponseTypeOrm({
-        //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        //   errorMessage: e.toString(), // or any custom error message you want
-        // });
-        return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, HttpStatus.INTERNAL_SERVER_ERROR);
+        return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
   }
@@ -748,10 +675,6 @@ export class PostgresUserService {
       if (userData?.userId) {
         userId = userData?.userId;
       } else {
-        // return new ErrorResponse({
-        //   errorCode: `404`,
-        //   errorMessage: "User with given username not found",
-        // });
         return APIResponse.error(response, apiId, "Not Found", `User with given username not found`, HttpStatus.NOT_FOUND);
       }
 
@@ -773,26 +696,13 @@ export class PostgresUserService {
           userId
         );
       } catch (e) {
-        // return new ErrorResponse({
-        //   errorCode: `${e.response.status}`,
-        //   errorMessage: e.response.data.error,
-        // });
         return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       if (apiResponse.statusCode === 204) {
-        // return new SuccessResponse({
-        //   statusCode: apiResponse.statusCode,
-        //   message: apiResponse.message,
-        //   data: apiResponse.data,
-        // });
         return await APIResponse.success(response, apiId, {},
           HttpStatus.NO_CONTENT, 'User Password Updated Successfully.')
       } else {
-        // return new ErrorResponse({
-        //   errorCode: "400",
-        //   errorMessage: apiResponse.errors,
-        // });
         return APIResponse.error(response, apiId, "Bad Request", `Error : ${apiResponse?.errors}`, HttpStatus.BAD_REQUEST);
       }
     } catch (e) {
@@ -875,10 +785,6 @@ export class PostgresUserService {
     const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
     // Validate userId format
     if (!isUUID(userId)) {
-      // return new ErrorResponseTypeOrm({
-      //     statusCode: HttpStatus.BAD_REQUEST,
-      //     errorMessage: "Please enter a valid UUID for userId",
-      // });
       return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid UUID for userId`, HttpStatus.BAD_REQUEST);
     }
 
@@ -886,10 +792,6 @@ export class PostgresUserService {
       // Check if user exists in usersRepository
       const user = await this.usersRepository.findOne({ where: { userId: userId } });
       if (!user) {
-        // return new ErrorResponseTypeOrm({
-        //     statusCode: HttpStatus.NOT_FOUND,
-        //     errorMessage: "User not found in user table.",
-        // });
         return APIResponse.error(response, apiId, "Not Found", `User not found in user table.`, HttpStatus.NOT_FOUND);
       }
 
@@ -918,21 +820,9 @@ export class PostgresUserService {
         }
       });
 
-
-      // return new SuccessResponse({
-      //   statusCode: HttpStatus.OK,
-      //   message: "User and related entries deleted Successfully.",
-      //   data: {
-      //     user: userResult
-      //   },
-      // });
       return await APIResponse.success(response, apiId, userResult,
         HttpStatus.OK, "User and related entries deleted Successfully.")
     } catch (e) {
-      //   return new ErrorResponseTypeOrm({
-      //   statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      //   errorMessage: e,
-      // });
       return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

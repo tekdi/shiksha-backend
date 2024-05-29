@@ -292,7 +292,6 @@ export class AttendanceHasuraService implements IServicelocator {
           }
         });
       });
-
       const data = {
         query: `query SearchAttendance($filters:Attendance_bool_exp,$limit:Int, $offset:Int) {
           Attendance_aggregate (where:$filters, limit: $limit, offset: $offset,){
@@ -480,10 +479,10 @@ export class AttendanceHasuraService implements IServicelocator {
       const attendanceToSearch = new AttendanceSearchDto({});
 
       attendanceToSearch.filters = {
+        contextId: { _eq: attendanceDto.contextId },
         attendanceDate: { _eq: attendanceDto.attendanceDate },
         userId: { _eq: attendanceDto.userId },
       };
-
       const attendanceFound: any = await this.searchAttendance(
         attendanceDto.tenantId,
         request,

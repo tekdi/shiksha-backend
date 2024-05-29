@@ -12,6 +12,7 @@ import { Repository } from "typeorm";
 import { SuccessResponse } from "src/success-response";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import APIResponse from "src/common/responses/response";
+import { APIID } from "src/common/utils/api-id.config";
 
 @Injectable()
 export class PostgresFieldsService {
@@ -102,7 +103,7 @@ export class PostgresFieldsService {
     }
 
     async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res) {
-        let apiId = 'api.post.createFieldValues';
+        const apiId = APIID.FIELDVALUES_CREATE;
 
 
         try {
@@ -120,8 +121,9 @@ export class PostgresFieldsService {
                return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
 
 
-        } catch (e) {
-           return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));   
+        } catch (error) {
+            const errorMessage = error.message || 'Internal server error';
+           return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
 
         }
     }

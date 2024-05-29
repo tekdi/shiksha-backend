@@ -20,6 +20,7 @@ import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import { isUUID } from "class-validator";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import APIResponse from "src/common/responses/response";
+import { APIID } from "src/common/utils/api-id.config";
 
 @Injectable()
 export class PostgresCohortService {
@@ -45,7 +46,7 @@ export class PostgresCohortService {
     request: any,
     res: any
   ) {
-    let apiId = 'api.get.getCohortList';
+    const apiId = APIID.COHORT_LIST;
     try {
       let findCohortId = await this.findCohortName(userId);
       let result = {
@@ -67,13 +68,14 @@ export class PostgresCohortService {
       return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort list fetched successfully");
 
     } catch (error) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
   }
 
   public async getCohortsDetails(cohortId: string, res) {
-    let apiId = 'api.get.getCohortDetails';
+    const apiId = APIID.COHORT_READ;
 
     try {
 
@@ -103,7 +105,8 @@ export class PostgresCohortService {
       }
 
     } catch (error) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${error}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -203,7 +206,7 @@ export class PostgresCohortService {
 
 
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto, res) {
-    let apiId = 'api.post.createCohort';
+    const apiId = APIID.COHORT_CREATE;
 
     try {
       let field_value_array = cohortCreateDto.fieldValues.split("|");
@@ -298,8 +301,9 @@ export class PostgresCohortService {
       return APIResponse.success(res, apiId, response, (HttpStatus.CREATED), "Cohort Created Successfully.");
 
 
-    } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+    } catch (error) {
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -309,7 +313,7 @@ export class PostgresCohortService {
     cohortUpdateDto: CohortUpdateDto,
     res
   ) {
-    let apiId = 'api.put.updateCohort';
+    const apiId = APIID.COHORT_UPDATE;
     try {
 
       let field_value_array = cohortUpdateDto.fieldValues.split("|");
@@ -453,8 +457,9 @@ export class PostgresCohortService {
           (HttpStatus.NOT_FOUND)
         )
       }
-    } catch (e) {
-      return APIResponse.error(res, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+    } catch (error) {
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
   }
@@ -464,7 +469,7 @@ export class PostgresCohortService {
     request: any,
     cohortSearchDto: CohortSearchDto, response
   ) {
-    let apiId = 'api.post.searchCohort';
+    const apiId = APIID.COHORT_LIST;
     try {
 
       let { limit, page, filters } = cohortSearchDto;
@@ -549,6 +554,8 @@ export class PostgresCohortService {
         cohortDetails: [],
       };
 
+      let count=0
+
       if (whereClause['userId']) {
         const additionalFields = Object.keys(whereClause).filter(key => key !== 'userId');
         if (additionalFields.length > 0) {
@@ -577,31 +584,33 @@ export class PostgresCohortService {
             (HttpStatus.BAD_REQUEST)
           )
         }
-        const [cohortData] = await this.cohortMembersRepository.findAndCount({
+        const [data,totalCount] = await this.cohortMembersRepository.findAndCount({
           where: whereClause,
           skip: offset,
-          take: limit,
         });
-
+        const cohortData = data.slice(offset, offset + (limit));
+        count=totalCount
         for (let data of cohortData) {
           let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
           results.cohortDetails.push(cohortDetails);
         }
       } else {
-        const [cohortData] = await this.cohortRepository.findAndCount({
+        const [data,totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
-          skip: offset,
-          take: limit,
+          skip: offset
         });
+        const cohortData = data.slice(offset, offset + (limit));
+        count=totalcount
 
         for (let data of cohortData) {
           let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
           results.cohortDetails.push(cohortDetails);
         }
       }
-
+      
       if (results.cohortDetails.length > 0) {
-        return APIResponse.success(response, apiId, results, (HttpStatus.OK), "Cohort details fetched successfully");
+        const totalCount = results.cohortDetails.length
+        return APIResponse.success(response, apiId, {count,results}, (HttpStatus.OK), "Cohort details fetched successfully");
 
       } else {
         return APIResponse.error(
@@ -614,8 +623,9 @@ export class PostgresCohortService {
       }
 
 
-    } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+    } catch (error) {
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -625,7 +635,7 @@ export class PostgresCohortService {
     request: any,
     response
   ) {
-    let apiId = 'api.delete.updateCohortStatus';
+    const apiId = APIID.COHORT_DELETE;
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       // const createdBy = decoded?.sub;
@@ -667,8 +677,9 @@ export class PostgresCohortService {
           (HttpStatus.BAD_REQUEST)
         )
       }
-    } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${e}`, (HttpStatus.INTERNAL_SERVER_ERROR));
+    } catch (error) {
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
 

@@ -13,5 +13,11 @@ export const APIID = {
     PRIVILEGE_BYROLEID: "api.privilegebyRoleId.get",
     PRIVILEGE_BYPRIVILEGEID: 'api.privilegebyPrivilegeId.get',
     PRIVILEGE_CREATE: 'api.privilege.create',
-    PRIVILEGE_DELETE: 'api.privilege.delete'
+    PRIVILEGE_DELETE: 'api.privilege.delete',
+    COHORT_CREATE:"api.cohort.create",
+    COHORT_LIST:"api.cohort.list",
+    COHORT_READ:"api.cohort.read",
+    COHORT_UPDATE:"api.cohort.update",
+    COHORT_DELETE:"api.cohort.delete",
+    FIELDVALUES_CREATE:"api.fieldValues.create"
 }

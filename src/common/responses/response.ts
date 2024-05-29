@@ -4,11 +4,11 @@ import { Response } from 'express';
 
 export default class APIResponse {
   public static success<Type>(
-    response:Response,
+    response: Response,
     id: string,
     result: Type,
     statusCode: string,
-    successmessage:string
+    successmessage: string
   ) {
     try {
       const params: Params = {
@@ -19,7 +19,7 @@ export default class APIResponse {
         successmessage: successmessage
       };
 
-      const resObj= {
+      const resObj = {
         id,
         ver: '1.0',
         ts: new Date().toISOString(),
@@ -54,7 +54,7 @@ export default class APIResponse {
         ts: new Date().toISOString(),
         params,
         responseCode: statusCode,
-        result: { },
+        result: {},
       };
       return response.status(Number(statusCode)).json(resObj);
     } catch (e) {

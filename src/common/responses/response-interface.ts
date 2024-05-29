@@ -22,7 +22,7 @@ export interface ServerResponse {
 
   headers?: any;
 
-  response:any;
+  response: any;
 }
 
 export interface Params {

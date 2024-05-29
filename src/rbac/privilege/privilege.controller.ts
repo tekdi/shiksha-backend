@@ -17,6 +17,7 @@ import {
   UseGuards,
   Query,
   UseFilters,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -141,14 +142,14 @@ export class PrivilegeController {
   // }
 
   @UseFilters(new AllExceptionsFilter(APIID.PRIVILEGE_DELETE))
-  @Delete("/:id")
+  @Delete("/:privilegeId")
   @ApiBasicAuth("access-token")
   @ApiHeader({ name: "tenantid" })
   @ApiOkResponse({ description: "Role deleted successfully." })
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
-    @Param("privilegeId") privilegeId: string,
+    @Param("privilegeId", ParseUUIDPipe) privilegeId: string,
     @Res() response: Response
   ) {
     return await this.privilegeAdapter

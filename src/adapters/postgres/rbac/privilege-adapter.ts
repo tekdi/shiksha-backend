@@ -173,16 +173,6 @@ export class PostgresPrivilegeService {
   public async deletePrivilege(privilegeId: string, res: Response) {
     const apiId = APIID.PRIVILEGE_DELETE
     try {
-      if (!isUUID(privilegeId)) {
-        return APIResponse.error(
-          res,
-          apiId,
-          `Please Enter valid (UUID)`,
-          'Invalid (UUID)',
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
       const privilegeToDelete = await this.privilegeRepository.findOne({
         where: { privilegeId: privilegeId },
       });

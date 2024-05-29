@@ -19,4 +19,12 @@ export const APIID = {
     COHORT_MEMBER_UPDATE: "api.cohortmember.update",
     COHORT_MEMBER_SEARCH: "api.cohortmember.list",
     COHORT_MEMBER_DELETE: "api.cohortmember.delete",
+    ASSIGNPRIVILEGE_CREATE: "api.assignprivilege.create",
+    ASSIGNPRIVILEGE_GET: "api.assignprivilege.get",
+    COHORT_CREATE: "api.cohort.create",
+    COHORT_LIST: "api.cohort.list",
+    COHORT_READ: "api.cohort.read",
+    COHORT_UPDATE: "api.cohort.update",
+    COHORT_DELETE: "api.cohort.delete",
+    FIELDVALUES_CREATE: "api.fieldValues.create"
 }

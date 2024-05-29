@@ -10,7 +10,7 @@ export interface IServicelocatorfields {
   searchFields(tenantid, request: any, fieldsSearchDto: FieldsSearchDto);
   // updateFields(fieldsId: string, request: any, fieldsDto: FieldsDto);
   //field values
-  createFieldValues(request: any, fieldValuesDto: FieldValuesDto);
+  createFieldValues(request: any, fieldValuesDto: FieldValuesDto,response);
   // getFieldValues(id, request);
   searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto);
   updateFieldValues(id: string, request: any, fieldValuesDto: FieldValuesDto);

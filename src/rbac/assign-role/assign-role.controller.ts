@@ -15,7 +15,7 @@ import { APIID } from 'src/common/utils/api-id.config';
 export class AssignRoleController {
   constructor(private readonly assignRoleAdpater: AssignRoleAdapter) { }
 
-  @UseFilters(new AllExceptionsFilter(APIID.USERROLE__CREATE))
+  @UseFilters(new AllExceptionsFilter(APIID.USERROLE_CREATE))
   @Post()
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")

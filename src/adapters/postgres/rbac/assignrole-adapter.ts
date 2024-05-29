@@ -23,7 +23,7 @@ export class PostgresAssignroleService {
     private roleRepository: Repository<Role>
   ) { }
   public async createAssignRole(request: Request, createAssignRoleDto: CreateAssignRoleDto, response: Response) {
-    const apiId = APIID.USERROLE__CREATE
+    const apiId = APIID.USERROLE_CREATE
     try {
       // const decoded: any = jwt_decode(request.headers.authorization);
       const userId = createAssignRoleDto.userId;

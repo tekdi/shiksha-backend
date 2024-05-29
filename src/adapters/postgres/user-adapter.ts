@@ -1,4 +1,4 @@
-import { ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,7 +23,6 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { CourseController } from 'src/course/course.controller';
 import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';

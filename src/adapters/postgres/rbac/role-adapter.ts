@@ -15,6 +15,7 @@ import { isUUID } from "class-validator";
 import APIResponse from "src/common/responses/response";
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config'
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @Injectable()
 export class PostgresRoleService {
@@ -24,7 +25,8 @@ export class PostgresRoleService {
     @InjectRepository(UserRoleMapping)
     private readonly userRoleMappingRepository: Repository<UserRoleMapping>,
     @InjectRepository(RolePrivilegeMapping)
-    private readonly roleprivilegeMappingRepository: Repository<RolePrivilegeMapping>
+    private readonly roleprivilegeMappingRepository: Repository<RolePrivilegeMapping>,
+    private readonly logger:LoggerService
   ) { }
   public async createRole(request: any, createRolesDto: CreateRolesDto, response: Response) {
     const apiId = APIID.ROLE_CREATE
@@ -75,6 +77,7 @@ export class PostgresRoleService {
       }
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in creating role`,`${errorMessage}`,"createRole",`/create`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return APIResponse.success(response, apiId, { successCount: roles.length, errorCount: errors.length, roles, errors },
@@ -90,6 +93,7 @@ export class PostgresRoleService {
       return APIResponse.success(response, apiId, { roles, totalCount }, HttpStatus.OK, 'Roles fetched successfully')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting role by roleId :${roleId}`,`${errorMessage}`,"getRole",`/read/${roleId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -103,6 +107,7 @@ export class PostgresRoleService {
       return APIResponse.success(response, apiId, { rowCount: result.affected, }, HttpStatus.OK, 'Roles Updated successful')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in updating role by roleId :${roleId}`,`${errorMessage}`,"getRole",`/update/${roleId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -192,6 +197,7 @@ export class PostgresRoleService {
       }
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting list of roles`,`${errorMessage}`,"searchRole",`/list/roles`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -238,6 +244,7 @@ export class PostgresRoleService {
       return APIResponse.success(res, apiId, { rowCount: response.affected }, HttpStatus.OK, 'Role deleted successfully.')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in deleting role by roleId :${roleId}`,`${errorMessage}`,"deleteRole",`/delete/${roleId}`);
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

@@ -4,12 +4,13 @@ import { CreatePrivilegeRoleDto } from './dto/create-assign-privilege.dto';
 import { Response, Request} from "express";
 import { ApiBasicAuth, ApiCreatedResponse, ApiBody, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/keycloak.guard';
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 @ApiTags('rbac')
 @Controller('assignprivilege')
 @UseGuards(JwtAuthGuard)
 export class AssignPrivilegeController {
-  constructor(private readonly assignPrivilegeAdpater: AssignPrivilegeAdapter) {}
+  constructor(private readonly assignPrivilegeAdpater: AssignPrivilegeAdapter,private readonly logger:LoggerService) {}
 
   @Post()
   @UsePipes(new ValidationPipe())
@@ -21,6 +22,7 @@ export class AssignPrivilegeController {
   public async create(@Req() request: Request,
   @Body() createAssignPrivilegeDto:CreatePrivilegeRoleDto ,
   @Res() response: Response) {
+    this.logger.log(`Assigning privileges to role to user ${createAssignPrivilegeDto.privilegeId}`, "create",request['user'].userId, "info");
     return await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().createPrivilegeRole(request,createAssignPrivilegeDto,response);
   }
 
@@ -35,6 +37,7 @@ export class AssignPrivilegeController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting privileges of role by roleId:${roleId}`, "getRole",request['user'].userId, "info");
     return await this.assignPrivilegeAdpater.buildPrivilegeRoleAdapter().getPrivilegeRole(roleId, request, response);
   }
 

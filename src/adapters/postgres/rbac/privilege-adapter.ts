@@ -15,6 +15,7 @@ import { Role } from "src/rbac/role/entities/role.entity";
 import { Response } from "express";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 @Injectable()
 export class PostgresPrivilegeService {
   constructor(
@@ -24,6 +25,7 @@ export class PostgresPrivilegeService {
     private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private readonly logger:LoggerService
   ) { }
 
   public async createPrivilege(
@@ -58,6 +60,7 @@ export class PostgresPrivilegeService {
       }
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in creating privileges`,`${errorMessage}`,"createPrivilege",`/create`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return APIResponse.success(response, apiId,
@@ -114,6 +117,7 @@ export class PostgresPrivilegeService {
         HttpStatus.OK, 'Privilege fetched successfully')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting privilege by privilegeId :${privilegeId}`,`${errorMessage}`,"getPrivilege",`/${privilegeId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -166,6 +170,7 @@ export class PostgresPrivilegeService {
       return APIResponse.success(response, APIID.ROLE_GET, { privileges, totalCount }, HttpStatus.OK, 'privileges fetched successfully')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting privileges list`,`${errorMessage}`,"getAllPrivilege");
       return APIResponse.error(response, APIID.PRIVILEGE_BYROLEID, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -197,6 +202,7 @@ export class PostgresPrivilegeService {
 
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in deleting privilege by privilegeId :${privilegeId}`,`${errorMessage}`,"deletePrivilege",`/${privilegeId}`);
       return APIResponse.error(res, APIID.PRIVILEGE_DELETE, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -250,6 +256,7 @@ export class PostgresPrivilegeService {
     }
     catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in getting privilege by roleId :${roleId}`,`${errorMessage}`,"getPrivilegebyRoleId",`/privileges`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

@@ -30,6 +30,7 @@ import { FieldsService } from "./fields.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @ApiTags("Fields")
 @Controller("fields")
@@ -37,7 +38,8 @@ import { APIID } from "src/common/utils/api-id.config";
 export class FieldsController {
   constructor(
     private fieldsAdapter: FieldsAdapter,
-    private readonly fieldsService: FieldsService
+    private readonly fieldsService: FieldsService,
+    private readonly logger:LoggerService
   ) {}
 
   //fields
@@ -61,6 +63,7 @@ export class FieldsController {
     const payload = {
       tenantId: tenantid,
     };
+    this.logger.log(`Creating fields`, "createFields",request['user'].userId, "info");
     Object.assign(fieldsDto, payload);
     const result = await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto);
     return response.status(result.statusCode).json(result);
@@ -85,6 +88,7 @@ export class FieldsController {
     @Body() fieldsSearchDto: FieldsSearchDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting fields list`, "searchFields",request['user'].userId, "info");
     let tenantid = headers["tenantid"];
     const result = await this.fieldsAdapter.buildFieldsAdapter().searchFields(
       tenantid,
@@ -110,6 +114,7 @@ export class FieldsController {
     @Body() fieldValuesDto: FieldValuesDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Creating field values`, "createFieldValues",request['user'].userId, "info");
     return await this.fieldsAdapter.buildFieldsAdapter().createFieldValues(
       request,
       fieldValuesDto,
@@ -133,6 +138,7 @@ export class FieldsController {
     @Body() fieldValuesSearchDto: FieldValuesSearchDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting field values list`, "searchFieldValues",request['user'].userId, "info");
     const result = await this.fieldsAdapter.buildFieldsAdapter().searchFieldValues(
       request,
       fieldValuesSearchDto

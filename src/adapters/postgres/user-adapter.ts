@@ -27,6 +27,7 @@ import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 @Injectable()
 export class PostgresUserService {
@@ -52,6 +53,7 @@ export class PostgresUserService {
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private readonly logger:LoggerService
   ) { }
 
   async searchUser(tenantId: string,
@@ -67,7 +69,9 @@ export class PostgresUserService {
       return await APIResponse.success(response, apiId, findData,
         HttpStatus.OK, 'User List fetched.')
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting user list`,`${errorMessage}`,"searchUser",`/list`);
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -166,8 +170,10 @@ export class PostgresUserService {
 
       result.userData['customFields'] = customFieldsArray;
       return await APIResponse.success(response, apiId, { ...result },
-        HttpStatus.OK, 'User details Fetched Successfully.')
-    } catch (e) {;
+        HttpStatus.OK, 'User details Fetched Successfully')
+    } catch (e) {
+      const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in getting user details by userId ${userData.userId} `,`${errorMessage}`,"getUsersDetailsById",`/read/${userData.userId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -380,7 +386,9 @@ export class PostgresUserService {
       return await APIResponse.success(response, apiId, updatedData,
         HttpStatus.OK, "User has been updated successfully.")
     } catch (e) {
-      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
+      const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in updating user ${userDto.userId} `,`${errorMessage}`,"updateUser",`update/${userDto.userId}`);
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -489,7 +497,9 @@ export class PostgresUserService {
       if (e instanceof ErrorResponseTypeOrm) {
         return e;
       } else {
-        return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
+        const errorMessage = e.message || 'Internal server error';
+        this.logger.error(`Error in creating user ${userCreateDto.name} `,`${errorMessage}`,"createUser",`/create`);
+        return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
   }
@@ -693,6 +703,7 @@ export class PostgresUserService {
           userId
         );
       } catch (e) {
+        this.logger.error(`Error in resetting keycloak password for userId ${userData.userId} `,`${e.message}`,"resetKeycloakPassword",`/read/${userData.userId}`);
         return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
@@ -703,7 +714,7 @@ export class PostgresUserService {
         return APIResponse.error(response, apiId, "Bad Request", `Error : ${apiResponse?.errors}`, HttpStatus.BAD_REQUEST);
       }
     } catch (e) {
-      // return e;
+      this.logger.error(`Error in resetting user password for username ${username} `,`${e.message}`,"resetUserPassword",`/reset-password`);
       return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -820,6 +831,7 @@ export class PostgresUserService {
       return await APIResponse.success(response, apiId, userResult,
         HttpStatus.OK, "User and related entries deleted Successfully.")
     } catch (e) {
+      this.logger.error(`Error in deleting user by userId ${userId} `,` ${e?.response?.data.error}`,"deleteUserById",`/delete/${userId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

@@ -7,12 +7,14 @@ import { isUUID } from 'class-validator';
 import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 @Injectable()
 export class PostgresAssignPrivilegeService {
    constructor(
     @InjectRepository(RolePrivilegeMapping)
-    private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>
+    private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>,
+    private readonly logger:LoggerService
    ){}
    public async createPrivilegeRole(request: Request,createPrivilegeRoleDto:CreatePrivilegeRoleDto,response:Response){
     const apiId = APIID.ASSIGNPRIVILEGE_CREATE;
@@ -45,7 +47,7 @@ export class PostgresAssignPrivilegeService {
         if(error.code === '23503') {
            return APIResponse.error(response, apiId, "Not Found",`Privilege Id or Role Id Doesn't Exist in Database.`, HttpStatus.NOT_FOUND);
         }
-
+        this.logger.error(`Error in mapping privileges to role`,`${error.message}`,"createPrivilegeRole",`/assignprivilege`);
         return APIResponse.error(response, apiId, "Not Found",`Error is: ${error}.`, HttpStatus.NOT_FOUND);
     }
    }
@@ -74,6 +76,7 @@ export class PostgresAssignPrivilegeService {
         return await APIResponse.success(response, apiId, result,HttpStatus.OK, "Privileges for role fetched successfully.")
 
     } catch (error) {
+        this.logger.error(`Error in getting privileges by roleId: ${roleId}`,`${error.message}`,"getPrivilegeRole",`/assignprivilege/${roleId}`);
         return APIResponse.error(response, apiId, "Internal Server Error",`Something went wrong.`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     

@@ -7,6 +7,7 @@ import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { User } from "src/user/entities/user-entity";
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 
 @Injectable()
@@ -18,6 +19,7 @@ export class PostgresAssignTenantService {
         private userRepository: Repository<User>,
         @InjectRepository(Tenants)
         private tenantsRepository: Repository<Tenants>,
+        private readonly logger:LoggerService
     ) { }
 
     public async validateUserTenantMapping(userId: string, tenantId: string, errors: any[]) {
@@ -98,6 +100,7 @@ export class PostgresAssignTenantService {
                 errors,
             };
         } catch (error) {
+            this.logger.error(`Error in creating user tenant mapping`,` ${error.message}`,"userTenantMapping",`/assign-tenant`);
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: JSON.stringify(error)

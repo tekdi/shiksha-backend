@@ -7,13 +7,14 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { DeleteAssignRoleDto } from './dto/delete-assign-role.dto';
 import { AllExceptionsFilter } from 'src/common/filters/exception.filter';
 import { APIID } from 'src/common/utils/api-id.config';
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 
 @ApiTags('rbac')
 @Controller('rbac/usersRoles')
 @UseGuards(JwtAuthGuard)
 export class AssignRoleController {
-  constructor(private readonly assignRoleAdpater: AssignRoleAdapter) { }
+  constructor(private readonly assignRoleAdpater: AssignRoleAdapter,private readonly logger:LoggerService) { }
 
   @UseFilters(new AllExceptionsFilter(APIID.USERROLE_CREATE))
   @Post()
@@ -31,6 +32,7 @@ export class AssignRoleController {
     @Res() response: Response,
     @Headers() headers,
   ) {
+    this.logger.log(`Assigning role to user ${createAssignRoleDto.userId}`, "create",request['user'].userId, "info");
     return await this.assignRoleAdpater.buildassignroleAdapter().createAssignRole(request, createAssignRoleDto, response);
     // return response.status(result.statusCode).json(result);
   }
@@ -47,6 +49,7 @@ export class AssignRoleController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting assigned roles for userId ${userId}`, "getRole",request['user'].userId, "info");
     return await this.assignRoleAdpater.buildassignroleAdapter().getAssignedRole(userId, request, response);
     // return response.status(result.statusCode).json(result);
   }
@@ -60,8 +63,10 @@ export class AssignRoleController {
   @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
     @Body() deleteAssignRoleDto: DeleteAssignRoleDto, // Modify this line to accept DeleteAssignRoleDto
-    @Res() response: Response
+    @Res() response: Response,
+    @Req() request: Request,
   ) {
+    this.logger.log(`Deleting roles assigned for userId ${deleteAssignRoleDto.userId}`, "createPrivilege",request['user'].userId, "info");
     return await this.assignRoleAdpater
       .buildassignroleAdapter()
       .deleteAssignedRole(deleteAssignRoleDto, response);

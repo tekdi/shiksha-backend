@@ -35,11 +35,12 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { RoleAdapter } from "./roleadapter"
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from 'src/common/utils/api-id.config';
+import { LoggerService } from "src/common/loggers/logger.service";
 @ApiTags("rbac")
 @Controller("rbac/roles")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
-  constructor(private readonly roleAdapter: RoleAdapter) { }
+  constructor(private readonly roleAdapter: RoleAdapter,private readonly logger:LoggerService) { }
 
   //Get role
   @UseFilters(new AllExceptionsFilter(APIID.ROLE_GET))
@@ -54,6 +55,7 @@ export class RoleController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting role by roleId :${roleId} `, "getRole",request['user'].userId, "info");
     return await this.roleAdapter.buildRbacAdapter().getRole(roleId, request, response);
   }
 
@@ -71,6 +73,7 @@ export class RoleController {
     @Body() createRolesDto: CreateRolesDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Creating role`, "createRole",request['user'].userId, "info");
     return await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto, response);
   }
 
@@ -88,6 +91,7 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Updating role by roleId : ${roleId}`, "updateRole",request['user'].userId, "info");
     return await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto, response)
   }
 
@@ -108,6 +112,7 @@ export class RoleController {
     @Res() response: Response
   ) {
     // let tenantid = headers["tenantid"];
+    this.logger.log(`Getting list of roles`, "searchRole",request['user'].userId, "info");
     return await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto, response);
   }
 
@@ -121,8 +126,10 @@ export class RoleController {
   @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
     @Param("roleId") roleId: string,
-    @Res() response: Response
+    @Res() response: Response,
+    @Req() request: Request,
   ) {
+    this.logger.log(`Deleting role by roleId: ${roleId}`, "deleteRole",request['user'].userId, "info");
     return await this.roleAdapter.buildRbacAdapter().deleteRole(roleId, response);
   }
 }

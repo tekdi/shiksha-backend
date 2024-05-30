@@ -43,12 +43,13 @@ import { CohortUpdateDto } from "./dto/cohort-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @ApiTags("Cohort")
 @Controller("cohort")
 @UseGuards(JwtAuthGuard)
 export class CohortController {
-  constructor(private readonly cohortAdapter: CohortAdapter) { }
+  constructor(private readonly cohortAdapter: CohortAdapter, private readonly logger: LoggerService) { }
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_READ))
   @Get("/read/:cohortId")
@@ -65,7 +66,7 @@ export class CohortController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    // const tenantId = headers["tenantid"];   Can be Used In future
+    this.logger.log(`Fetching details for cohort ${cohortId}`, "getCohortsDetails",request['user'].userId, "info");
     return await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(cohortId, response);
 
   }
@@ -106,6 +107,7 @@ export class CohortController {
       tenantId: tenantid,
     };
     Object.assign(cohortCreateDto, payload);
+    this.logger.log(`Payload for creating cohort name:${cohortCreateDto.name}`,"createCohort",request['user'].userId,"info" );
     return await this.cohortAdapter.buildCohortAdapter().createCohort(
       request,
       cohortCreateDto,
@@ -130,10 +132,11 @@ export class CohortController {
   })
   public async searchCohort(
     @Headers() headers,
-    @Req() request: Request,
+    @Req() request,
     @Body() cohortSearchDto: CohortSearchDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Searching cohorts`, "searchCohort", request['user'].userId, "info");
     let tenantid = headers["tenantid"];
     return await this.cohortAdapter.buildCohortAdapter().searchCohort(
       tenantid,
@@ -168,6 +171,7 @@ export class CohortController {
     @UploadedFile() image,
     @Res() response: Response
   ) {
+    this.logger.log(`Updating cohort ${cohortId}`, "updateCohort", request['user'].userId, "info");
     return await this.cohortAdapter.buildCohortAdapter().updateCohort(
       cohortId,
       request,
@@ -188,6 +192,7 @@ export class CohortController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Deleting cohort ${cohortId}`, "updateCohortStatus", request['user'].userId, "info");
     return await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId, request, response);
   }
 }

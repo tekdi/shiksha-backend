@@ -33,12 +33,14 @@ import { Response, response } from "express";
 import { AssignTenantAdapter } from "./user-tenant-mapping.adapter";
 import { UserTenantMappingDto } from "./dto/user-tenant-mapping.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @ApiTags("AssignTenant")
 @Controller("assign-tenant")
 @UseGuards(JwtAuthGuard)
 export class AssignTenantController {
-    constructor(private readonly assignTenantAdapter: AssignTenantAdapter) { }
+    constructor(private readonly assignTenantAdapter: AssignTenantAdapter,
+        private readonly logger:LoggerService) { }
 
     //create cohort
     @Post()
@@ -49,12 +51,13 @@ export class AssignTenantController {
     @ApiConflictResponse({ description: "Tenant is already assigned to this user." })
     @UsePipes(new ValidationPipe())
     @ApiBody({ type: UserTenantMappingDto })
-    public async createCohort(
+    public async userTenantMapping(
         @Headers() headers,
         @Req() request: Request,
         @Body() userTenantMappingDto: UserTenantMappingDto,
         @Res() response: Response
     ) {
+        this.logger.log(`Creating user tenant mapping`, "userTenantMapping",request['user'].userId, "info");
         const result = await this.assignTenantAdapter.buildAssignTenantAdapter().userTenantMapping(
             request,
             userTenantMappingDto

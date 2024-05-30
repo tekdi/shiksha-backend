@@ -13,6 +13,7 @@ import { DeleteAssignRoleDto } from 'src/rbac/assign-role/dto/delete-assign-role
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import APIResponse from 'src/common/responses/response';
+import { LoggerService } from 'src/common/loggers/logger.service';
 
 @Injectable()
 export class PostgresAssignroleService {
@@ -20,7 +21,8 @@ export class PostgresAssignroleService {
     @InjectRepository(UserRoleMapping)
     private userRoleMappingRepository: Repository<UserRoleMapping>,
     @InjectRepository(Role)
-    private roleRepository: Repository<Role>
+    private roleRepository: Repository<Role>,
+    private readonly logger:LoggerService
   ) { }
   public async createAssignRole(request: Request, createAssignRoleDto: CreateAssignRoleDto, response: Response) {
     const apiId = APIID.USERROLE_CREATE
@@ -104,6 +106,7 @@ export class PostgresAssignroleService {
         )
       }
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in assigning role to user`,`${errorMessage}`,"createAssignRole",`/usersRoles`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -134,6 +137,7 @@ export class PostgresAssignroleService {
       return APIResponse.success(response, apiId, result, HttpStatus.OK, 'User role fetched successfully')
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in getting assigned roles to user`,`${errorMessage}`,"getAssignedRole",`/usersRoles/${userId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -204,6 +208,7 @@ export class PostgresAssignroleService {
         HttpStatus.OK, 'Roles deleted successfully.')
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
+      this.logger.error(`Error in deleting assignes roles of user :${deleteAssignRoleDto.userId}`,`${errorMessage}`,"deleteAssignedRole",`/usersRoles/${deleteAssignRoleDto.userId}`);
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

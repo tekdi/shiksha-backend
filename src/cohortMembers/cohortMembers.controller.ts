@@ -37,13 +37,14 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @ApiTags("Cohort Member")
 @Controller("cohortmember")
 @UseGuards(JwtAuthGuard)
 export class CohortMembersController {
   constructor(
-    private readonly cohortMemberAdapter: CohortMembersAdapter
+    private readonly cohortMemberAdapter: CohortMembersAdapter,private readonly logger:LoggerService
   ) { }
 
   //create cohort members
@@ -63,8 +64,9 @@ export class CohortMembersController {
     @Req() request,
     @Body() cohortMembersDto: CohortMembersDto,
     @Res() response: Response
-  ) {
+  ) { 
     const loginUser = request.user.userId;
+    this.logger.log(`Creating cohort member userId ${cohortMembersDto.userId}`, "createCohortMembers",request['user'].userId, "info");
     const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
@@ -93,6 +95,7 @@ export class CohortMembersController {
     @Res() response: Response,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
+    this.logger.log(`Fetching details for cohortMember ${cohortId}`, "getCohortMembers",request['user'].userId, "info");
     const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
@@ -120,7 +123,7 @@ export class CohortMembersController {
     @Body() cohortMembersSearchDto: CohortMembersSearchDto
   ) {
     const tenantId = headers["tenantid"];
-
+    this.logger.log(`Searching cohort members`, "searchCohortMembers",request['user'].userId, "info");
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .searchCohortMembers(cohortMembersSearchDto, tenantId, response);
@@ -143,7 +146,7 @@ export class CohortMembersController {
     @Res() response: Response
   ) {
     const loginUser = request.user.userId;
-
+    this.logger.log(`updating cohort members ${cohortMembersId}`, "updateCohortMembers",request['user'].userId, "info");
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .updateCohortMembers(
@@ -173,7 +176,7 @@ export class CohortMembersController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-
+    this.logger.log(`updating cohort members ${cohortMembershipId}`, "deleteCohortMember",request['user'].userId, "info");
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .deleteCohortMemberById(tenantid, cohortMembershipId, response);

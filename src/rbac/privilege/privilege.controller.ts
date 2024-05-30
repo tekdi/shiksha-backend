@@ -39,12 +39,13 @@ import { PrivilegeAdapter } from "./privilegeadapter";
 import { v4 as uuidv4 } from "uuid";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @UseGuards(JwtAuthGuard)
 @ApiTags("rbac")
 @Controller('rbac/privileges')
 export class PrivilegeController {
-  constructor(private readonly privilegeAdapter: PrivilegeAdapter) { }
+  constructor(private readonly privilegeAdapter: PrivilegeAdapter,private readonly logger:LoggerService) { }
 
   @UseFilters(new AllExceptionsFilter(APIID.PRIVILEGE_BYROLEID))
   @Get()
@@ -59,6 +60,7 @@ export class PrivilegeController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting privileges by roleId: ${roleId}`, "getPrivilegebyRoleId",request['user'].userId, "info");
     return await this.privilegeAdapter.buildPrivilegeAdapter().getPrivilegebyRoleId(tenantId, roleId, request, response);
   }
 
@@ -76,6 +78,7 @@ export class PrivilegeController {
     @Req() request: Request,
     @Res() response: Response
   ) {
+    this.logger.log(`Getting privileges by privilegeId: ${privilegeId}`, "getPrivilege",request['user'].userId, "info");
     return await this.privilegeAdapter
       .buildPrivilegeAdapter()
       .getPrivilege(privilegeId, request, response);
@@ -101,6 +104,7 @@ export class PrivilegeController {
     @Body() createPrivilegesDto: CreatePrivilegesDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Creating privilege`, "createPrivilege",request['user'].userId, "info");
     return await this.privilegeAdapter
       .buildPrivilegeAdapter()
       .createPrivilege(request.user.userId, createPrivilegesDto, response);
@@ -150,8 +154,10 @@ export class PrivilegeController {
   @ApiBadRequestResponse({ description: "Bad request" })
   public async deleteRole(
     @Param("privilegeId", ParseUUIDPipe) privilegeId: string,
-    @Res() response: Response
+    @Res() response: Response,
+    @Req() request,
   ) {
+    this.logger.log(`Deleting privilege by privilegeId:${privilegeId}`, "createPrivilege",request['user'].userId, "info");
     return await this.privilegeAdapter
       .buildPrivilegeAdapter()
       .deletePrivilege(privilegeId, response);

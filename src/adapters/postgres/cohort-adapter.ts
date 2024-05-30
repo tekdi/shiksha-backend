@@ -21,6 +21,7 @@ import { isUUID } from "class-validator";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @Injectable()
 export class PostgresCohortService {
@@ -38,6 +39,7 @@ export class PostgresCohortService {
     @InjectRepository(UserTenantMapping)
     private UserTenantMappingRepository: Repository<UserTenantMapping>,
     private fieldsService: PostgresFieldsService,
+    private readonly logger:LoggerService
   ) { }
 
   public async getCohortList(
@@ -69,6 +71,7 @@ export class PostgresCohortService {
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in get cohort list`, ` ${errorMessage}`,"getCohortList");
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
@@ -106,6 +109,7 @@ export class PostgresCohortService {
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in getCohortsDetails`,`${errorMessage}`,"getCohortsDetails",`/read/${cohortId}`);
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
@@ -303,6 +307,7 @@ export class PostgresCohortService {
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in cohortCreate`, ` ${errorMessage}`,"createCohort","/create");
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
@@ -459,6 +464,7 @@ export class PostgresCohortService {
       }
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in cohort update`,` ${errorMessage}`,"updateCohort",`/update/${cohortId}`);
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
     }
@@ -625,6 +631,7 @@ export class PostgresCohortService {
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in cohort search:`, `${errorMessage}`,"searchCohort","/search");
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }
@@ -679,6 +686,7 @@ export class PostgresCohortService {
       }
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
+      this.logger.error(`Error in update cohort status`, `${errorMessage}`,"updateCohortStatus",`/delete/${cohortId}`);
       return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
     }
   }

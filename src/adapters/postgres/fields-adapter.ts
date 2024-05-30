@@ -13,6 +13,7 @@ import { SuccessResponse } from "src/success-response";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 
 @Injectable()
 export class PostgresFieldsService {
@@ -21,6 +22,7 @@ export class PostgresFieldsService {
         private fieldsRepository: Repository<Fields>,
         @InjectRepository(FieldValues)
         private fieldsValuesRepository: Repository<FieldValues>,
+        private readonly logger:LoggerService
     ) { }
 
     //fields
@@ -49,6 +51,7 @@ export class PostgresFieldsService {
             });
 
         } catch (e) {
+            this.logger.error(`Error in creating fields`,`${e.message}`,"createFields",`/fields`);
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
@@ -75,6 +78,7 @@ export class PostgresFieldsService {
             });
 
         } catch (e) {
+            this.logger.error(`Error in searching fields`,`${e.message}`,"searchFields",`/fields/search`);
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
@@ -123,6 +127,7 @@ export class PostgresFieldsService {
 
         } catch (error) {
             const errorMessage = error.message || 'Internal server error';
+            this.logger.error(`Error in creating field values`,`${errorMessage}`,"createFieldValues",`/fields/values`);
            return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
 
         }
@@ -145,6 +150,7 @@ export class PostgresFieldsService {
             });
 
         } catch (e) {
+            this.logger.error(`Error in searching field values`,`${e.message}`,"searchFieldValues",`/fields/values/search`);
             return new ErrorResponseTypeOrm({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 errorMessage: e,
@@ -196,6 +202,7 @@ export class PostgresFieldsService {
 
             return response;
         } catch (e) {
+            this.logger.error(`Error in updating field values`,`${e.message}`,"updateFieldValues");
             return new ErrorResponse({
                 errorCode: "400",
                 errorMessage: e,

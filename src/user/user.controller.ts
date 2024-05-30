@@ -41,6 +41,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Request, Response } from "express";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { LoggerService } from "src/common/loggers/logger.service";
 export interface UserData {
   context: string;
   tenantId: string;
@@ -52,7 +53,7 @@ export interface UserData {
 @Controller()
 export class UserController {
   constructor(
-    private userAdapter: UserAdapter,
+    private userAdapter: UserAdapter,private readonly logger:LoggerService
   ) {}
 
   @UseFilters(new AllExceptionsFilter(APIID.USER_GET))
@@ -73,6 +74,7 @@ export class UserController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
+    this.logger.log(`Getting user ${userId}`, "getUser",request['user'].userId, "info");
     const tenantId = headers["tenantid"]; 
     if(!tenantId){
       return response.status(400).json({ "statusCode": 400, error: "Please provide a tenantId." });
@@ -107,6 +109,7 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto,
     @Res() response: Response
   ) {
+    this.logger.log(`Creating user ${userCreateDto.username} `, "createUser",request['user'].userId, "info");
     return await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto, response);
 
   }
@@ -130,6 +133,7 @@ export class UserController {
   ) {
     // userDto.tenantId = headers["tenantid"];
     userUpdateDto.userId = userId;
+    this.logger.log(`Updating user ${userUpdateDto.userId} `, "updateUser",request['user'].userId, "info");
     return await this.userAdapter.buildUserAdapter().updateUser(userUpdateDto,response);
   }
 
@@ -152,6 +156,7 @@ export class UserController {
     @Body() userSearchDto: UserSearchDto
   ) {
     const tenantId = headers["tenantid"];
+    this.logger.log(`Getting user list`, "searchUser",request['user'].userId, "info");
     return await this.userAdapter.buildUserAdapter().searchUser(tenantId,request,response,userSearchDto);
   }
 
@@ -171,6 +176,7 @@ export class UserController {
       newPassword: string;
     }
   ) {
+    this.logger.log(`Resetting password for ${reqBody.username}`, "resetUserPassword",request['user'].userId, "info");
     return await this.userAdapter
       .buildUserAdapter()
       .resetUserPassword(request, reqBody.username, reqBody.newPassword, response);
@@ -182,6 +188,7 @@ export class UserController {
     @Body() body,
     @Res() response: Response
   ) {
+    this.logger.log(`Checking user`, "checkUser");
     const result = await this.userAdapter.buildUserAdapter().checkUser(body,response)
     return response.status(result.statusCode).json(result);
   }
@@ -201,6 +208,7 @@ export class UserController {
      @Req() request: Request,
      @Res() response: Response
    ) {
+    this.logger.log(`Deleting user ${userId}`, "deleteUserById",request['user'].userId, "info");
      return await this.userAdapter
        .buildUserAdapter()
        .deleteUserById(userId,response);

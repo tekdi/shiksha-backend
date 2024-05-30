@@ -14,12 +14,12 @@ import {
   SerializeOptions,
   Req,
   Res,
-  Response,
   HttpStatus,
   HttpCode,
   UsePipes,
   ValidationPipe,
   UseGuards,
+  UseFilters,
 } from "@nestjs/common";
 import {
   AuthDto,
@@ -28,24 +28,27 @@ import {
 } from "./dto/auth-dto";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { RbacAuthGuard } from "src/common/guards/rbac.guard";
-import { Permissions } from "src/common/decorators/permission.decorator";
+import { APIID } from "src/common/utils/api-id.config";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { Response } from "express";
 
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @UseFilters(new AllExceptionsFilter(APIID.LOGIN))
   @Post("/login")
   @ApiBody({ type: AuthDto })
   @UsePipes(ValidationPipe)
   @HttpCode(HttpStatus.OK)
   @ApiForbiddenResponse({ description: "Forbidden" })
-  public async login(@Body() authDto: AuthDto) {
-    return this.authService.login(authDto);
+  public async login(@Body() authDto: AuthDto, @Res() response: Response) {
+    return this.authService.login(authDto,response);
   }
 
-  @Get("/user")
+  @UseFilters(new AllExceptionsFilter(APIID.USER_AUTH))
+  @Get("/")
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "User detail." })
@@ -57,23 +60,25 @@ export class AuthController {
     return this.authService.getUserByAuth(request, response);
   }
 
+  @UseFilters(new AllExceptionsFilter(APIID.REFRESH))
   @Post("/refresh")
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: RefreshTokenRequestBody })
   @UsePipes(ValidationPipe)
-  refreshToken(@Body() body: RefreshTokenRequestBody) {
+  refreshToken(@Body() body: RefreshTokenRequestBody, @Res() response: Response) {
     const { refresh_token: refreshToken } = body;
 
-    return this.authService.refreshToken(refreshToken);
+    return this.authService.refreshToken(refreshToken,response);
   }
 
+  @UseFilters(new AllExceptionsFilter(APIID.LOGOUT))
   @Post("/logout")
   @UsePipes(ValidationPipe)
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: LogoutRequestBody })
-  async logout(@Body() body: LogoutRequestBody) {
+  async logout(@Body() body: LogoutRequestBody, @Res() response: Response) {
     const { refresh_token: refreshToken } = body;
 
-    await this.authService.logout(refreshToken);
+    await this.authService.logout(refreshToken,response);
   }
 }

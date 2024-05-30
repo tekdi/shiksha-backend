@@ -13,6 +13,8 @@ import {
   Headers,
   Delete,
   UseGuards,
+  UseFilters,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -28,34 +30,35 @@ import {
 import { Request } from "@nestjs/common";
 import { CreateRolesDto, RoleDto } from "./dto/role.dto";
 import { RoleSearchDto } from "./dto/role-search.dto";
-import { Response, response } from "express";
+import { Response } from "express";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { RoleAdapter } from "./roleadapter"
-
-
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from 'src/common/utils/api-id.config';
 @ApiTags("rbac")
 @Controller("rbac/roles")
 @UseGuards(JwtAuthGuard)
 export class RoleController {
-  constructor(private readonly roleAdapter:RoleAdapter) { }
+  constructor(private readonly roleAdapter: RoleAdapter) { }
 
   //Get role
-  @Get("/:id")
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_GET))
+  @Get("read/:id")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Role Detail." })
   @ApiHeader({ name: "tenantid" })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @SerializeOptions({strategy: "excludeAll",})
+  @SerializeOptions({ strategy: "excludeAll", })
   public async getRole(
-    @Param("id") roleId: string,
+    @Param("id", ParseUUIDPipe) roleId: string,
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().getRole(roleId, request);
-    return response.status(result.statusCode).json(result);
+    return await this.roleAdapter.buildRbacAdapter().getRole(roleId, request, response);
   }
 
   //Create role
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_CREATE))
   @Post("/create")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
@@ -68,12 +71,12 @@ export class RoleController {
     @Body() createRolesDto: CreateRolesDto,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto);
-    return response.status(result.statusCode).json(result);
+    return await this.roleAdapter.buildRbacAdapter().createRole(request, createRolesDto, response);
   }
 
   //Update Role
-  @Put("/:id")
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_UPDATE))
+  @Put("update/:id")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role updated successfully." })
   @ApiBody({ type: RoleDto })
@@ -85,12 +88,12 @@ export class RoleController {
     @Body() roleDto: RoleDto,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto);
-    return response.status(result.statusCode).json(result);
+    return await this.roleAdapter.buildRbacAdapter().updateRole(roleId, request, roleDto, response)
   }
 
   // search Role
-  @Post("/list-roles")
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_SEARCH))
+  @Post("list/roles")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Role List." })
   @ApiBody({ type: RoleSearchDto })
@@ -105,12 +108,12 @@ export class RoleController {
     @Res() response: Response
   ) {
     // let tenantid = headers["tenantid"];
-    const result = await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto);
-    return response.status(result.statusCode).json(result);
+    return await this.roleAdapter.buildRbacAdapter().searchRole(roleSearchDto, response);
   }
 
   //delete role
-  @Delete("/:roleId")
+  @UseFilters(new AllExceptionsFilter(APIID.ROLE_DELETE))
+  @Delete("delete/:roleId")
   @ApiBasicAuth("access-token")
   @ApiHeader({ name: "tenantid" })
   @ApiOkResponse({ description: "Role deleted successfully." })
@@ -120,7 +123,6 @@ export class RoleController {
     @Param("roleId") roleId: string,
     @Res() response: Response
   ) {
-    const result = await this.roleAdapter.buildRbacAdapter().deleteRole(roleId);
-    return response.status(result.statusCode).json(result);
+    return await this.roleAdapter.buildRbacAdapter().deleteRole(roleId, response);
   }
 }

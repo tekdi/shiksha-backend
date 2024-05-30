@@ -12,7 +12,9 @@ import {
 import { isUUID } from "class-validator";
 import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-privilege.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-
+import { Response } from "express";
+import APIResponse from "src/common/responses/response";
+import { APIID } from "src/common/utils/api-id.config";
 @Injectable()
 export class PostgresPrivilegeService {
   constructor(
@@ -22,14 +24,16 @@ export class PostgresPrivilegeService {
     private rolePrivilegeMappingRepository: Repository<RolePrivilegeMapping>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-  ) {}
+  ) { }
 
   public async createPrivilege(
     loggedinUser: any,
-    createPrivilegesDto: CreatePrivilegesDto
+    createPrivilegesDto: CreatePrivilegesDto,
+    response: Response
   ) {
     const privileges = [];
     const errors = [];
+    const apiId = APIID.PRIVILEGE_CREATE
     try {
       for (const privilegeDto of createPrivilegesDto.privileges) {
         const code = privilegeDto.code;
@@ -53,19 +57,17 @@ export class PostgresPrivilegeService {
         privileges.push(new PrivilegeResponseDto(response));
       }
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e.message || "Internal server error",
-      });
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    return {
-      statusCode: HttpStatus.OK,
-      successCount: privileges.length,
-      errorCount: errors.length,
-      privileges,
-      errors,
-    };
+    return APIResponse.success(response, apiId,
+      {
+        successCount: privileges.length,
+        errorCount: errors.length,
+        privileges,
+        errors,
+      },
+      HttpStatus.CREATED, 'Privileges successfully Created')
   }
 
   public async checkExistingPrivilege(code) {
@@ -77,41 +79,42 @@ export class PostgresPrivilegeService {
     } catch (error) {
       return new ErrorResponseTypeOrm({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: error,
+        errorMessage: error.message || "Internal server error",
       });
     }
   }
 
-  public async getPrivilege(privilegeId: string, request: any) {
+  public async getPrivilege(privilegeId: string, request: any, response: Response) {
+    const apiId = APIID.PRIVILEGE_BYPRIVILEGEID
     try {
       if (!isUUID(privilegeId)) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please Enter valid PrivilegeId (UUID)",
-        });
+        return APIResponse.error(
+          response,
+          apiId,
+          `Please Enter valid PrivilegeId (UUID)`,
+          'Invalid PrivilegeId (UUID)',
+          HttpStatus.BAD_REQUEST
+        )
       }
 
       const privilege = await this.privilegeRepository.findOne({
         where: { privilegeId },
       });
       if (!privilege) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.NOT_FOUND,
-          errorMessage: "Privilege not found",
-        });
+        return APIResponse.error(
+          response,
+          apiId,
+          `Privilege not found`,
+          'Not found',
+          HttpStatus.NOT_FOUND
+        )
       }
 
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok.",
-        // totalCount,
-        data: privilege,
-      });
+      return APIResponse.success(response, apiId, privilege,
+        HttpStatus.OK, 'Privilege fetched successfully')
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -157,41 +160,30 @@ export class PostgresPrivilegeService {
   //     }
   // }
 
-  public async getAllPrivilege(request) {
+  public async getAllPrivilege(request, response: Response) {
     try {
-      const [result, count] = await this.privilegeRepository.findAndCount();
-
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Ok",
-        totalCount: count,
-        data: result,
-      });
+      const [privileges, totalCount] = await this.privilegeRepository.findAndCount();
+      return APIResponse.success(response, APIID.ROLE_GET, { privileges, totalCount }, HttpStatus.OK, 'privileges fetched successfully')
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: "Internal server error",
-      });
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(response, APIID.PRIVILEGE_BYROLEID, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  public async deletePrivilege(privilegeId: string) {
+  public async deletePrivilege(privilegeId: string, res: Response) {
+    const apiId = APIID.PRIVILEGE_DELETE
     try {
-      if (!isUUID(privilegeId)) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: "Please Enter valid (UUID)",
-        });
-      }
-
       const privilegeToDelete = await this.privilegeRepository.findOne({
         where: { privilegeId: privilegeId },
       });
       if (!privilegeToDelete) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.NOT_FOUND,
-          errorMessage: "Privilege not found",
-        });
+        return APIResponse.error(
+          res,
+          apiId,
+          `Privilege not found`,
+          'Not found',
+          HttpStatus.NOT_FOUND
+        )
       }
       // Delete the privilege
       const response = await this.privilegeRepository.delete(privilegeId);
@@ -201,89 +193,78 @@ export class PostgresPrivilegeService {
         await this.rolePrivilegeMappingRepository.delete({
           privilegeId: privilegeId,
         });
+      return APIResponse.success(res, APIID.PRIVILEGE_DELETE, { rowCount: response.affected }, HttpStatus.OK, 'Privilege deleted successfully.')
 
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "Privilege deleted successfully.",
-        data: {
-          rowCount: response.affected,
-        },
-      });
     } catch (e) {
-      console.log(e);
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: "Internal server error",
-      });
+      const errorMessage = e.message || 'Internal server error';
+      return APIResponse.error(res, APIID.PRIVILEGE_DELETE, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+  }
 
-    public async getPrivilegebyRoleId(tenantId, roleId, request) {
+  public async getPrivilegebyRoleId(tenantId, roleId, request, response: Response) {
+    const apiId = APIID.PRIVILEGE_BYROLEID
+    if (!isUUID(tenantId) || !isUUID(roleId)) {
+      return APIResponse.error(
+        response,
+        apiId,
+        `Please Enter valid tenantId and roleId (UUID)`,
+        'Invalid Tenant Id or Role Id',
+        HttpStatus.BAD_REQUEST
+      )
+    }
 
-        if (!isUUID(tenantId) || !isUUID(roleId)) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.BAD_REQUEST,
-                errorMessage: "Please Enter valid tenantId and roleId (UUID)",
-            });
-        }
+    try {
+      const valid = await this.checkValidTenantIdRoleIdCombination(tenantId, roleId)
+      if (!valid) {
+        return APIResponse.error(
+          response,
+          apiId,
+          `Invalid combination of roleId and tenantId`,
+          'Invalid roleId or tenantId ',
+          HttpStatus.BAD_REQUEST
+        )
+      }
 
-        try {
-            const valid = await this.checkValidTenantIdRoleIdCombination(tenantId, roleId)
-
-            if (!valid) {
-                return new ErrorResponseTypeOrm({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    errorMessage: "Invalid combination of roleId and tenantId",
-                });
-            }
-
-            let query = `SELECT r.*, u.*
+      let query = `SELECT r.*, u.*
         FROM public."RolePrivilegesMapping" AS r
         inner JOIN public."Privileges" AS u ON r."privilegeId" = u."privilegeId"
         where r."roleId"=$1`
 
-            const result = await this.privilegeRepository.query(query, [roleId]);
-            const privilegeResponseArray: PrivilegeResponseDto[] = result.map((item: any) => {
-                const privilegeDto = new PrivilegeDto(item);
-                privilegeDto.title = item.name
-                return new PrivilegeResponseDto(privilegeDto);
-            });
+      const result = await this.privilegeRepository.query(query, [roleId]);
+      const privilegeResponseArray: PrivilegeResponseDto[] = result.map((item: any) => {
+        const privilegeDto = new PrivilegeDto(item);
+        privilegeDto.title = item.name
+        return new PrivilegeResponseDto(privilegeDto);
+      });
 
-            if (!privilegeResponseArray.length) {
-                return new ErrorResponseTypeOrm({
-                    statusCode: HttpStatus.NOT_FOUND,
-                    errorMessage: "No privileges assigned to the role",
-                });
-            }
-
-            return new SuccessResponse({
-                statusCode: HttpStatus.OK,
-                message: "Ok",
-                data: privilegeResponseArray
-            });
-        }
-        catch (error) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: error,
-            });
-        }
-
-
+      if (!privilegeResponseArray.length) {
+        APIResponse.error(
+          response,
+          apiId,
+          `No privileges assigned to the role`,
+          'Not found',
+          HttpStatus.NOT_FOUND
+        )
+      }
+      return APIResponse.success(response, apiId, privilegeResponseArray, HttpStatus.OK, 'privilege fetched successfully by Role Id')
     }
-
-    public async checkValidTenantIdRoleIdCombination(tenantId, roleId) {
-        try {
-
-            const ValidTenantIdRoleCombination = await this.roleRepository.findOne({ where: { tenantId: tenantId, roleId: roleId } });
-            return ValidTenantIdRoleCombination;
-        }
-        catch (error) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: error,
-            });
-        }
+    catch (error) {
+      const errorMessage = error.message || 'Internal server error';
+      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  public async checkValidTenantIdRoleIdCombination(tenantId, roleId) {
+    try {
+      const ValidTenantIdRoleCombination = await this.roleRepository.findOne({ where: { tenantId: tenantId, roleId: roleId } });
+      return ValidTenantIdRoleCombination;
+    }
+    catch (error) {
+      return new ErrorResponseTypeOrm({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorMessage: error.message || "Internal server error",
+      });
+    }
+  }
 
 }

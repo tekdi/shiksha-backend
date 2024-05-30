@@ -13,11 +13,11 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
-  HttpStatus,
   Delete,
+  ParseUUIDPipe,
+  UseFilters,
 } from "@nestjs/common";
 
-import { Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -38,20 +38,28 @@ import { UserAdapter } from "./useradapter";
 import { UserCreateDto } from "./dto/user-create.dto";
 import { UserUpdateDTO } from "./dto/user-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { Response } from "express";
-import { isUUID } from "class-validator";
-import { SuccessResponse } from "src/success-response";
+import { Request, Response } from "express";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from "src/common/utils/api-id.config";
+export interface UserData {
+  context: string;
+  tenantId: string;
+  userId: string;
+  fieldValue: boolean;
+}
+
 @ApiTags("User")
-@Controller("users")
+@Controller()
 export class UserController {
   constructor(
     private userAdapter: UserAdapter,
   ) {}
 
-  @Get('/:userId')
+  @UseFilters(new AllExceptionsFilter(APIID.USER_GET))
+  @Get('read/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
-  @ApiOkResponse({ description: "User detais Fetched Succcessfully" })
+  @ApiOkResponse({ description: "User details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "User Not Found" })
   @ApiInternalServerErrorResponse({description:"Internal Server Error" })
   @ApiBadRequestResponse({description:"Bad Request"})
@@ -62,19 +70,20 @@ export class UserController {
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
-    @Param("userId") userId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
     @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     const tenantId = headers["tenantid"]; 
     if(!tenantId){
       return response.status(400).json({ "statusCode": 400, error: "Please provide a tenantId." });
     }
+    const fieldValueBoolean = fieldvalue === 'true';
     // Context and ContextType can be taken from .env later
-    let userData = {
+    let userData:UserData = {
       context: "USERS",
       tenantId: tenantId,
       userId: userId,
-      fieldValue: fieldvalue
+      fieldValue: fieldValueBoolean
     }
     let result;
     result = await this.userAdapter.buildUserAdapter().getUsersDetailsById(userData, response);
@@ -82,8 +91,8 @@ export class UserController {
     return response.status(result.statusCode).json(result);
   }
 
-
-  @Post()
+  @UseFilters(new AllExceptionsFilter(APIID.USER_CREATE))
+  @Post("/create")
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
@@ -98,11 +107,12 @@ export class UserController {
     @Body() userCreateDto: UserCreateDto,
     @Res() response: Response
   ) {
-    const result = await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto);
-    return response.status(result.statusCode).json(result);
+    return await this.userAdapter.buildUserAdapter().createUser(request, userCreateDto, response);
+
   }
 
-  @Patch("/:userid")
+  @UseFilters(new AllExceptionsFilter(APIID.USER_UPDATE))
+  @Patch("update/:userid")
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiBody({ type: UserUpdateDTO })
@@ -120,11 +130,11 @@ export class UserController {
   ) {
     // userDto.tenantId = headers["tenantid"];
     userUpdateDto.userId = userId;
-    const result = await this.userAdapter.buildUserAdapter().updateUser(userUpdateDto,response);
-    return response.status(result.statusCode).json(result);
+    return await this.userAdapter.buildUserAdapter().updateUser(userUpdateDto,response);
   }
 
-  @Post("/search")
+  @UseFilters(new AllExceptionsFilter(APIID.USER_LIST))
+  @Post("/list")
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "User list." })
@@ -142,10 +152,10 @@ export class UserController {
     @Body() userSearchDto: UserSearchDto
   ) {
     const tenantId = headers["tenantid"];
-    const result = await this.userAdapter.buildUserAdapter().searchUser(tenantId,request,response,userSearchDto);
-    return response.status(result.statusCode).json(result);
+    return await this.userAdapter.buildUserAdapter().searchUser(tenantId,request,response,userSearchDto);
   }
 
+  @UseFilters(new AllExceptionsFilter(APIID.USER_RESET_PASSWORD))
   @Post("/reset-password")
   @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
@@ -154,6 +164,7 @@ export class UserController {
   @ApiBody({ type: Object })
   public async resetUserPassword(
     @Req() request: Request,
+    @Res() response: Response,
     @Body()
     reqBody: {
       username: string;
@@ -162,9 +173,10 @@ export class UserController {
   ) {
     return await this.userAdapter
       .buildUserAdapter()
-      .resetUserPassword(request, reqBody.username, reqBody.newPassword);
+      .resetUserPassword(request, reqBody.username, reqBody.newPassword, response);
   }
 
+  // required for FTL
   @Post("/check")
   async checkUser(
     @Body() body,
@@ -175,25 +187,22 @@ export class UserController {
   }
 
    //delete
-   @Delete("/:userId")
-
+   @Delete("delete/:userId")
+   @UseGuards(JwtAuthGuard)
    @ApiBasicAuth("access-token")
    @ApiOkResponse({ description: "User deleted successfully" })
    @ApiNotFoundResponse({ description: "Data not found" })
    @SerializeOptions({
      strategy: "excludeAll",
    })
-
    public async deleteUserById(
      @Headers() headers,
      @Param("userId") userId: string,
      @Req() request: Request,
      @Res() response: Response
    ) {
-
-     const result = await this.userAdapter
+     return await this.userAdapter
        .buildUserAdapter()
-       .deleteUserById(userId);
-     return response.status(result.statusCode).json(result);
+       .deleteUserById(userId,response);
    }
 }

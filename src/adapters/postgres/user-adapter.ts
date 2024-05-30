@@ -23,7 +23,7 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "src/utils/mask-data";
+import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "@utils/mask-data";
 import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';

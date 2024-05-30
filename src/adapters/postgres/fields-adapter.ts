@@ -13,9 +13,11 @@ import { SuccessResponse } from "src/success-response";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
+import { IServicelocatorfields } from "../fieldsservicelocator";
+import { Response } from "express";
 
 @Injectable()
-export class PostgresFieldsService {
+export class PostgresFieldsService implements IServicelocatorfields {
     constructor(
         @InjectRepository(Fields)
         private fieldsRepository: Repository<Fields>,
@@ -24,9 +26,9 @@ export class PostgresFieldsService {
     ) { }
 
     //fields
-    async createFields(request: any, fieldsDto: FieldsDto) {
+    async createFields(request: any, fieldsDto: FieldsDto, response: Response,) {
+        const apiId = APIID.FIELDS_CREATE;
         try {
-
             const fieldsData: any = {}; // Define an empty object to store field data
 
             Object.keys(fieldsDto).forEach((e) => {
@@ -42,21 +44,18 @@ export class PostgresFieldsService {
             });
 
             let result = await this.fieldsRepository.save(fieldsData);
-            return new SuccessResponse({
-                statusCode: HttpStatus.CREATED,
-                message: "Ok.",
-                data: result,
-            });
+       
+            return await APIResponse.success(response, apiId, result,
+                HttpStatus.CREATED, 'Fields created successfully.')
 
         } catch (e) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: e,
-            });
+            const errorMessage = e?.message || 'Something went wrong';
+            return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 
-    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto) {
+    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto,response :Response) {
+        const apiId = APIID.FIELDS_SEARCH;
         try {
 
             const getConditionalData = await this.search(fieldsSearchDto)
@@ -67,18 +66,18 @@ export class PostgresFieldsService {
             const getFieldValue = await this.searchFieldData(offset, limit, whereClause)
 
 
-            return new SuccessResponse({
-                statusCode: HttpStatus.OK,
-                message: 'Ok.',
+            const result = {
                 totalCount: getFieldValue.totalCount,
-                data: getFieldValue.mappedResponse,
-            });
+                fields: getFieldValue.mappedResponse,
+            }
+
+            return await APIResponse.success(response, apiId, result,
+                HttpStatus.OK, 'Fields fetched successfully.')
+
 
         } catch (e) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: e,
-            });
+            const errorMessage = e?.message || 'Something went wrong';
+            return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 
@@ -102,7 +101,7 @@ export class PostgresFieldsService {
         return { mappedResponse, totalCount };
     }
 
-    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res) {
+    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res:Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
 
 
@@ -128,7 +127,8 @@ export class PostgresFieldsService {
         }
     }
 
-    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto) {
+    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) {
+        const apiId = APIID.FIELDVALUES_SEARCH;
         try {
             const getConditionalData = await this.search(fieldValuesSearchDto)
             const offset = getConditionalData.offset;
@@ -137,18 +137,17 @@ export class PostgresFieldsService {
 
             const getFieldValue = await this.getSearchFieldValueData(offset, limit, whereClause)
 
-            return new SuccessResponse({
-                statusCode: HttpStatus.OK,
-                message: 'Ok.',
+            const result = {
                 totalCount: getFieldValue.totalCount,
-                data: getFieldValue.mappedResponse,
-            });
+                fields: getFieldValue.mappedResponse,
+            }
+
+            return await APIResponse.success(response, apiId, result,
+                HttpStatus.OK, 'Field Values fetched successfully.')
 
         } catch (e) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: e,
-            });
+            const errorMessage = e?.message || 'Something went wrong';
+            return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 

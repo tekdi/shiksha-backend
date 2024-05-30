@@ -28,6 +28,7 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
+import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "@utils/mask-data";
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -111,7 +112,7 @@ export class PostgresUserService implements IServicelocator {
       })
 
       if (checkExistUser.length == 0) {
-        return APIResponse.error(response, apiId, "Not Found",`User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
+        return APIResponse.error(response, apiId, "Not Found", `User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
       }
 
       const result = {
@@ -154,6 +155,7 @@ export class PostgresUserService implements IServicelocator {
 
         const customField = {
           fieldId: data.fieldId,
+          name: data.name,
           label: data.label,
           order: data.ordering,
           value: fieldValue || '',
@@ -168,7 +170,7 @@ export class PostgresUserService implements IServicelocator {
       result.userData['customFields'] = customFieldsArray;
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
-    } catch (e) {;
+    } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -577,8 +579,9 @@ export class PostgresUserService implements IServicelocator {
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
-    user.mobile = Number(userCreateDto?.mobile) || null,
-      user.createdBy = userCreateDto?.createdBy
+    user.mobile = userCreateDto?.mobile
+    user.dob = userCreateDto?.dob
+    user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
       user.state = userCreateDto?.state,
@@ -586,8 +589,17 @@ export class PostgresUserService implements IServicelocator {
       user.address = userCreateDto?.address,
       user.pincode = userCreateDto?.pincode
 
+    if (userCreateDto?.email) {
+      user.email = maskEmail(user.email)
+      user.encryptedEmail = encrypt(user.email)
+    }
+    if (userCreateDto?.mobile) {
+      user.mobile = maskMobileNumber(user.mobile)
+      user.encryptedMobile = encrypt(user.mobile)
+    }
     if (userCreateDto?.dob) {
-      user.dob = new Date(userCreateDto.dob);
+      user.dob = maskDateOfBirth(user.dob);
+      user.encryptedDob = encrypt(user.dob)
     }
 
     let result = await this.usersRepository.save(user);

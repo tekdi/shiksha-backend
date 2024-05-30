@@ -25,14 +25,15 @@ import {
     UseGuards,
     ValidationPipe,
     UsePipes,
+    UseFilters,
 } from "@nestjs/common";
 import { Request } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
-
 import { Response, response } from "express";
 import { AssignTenantAdapter } from "./user-tenant-mapping.adapter";
 import { UserTenantMappingDto } from "./dto/user-tenant-mapping.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
+import { AllExceptionsFilter } from "src/common/filters/exception.filter";
+import { APIID } from "src/common/utils/api-id.config";
 
 @ApiTags("AssignTenant")
 @Controller("assign-tenant")
@@ -40,7 +41,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 export class AssignTenantController {
     constructor(private readonly assignTenantAdapter: AssignTenantAdapter) { }
 
-    //create cohort
+    @UseFilters(new AllExceptionsFilter(APIID.ASSIGN_TENANT_CREATE))
     @Post()
     @ApiBasicAuth("access-token")
     @ApiCreatedResponse({ description: "Tenant assigned successfully to the user." })
@@ -49,7 +50,7 @@ export class AssignTenantController {
     @ApiConflictResponse({ description: "Tenant is already assigned to this user." })
     @UsePipes(new ValidationPipe())
     @ApiBody({ type: UserTenantMappingDto })
-    public async createCohort(
+    public async createUserTenantMapping(
         @Headers() headers,
         @Req() request: Request,
         @Body() userTenantMappingDto: UserTenantMappingDto,
@@ -57,9 +58,9 @@ export class AssignTenantController {
     ) {
         const result = await this.assignTenantAdapter.buildAssignTenantAdapter().userTenantMapping(
             request,
-            userTenantMappingDto
+            userTenantMappingDto,
+            response
         );
         return response.status(result.statusCode).json(result);
     }
-
 }

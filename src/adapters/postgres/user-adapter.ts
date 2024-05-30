@@ -23,7 +23,6 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "@utils/mask-data";
 import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
@@ -31,7 +30,7 @@ import { APIID } from 'src/common/utils/api-id.config';
 
 @Injectable()
 export class PostgresUserService {
-  axios = require("axios"); maskEmail
+  axios = require("axios");
 
   constructor(
     // private axiosInstance: AxiosInstance,
@@ -111,7 +110,7 @@ export class PostgresUserService {
       })
 
       if (checkExistUser.length == 0) {
-        return APIResponse.error(response, apiId, "Not Found", `User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
+        return APIResponse.error(response, apiId, "Not Found",`User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
       }
 
       const result = {
@@ -154,7 +153,6 @@ export class PostgresUserService {
 
         const customField = {
           fieldId: data.fieldId,
-          name: data.name,
           label: data.label,
           order: data.ordering,
           value: fieldValue || '',
@@ -169,8 +167,7 @@ export class PostgresUserService {
       result.userData['customFields'] = customFieldsArray;
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
-    } catch (e) {
-      ;
+    } catch (e) {;
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -465,6 +462,7 @@ export class PostgresUserService {
         userCreateDto.userId = resKeycloak;
 
         let result = await this.createUserInDatabase(request, userCreateDto);
+
         let fieldData = {};
         if (userCreateDto.fieldValues) {
 
@@ -578,8 +576,7 @@ export class PostgresUserService {
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
-    user.mobile = userCreateDto?.mobile,
-      user.dob = userCreateDto?.dob,
+    user.mobile = Number(userCreateDto?.mobile) || null,
       user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
@@ -588,17 +585,8 @@ export class PostgresUserService {
       user.address = userCreateDto?.address,
       user.pincode = userCreateDto?.pincode
 
-    if (userCreateDto?.email) {
-      user.email = maskEmail(user.email)
-      user.encryptedEmail = encrypt(user.email)
-    }
-    if (userCreateDto?.mobile) {
-      user.mobile = maskMobileNumber(user.mobile)
-      user.encryptedMobile = encrypt(user.mobile)
-    }
     if (userCreateDto?.dob) {
-      user.dob = maskDateOfBirth(user.dob);
-      user.encryptedDob = encrypt(user.dob)
+      user.dob = new Date(userCreateDto.dob);
     }
 
     let result = await this.usersRepository.save(user);

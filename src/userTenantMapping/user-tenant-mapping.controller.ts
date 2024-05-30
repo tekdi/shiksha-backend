@@ -56,11 +56,10 @@ export class AssignTenantController {
         @Body() userTenantMappingDto: UserTenantMappingDto,
         @Res() response: Response
     ) {
-        const result = await this.assignTenantAdapter.buildAssignTenantAdapter().userTenantMapping(
+        return await this.assignTenantAdapter.buildAssignTenantAdapter().userTenantMapping(
             request,
             userTenantMappingDto,
             response
         );
-        return response.status(result.statusCode).json(result);
     }
 }

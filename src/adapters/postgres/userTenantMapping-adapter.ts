@@ -1,4 +1,4 @@
-import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { UserTenantMapping } from 'src/userTenantMapping/entities/user-tenant-mapping.entity';
@@ -84,7 +84,7 @@ export class PostgresAssignTenantService implements IServicelocatorAssignTenant 
             }
 
             if (result.length == 0) {
-                return APIResponse.error(response, apiId, "Bad Request", `User not added to tenants`, HttpStatus.BAD_REQUEST);
+                return APIResponse.error(response, apiId, "Bad Request", `User not added to tenants ${JSON.stringify(errors)}`, HttpStatus.BAD_REQUEST);
             }
             const res = {
                 successCount: result.length,

@@ -1,4 +1,4 @@
-import { BadRequestException, ConsoleLogger, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { UserTenantMapping } from 'src/userTenantMapping/entities/user-tenant-mapping.entity';
@@ -7,10 +7,13 @@ import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { SuccessResponse } from 'src/success-response';
 import { User } from "src/user/entities/user-entity";
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
-
+import { IServicelocatorAssignTenant } from '../usertenantmappinglocator';
+import APIResponse from 'src/common/responses/response';
+import { Response } from 'express';
+import { APIID } from 'src/common/utils/api-id.config';
 
 @Injectable()
-export class PostgresAssignTenantService {
+export class PostgresAssignTenantService implements IServicelocatorAssignTenant {
     constructor(
         @InjectRepository(UserTenantMapping)
         private userTenantMappingRepository: Repository<UserTenantMapping>,
@@ -49,18 +52,15 @@ export class PostgresAssignTenantService {
         return true;
     }
     
-    public async userTenantMapping(request: any, assignTenantMappingDto: UserTenantMappingDto) {
+    public async userTenantMapping(request: any, assignTenantMappingDto: UserTenantMappingDto, response: Response) {
+        const apiId = APIID.ASSIGN_TENANT_CREATE;
         try {
-
             const userId = assignTenantMappingDto.userId;
             const tenantIds = assignTenantMappingDto.tenantId;
 
             // Check if tenant array is not empty
             if (!tenantIds || tenantIds.length === 0) {
-                return new SuccessResponse({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: "Please provide at least one tenant Id",
-                });
+                return APIResponse.error(response, apiId, "Bad Request", "Please provide at least one tenant Id", HttpStatus.BAD_REQUEST);
             }
 
             let result = [];
@@ -84,25 +84,19 @@ export class PostgresAssignTenantService {
             }
 
             if (result.length == 0) {
-                return {
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    errorCount: errors.length,
-                    errors,
-                };
+                return APIResponse.error(response, apiId, "Bad Request", `User not added to tenants ${JSON.stringify(errors)}`, HttpStatus.BAD_REQUEST);
             }
-            return {
-                statusCode: HttpStatus.CREATED,
+            const res = {
                 successCount: result.length,
                 errorCount: errors.length,
                 data: result,
                 errors,
             };
+
+            return await APIResponse.success(response, apiId, res ,HttpStatus.OK, "User added to tenants successfully.")
         } catch (error) {
-            return new ErrorResponseTypeOrm({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                errorMessage: JSON.stringify(error)
-            });
+            const errorMessage = error?.message || 'Something went wrong';
+            return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
-
 }

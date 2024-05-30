@@ -42,7 +42,7 @@ export class FieldsController {
 
   //fields
   //create fields
-  @Post()
+  @Post("/create")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Fields has been created successfully." })
   @ApiBody({ type: FieldsDto })
@@ -62,8 +62,7 @@ export class FieldsController {
       tenantId: tenantid,
     };
     Object.assign(fieldsDto, payload);
-    const result = await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto);
-    return response.status(result.statusCode).json(result);
+    return await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto, response);
   }
 
   //search
@@ -86,18 +85,18 @@ export class FieldsController {
     @Res() response: Response
   ) {
     let tenantid = headers["tenantid"];
-    const result = await this.fieldsAdapter.buildFieldsAdapter().searchFields(
+    return await this.fieldsAdapter.buildFieldsAdapter().searchFields(
       tenantid,
       request,
-      fieldsSearchDto
+      fieldsSearchDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 
   //field values
   //create fields values
   @UseFilters(new AllExceptionsFilter(APIID.FIELDVALUES_CREATE))
-  @Post("/values")
+  @Post("/values/create")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Fields Values has been created successfully.",
@@ -115,7 +114,6 @@ export class FieldsController {
       fieldValuesDto,
       response
     );  
-    
   }
 
   //search fields values
@@ -133,10 +131,10 @@ export class FieldsController {
     @Body() fieldValuesSearchDto: FieldValuesSearchDto,
     @Res() response: Response
   ) {
-    const result = await this.fieldsAdapter.buildFieldsAdapter().searchFieldValues(
+    return await this.fieldsAdapter.buildFieldsAdapter().searchFieldValues(
       request,
-      fieldValuesSearchDto
+      fieldValuesSearchDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 }

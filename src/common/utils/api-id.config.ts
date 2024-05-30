@@ -29,5 +29,9 @@ export const APIID = {
     COHORT_READ: "api.cohort.read",
     COHORT_UPDATE: "api.cohort.update",
     COHORT_DELETE: "api.cohort.delete",
-    FIELDVALUES_CREATE: "api.fieldValues.create"
+    ASSIGN_TENANT_CREATE:"api.assigntenant.create",
+    FIELDS_CREATE: "api.fields.create",
+    FIELDS_SEARCH:"api.fields.search",
+    FIELDVALUES_CREATE: "api.fieldValues.create",
+    FIELDVALUES_SEARCH: "api.fieldValues.search"
 }

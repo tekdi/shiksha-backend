@@ -464,7 +464,6 @@ export class PostgresUserService {
         userCreateDto.userId = resKeycloak;
 
         let result = await this.createUserInDatabase(request, userCreateDto);
-
         let fieldData = {};
         if (userCreateDto.fieldValues) {
 
@@ -789,25 +788,19 @@ export class PostgresUserService {
     };
   }
 
-<<<<<<< HEAD
-  public async deleteUserById(userId) {
+  public async deleteUserById(userId: string, response: Response) {
+    const apiId = APIID.USER_DELETE;
     const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
     // Validate userId format
     if (!isUUID(userId)) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.BAD_REQUEST,
-        errorMessage: "Please enter a valid UUID for userId",
-      });
+      return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid UUID for userId`, HttpStatus.BAD_REQUEST);
     }
 
     try {
       // Check if user exists in usersRepository
       const user = await this.usersRepository.findOne({ where: { userId: userId } });
       if (!user) {
-        return new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.NOT_FOUND,
-          errorMessage: "User not found in user table.",
-        });
+        return APIResponse.error(response, apiId, "Not Found", `User not found in user table.`, HttpStatus.NOT_FOUND);
       }
 
 
@@ -835,68 +828,10 @@ export class PostgresUserService {
         }
       });
 
-
-      return new SuccessResponse({
-        statusCode: HttpStatus.OK,
-        message: "User and related entries deleted Successfully.",
-        data: {
-          user: userResult
-        },
-      });
+      return await APIResponse.success(response, apiId, userResult,
+        HttpStatus.OK, "User and related entries deleted Successfully.")
     } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
-=======
-  public async deleteUserById(userId: string, response: Response) {
-    const apiId = APIID.USER_DELETE;
-    const { KEYCLOAK, KEYCLOAK_ADMIN } = process.env;
-    // Validate userId format
-    if (!isUUID(userId)) {
-      return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid UUID for userId`, HttpStatus.BAD_REQUEST);
->>>>>>> 6fea9fcd95d1db6e36f77477aeff30bd7355eed7
+      return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  }
-
-
-
-    try {
-  // Check if user exists in usersRepository
-  const user = await this.usersRepository.findOne({ where: { userId: userId } });
-  if (!user) {
-    return APIResponse.error(response, apiId, "Not Found", `User not found in user table.`, HttpStatus.NOT_FOUND);
-  }
-
-
-  // Delete from User table
-  const userResult = await this.usersRepository.delete(userId);
-
-  // Delete from CohortMembers table
-  const cohortMembersResult = await this.cohortMemberRepository.delete({ userId: userId });
-
-  // Delete from UserTenantMapping table
-  const userTenantMappingResult = await this.userTenantMappingRepository.delete({ userId: userId });
-
-  // Delete from UserRoleMapping table
-  const userRoleMappingResult = await this.userRoleMappingRepository.delete({ userId: userId });
-
-  // Delete from FieldValues table where ItemId matches userId
-  const fieldValuesResult = await this.fieldsValueRepository.delete({ itemId: userId });
-
-  const keycloakResponse = await getKeycloakAdminToken();
-  const token = keycloakResponse.data.access_token;
-
-  await this.axios.delete(`${KEYCLOAK}${KEYCLOAK_ADMIN}/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  return await APIResponse.success(response, apiId, userResult,
-    HttpStatus.OK, "User and related entries deleted Successfully.")
-} catch (e) {
-  return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
-}
   }
 }

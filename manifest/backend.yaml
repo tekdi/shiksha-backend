@@ -24,7 +24,7 @@ spec:
         io.kompose.service: backend
     spec:
       containers:
-      - image: dubea/pratham-backend:latest
+      - image: ${ECR_REPOSITORY}:${IMAGE_TAG}
         imagePullPolicy: ""
         name: backend-pratham
         ports:

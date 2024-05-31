@@ -366,16 +366,24 @@ export class PostgresUserService implements IServicelocator {
         let unEditableIdes = [];
         for (let data of userDto.customFields) {
           if (isEditableFieldId.includes(data.fieldId)) {
+
             const result = await this.updateCustomFields(userDto.userId, data);
             if (result) {
               if (!updatedData['customFields'])
                 updatedData['customFields'] = [];
               updatedData['customFields'].push(result);
+              // console.log("updatedData");
             }
           } else {
+
             unEditableIdes.push(data.fieldId)
+            // console.log(unEditableIdes);
           }
         }
+        // console.log(updatedData);
+        // console.log(unEditableIdes);
+
+
         if (unEditableIdes.length > 0) {
           errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
         }
@@ -400,6 +408,10 @@ export class PostgresUserService implements IServicelocator {
 
   async updateCustomFields(itemId, data) {
 
+    // console.log("itemId", itemId);
+    console.log("data", data);
+
+
     if (Array.isArray(data.value) === true) {
       let dataArray = [];
       for (let value of data.value) {
@@ -407,6 +419,7 @@ export class PostgresUserService implements IServicelocator {
       }
       data.value = dataArray.join(', ');
     }
+    console.log(data.value);
 
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
     let newResult;
@@ -418,6 +431,8 @@ export class PostgresUserService implements IServicelocator {
       });
     }
     Object.assign(result, newResult);
+    console.log("result", result);
+
     return result;
   }
 

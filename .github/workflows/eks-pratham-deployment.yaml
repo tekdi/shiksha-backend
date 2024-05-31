@@ -68,6 +68,6 @@ jobs:
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
         export IMAGE_TAG=${{ secrets.IMAGE_TAG }}
         export ECR_IMAGE=${{ secrets.ECR_IMAGE }}
-        envsubst < manifest/attendance-service.yaml > manifest/attendance-service-updated.yaml
-        cat manifest/attendance-service-updated.yaml 
-        kubectl apply -f manifest/attendance-service-updated.yaml
+        envsubst < manifest/backend.yaml > manifest/backend-updated.yaml
+        cat manifest/backend-updated.yaml 
+        kubectl apply -f manifest/backend-updated.yaml

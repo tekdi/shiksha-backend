@@ -154,6 +154,7 @@ export class PostgresUserService implements IServicelocator {
 
         const customField = {
           fieldId: data.fieldId,
+          name:data?.name,
           label: data.label,
           order: data.ordering,
           value: fieldValue || '',

@@ -3,7 +3,7 @@ import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserCreateDto } from '../../user/dto/user-create.dto';
+import { UserCreateDto, DecryptPIIDataDTO } from '../../user/dto/user-create.dto';
 import jwt_decode from "jwt-decode";
 import {
   getKeycloakAdminToken,
@@ -28,7 +28,7 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt } from "@utils/mask-data";
+import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "@utils/mask-data";
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -372,17 +372,12 @@ export class PostgresUserService implements IServicelocator {
               if (!updatedData['customFields'])
                 updatedData['customFields'] = [];
               updatedData['customFields'].push(result);
-              // console.log("updatedData");
             }
           } else {
 
             unEditableIdes.push(data.fieldId)
-            // console.log(unEditableIdes);
           }
         }
-        // console.log(updatedData);
-        // console.log(unEditableIdes);
-
 
         if (unEditableIdes.length > 0) {
           errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
@@ -408,10 +403,6 @@ export class PostgresUserService implements IServicelocator {
 
   async updateCustomFields(itemId, data) {
 
-    // console.log("itemId", itemId);
-    console.log("data", data);
-
-
     if (Array.isArray(data.value) === true) {
       let dataArray = [];
       for (let value of data.value) {
@@ -419,7 +410,6 @@ export class PostgresUserService implements IServicelocator {
       }
       data.value = dataArray.join(', ');
     }
-    console.log(data.value);
 
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
     let newResult;
@@ -431,7 +421,6 @@ export class PostgresUserService implements IServicelocator {
       });
     }
     Object.assign(result, newResult);
-    console.log("result", result);
 
     return result;
   }
@@ -605,16 +594,16 @@ export class PostgresUserService implements IServicelocator {
       user.pincode = userCreateDto?.pincode
 
     if (userCreateDto?.email) {
-      user.email = maskEmail(user.email)
       user.encryptedEmail = encrypt(user.email)
+      user.email = maskEmail(user.email)
     }
     if (userCreateDto?.mobile) {
-      user.mobile = maskMobileNumber(user.mobile)
       user.encryptedMobile = encrypt(user.mobile)
+      user.mobile = maskMobileNumber(user.mobile)
     }
     if (userCreateDto?.dob) {
-      user.dob = maskDateOfBirth(user.dob);
       user.encryptedDob = encrypt(user.dob)
+      user.dob = maskDateOfBirth(user.dob);
     }
 
     let result = await this.usersRepository.save(user);
@@ -850,5 +839,59 @@ export class PostgresUserService implements IServicelocator {
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  public async user_decrypt_data(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
+
+    const apiId = APIID.USER_DECRYPT_DATA;
+    if (!isUUID(decryptPIIDataDTO.userId)) {
+      return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid UUID for userId`, HttpStatus.BAD_REQUEST);
+    }
+
+
+    const selectField = [];
+    switch (decryptPIIDataDTO.fieldName.toLowerCase()) {
+      case 'email':
+        selectField.push("encryptedEmail");
+        break;
+      case 'mobile':
+        selectField.push("encryptedMobile");
+        break;
+      case 'phone':
+        selectField.push("encryptedDob");
+        break;
+      default:
+        // Handle the case where fieldName is not recognized
+        return APIResponse.error(response, apiId, "Bad request", `Invalid field name`, HttpStatus.BAD_REQUEST);
+    }
+
+
+    // Perform repository query
+    const result = await this.usersRepository.findOne({
+      where: {
+        userId: decryptPIIDataDTO.userId,
+      },
+      select: selectField
+    });
+
+
+    if (!result) {
+      return APIResponse.error(response, apiId, "Bad request", `User not exist`, HttpStatus.BAD_REQUEST);
+    }
+    let decryptData
+
+    if (result.encryptedEmail) {
+      decryptData = decrypt(result.encryptedEmail)
+    }
+    if (result.encryptedDob) {
+      decryptData = decrypt(result.encryptedDob)
+    }
+    if (result.encryptedMobile) {
+      decryptData = decrypt(result.encryptedMobile)
+    }
+
+
+    return await APIResponse.success(response, apiId, decryptData,
+      HttpStatus.OK, "User and related entries deleted Successfully.")
   }
 }

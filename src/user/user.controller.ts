@@ -194,6 +194,7 @@ export class UserController {
   }
 
    //delete
+   @UseFilters(new AllExceptionsFilter(APIID.USER_DELETE))
    @Delete("delete/:userId")
    @UseGuards(JwtAuthGuard)
    @ApiBasicAuth("access-token")

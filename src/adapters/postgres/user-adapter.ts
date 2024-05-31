@@ -28,9 +28,10 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { LoggerService } from 'src/common/loggers/logger.service';
+import { IServicelocator } from '../userservicelocator';
 
 @Injectable()
-export class PostgresUserService {
+export class PostgresUserService implements IServicelocator {
   axios = require("axios");
 
   constructor(

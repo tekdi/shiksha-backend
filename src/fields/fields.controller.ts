@@ -44,7 +44,7 @@ export class FieldsController {
 
   //fields
   //create fields
-  @Post()
+  @Post("/create")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Fields has been created successfully." })
   @ApiBody({ type: FieldsDto })
@@ -65,8 +65,7 @@ export class FieldsController {
     };
     this.logger.log(`Creating fields`, "createFields",request['user'].userId, "info");
     Object.assign(fieldsDto, payload);
-    const result = await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto);
-    return response.status(result.statusCode).json(result);
+    return await this.fieldsAdapter.buildFieldsAdapter().createFields(request, fieldsDto, response);
   }
 
   //search
@@ -90,18 +89,18 @@ export class FieldsController {
   ) {
     this.logger.log(`Getting fields list`, "searchFields",request['user'].userId, "info");
     let tenantid = headers["tenantid"];
-    const result = await this.fieldsAdapter.buildFieldsAdapter().searchFields(
+    return await this.fieldsAdapter.buildFieldsAdapter().searchFields(
       tenantid,
       request,
-      fieldsSearchDto
+      fieldsSearchDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 
   //field values
   //create fields values
   @UseFilters(new AllExceptionsFilter(APIID.FIELDVALUES_CREATE))
-  @Post("/values")
+  @Post("/values/create")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Fields Values has been created successfully.",
@@ -120,7 +119,6 @@ export class FieldsController {
       fieldValuesDto,
       response
     );  
-    
   }
 
   //search fields values
@@ -141,8 +139,8 @@ export class FieldsController {
     this.logger.log(`Getting field values list`, "searchFieldValues",request['user'].userId, "info");
     const result = await this.fieldsAdapter.buildFieldsAdapter().searchFieldValues(
       request,
-      fieldValuesSearchDto
+      fieldValuesSearchDto,
+      response
     );
-    return response.status(result.statusCode).json(result);
   }
 }

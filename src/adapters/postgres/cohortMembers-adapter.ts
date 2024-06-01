@@ -22,6 +22,7 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
 import APIResponse from "src/common/responses/response";
 import { Response } from "express";
 import { APIID } from 'src/common/utils/api-id.config';
+import { Role } from "src/rbac/role/entities/role.entity";
 @Injectable()
 export class PostgresCohortMembersService {
   constructor(
@@ -32,7 +33,9 @@ export class PostgresCohortMembersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     @InjectRepository(Cohort)
-    private cohortRepository: Repository<Cohort>
+    private cohortRepository: Repository<Cohort>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>
   ) { }
 
   async getCohortMembers(cohortId: any, tenantId: any, fieldvalue: any, res: Response) {
@@ -173,18 +176,23 @@ export class PostgresCohortMembersService {
         return APIResponse.error(res, apiId, "Bad Request", "Invalid input: TenantId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
 
-      let { limit, page, filters } = cohortMembersSearchDto;
-      let offset = 0;
-      if (page > 1) {
-        offset = limit * (page - 1);
-      }
+      let { limit, offset, filters } = cohortMembersSearchDto;
+      // let offset = 0;
+      // if (page > 1) {
+      //   offset = limit * (page - 1);
+      // }
 
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {
         Object.entries(filters).forEach(([key, value]) => {
           whereClause[key] = value;
         });
+
+        if (whereClause["role"] && (!whereClause["cohortId"] && !whereClause["userId"])) {
+          return APIResponse.error(res, apiId, "Bad Request", "Invalid input: API did not accept only role. You need to put userId or cohortId.", HttpStatus.BAD_REQUEST);
+        }
       }
+
 
       // Validate cohortId and userId format
       if (whereClause["cohortId"] && !isUUID(whereClause["cohortId"])) {
@@ -213,18 +221,19 @@ export class PostgresCohortMembersService {
         }
       }
 
-      // console.log("USER DATA ",userData)
       let results = {};
       let where = [];
+
+      if (whereClause["role"]) {
+        where.push(["role", whereClause["role"]]);
+      }
       if (whereClause["cohortId"]) {
         where.push(["cohortId", whereClause["cohortId"]]);
       }
       if (whereClause["userId"]) {
         where.push(["userId", whereClause["userId"]]);
       }
-      if (whereClause["role"]) {
-        where.push(["role", whereClause["role"]]);
-      }
+
       let options = [];
       if (limit) {
         options.push(['limit', limit]);
@@ -238,6 +247,9 @@ export class PostgresCohortMembersService {
         "true",
         options
       );
+      if (results == false) {
+        return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
+      }
       const totalCount = results['userDetails'].length;
 
 
@@ -259,29 +271,33 @@ export class PostgresCohortMembersService {
       userDetails: [],
     };
 
-    let getUserDetails = await this.getUsers(where, options);
+    try {
+      let getUserDetails = await this.getUsers(where, options);
 
-    for (let data of getUserDetails) {
-      let userDetails = {
-        userId: data?.userId,
-        userName: data?.userName,
-        name: data?.name,
-        role: data?.role,
-        district: data?.district,
-        state: data?.state,
-        mobile: data?.mobile
-      };
+      for (let data of getUserDetails) {
+        let userDetails = {
+          userId: data?.userId,
+          userName: data?.userName,
+          name: data?.name,
+          role: data?.role,
+          district: data?.district,
+          state: data?.state,
+          mobile: data?.mobile
+        };
 
-      if (fieldShowHide === "false") {
-        results.userDetails.push(userDetails);
-      } else {
-        const fieldValues = await this.getFieldandFieldValues(data.userId);
-        userDetails['customField'] = fieldValues;
-        results.userDetails.push(userDetails);
+        if (fieldShowHide === "false") {
+          results.userDetails.push(userDetails);
+        } else {
+          const fieldValues = await this.getFieldandFieldValues(data.userId);
+          userDetails['customField'] = fieldValues;
+          results.userDetails.push(userDetails);
+        }
       }
-    }
 
-    return results;
+      return results;
+    } catch {
+      return false;
+    }
   }
 
   public async createCohortMembers(
@@ -337,53 +353,105 @@ export class PostgresCohortMembersService {
   }
 
   async getUsers(where: any, options: any) {
-    let query = ``;
-    let whereCase = ``;
-    let optionsCase = ``;
-    let isRoleCondition = 0;
-    if (where.length > 0) {
-      whereCase = `where `;
-      where.forEach((value, index) => {
-        if (value[0] == "role") {
-          isRoleCondition = 1;
-          whereCase += `R."name"='${value[1]}' `;
-        } else {
-          whereCase += `CM."${value[0]}"='${value[1]}' `;
+
+    try {
+      let query = ``;
+      let whereCase = ``;
+      let optionsCase = ``;
+      let isRoleCondition = 0;
+      let roleCase;
+      let fieldValue
+      if (where.length > 0) {
+        where.forEach((value, index) => {
+          if (value[0] == "role") {
+            isRoleCondition = 1;
+            roleCase = `R."name"='${value[1]}' `;
+            fieldValue = value[1];
+          } else {
+            whereCase += `CM."${value[0]}"='${value[1]}' `;
+            if (index != (where.length - 1)) {
+              whereCase += ` AND `
+            }
+          }
+
+        })
+      }
+
+
+      if (options.length > 0) {
+        options.forEach((value, index) => {
+          optionsCase = `${value[0]} ${value[1]} `;
+        })
+      }
+      let result;
+      if (isRoleCondition == 1) {
+
+        let getRoleUserId = `SELECT R."roleId" FROM public."Roles" R WHERE ${roleCase}`
+        let roleResult = await this.usersRepository.query(getRoleUserId);
+        let roleId = roleResult[0]?.roleId;
+
+        let getCohortMember = `SELECT "userId" FROM public."CohortMembers" CM WHERE ${whereCase} ${optionsCase};`
+        let cohortMemberIds = await this.usersRepository.query(getCohortMember);
+        let userIds = cohortMemberIds.map(userId => `'${userId.userId}'`).join(`,`);
+
+        let cohortMembers = `SELECT U."userId", U."username", U."name", U."district", U."state",U."mobile" FROM public."UserRolesMapping" URM
+      INNER JOIN public."Users" U
+      ON URM."userId" = U."userId"
+      WHERE URM."userId" IN(${userIds}) AND URM."roleId"='${roleId}'`;
+
+        let allCohortMembers = await this.usersRepository.query(cohortMembers);
+
+        let result = allCohortMembers.map(member => ({
+          ...member,
+          role: fieldValue ?? null
+        }));
+        return result;
+
+      } else {
+
+        query = `SELECT U."userId", U.username, U.name, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+    INNER JOIN public."Users" U
+    ON CM."userId" = U."userId"
+      WHERE ${whereCase} ${optionsCase}`;
+
+        if (!query) {
+          return false;
         }
-        if (index != (where.length - 1)) {
-          whereCase += ` AND `
+
+        let cohortMember = await this.usersRepository.query(query);
+
+        let userIds = (cohortMember.map(userId => `'${userId.userId}'`).join(`,`));
+
+        let getRole = `
+      SELECT R."name", URM."userId" FROM public."Roles" R
+      INNER JOIN "UserRolesMapping" URM
+      ON URM."roleId" = R."roleId"
+      WHERE URM."userId" IN (${userIds})`
+        let roleName = await this.usersRepository.query(getRole);
+
+        let roleMap = {};
+
+        for (let role of roleName) {
+          if (!roleMap[role.userId]) {
+            roleMap[role.userId] = [];
+          }
+          roleMap[role.userId].push(role.name);
         }
-      })
+
+        result = cohortMember.map(members => ({
+          ...members,
+          role: roleMap[members.userId] || []
+        }))
+      }
+      return result;
+    } catch {
+      return false;
     }
 
-    if (options.length > 0) {
-      options.forEach((value, index) => {
-        optionsCase = `${value[0]} ${value[1]} `;
-      })
-    }
 
-    if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
-      INNER JOIN public."Users" U
-      ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
-      ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
-    }
-    else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
-      INNER JOIN public."Users" U
-      ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
-      ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
-    }
-    let result = await this.usersRepository.query(query);
-    return result;
 
   }
+
 
 
   public async updateCohortMembers(

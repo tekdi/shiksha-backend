@@ -11,10 +11,11 @@ import { HasuraCohortMembersService } from "src/adapters/hasura/cohortMembers.ad
 import { Fields } from "src/fields/entities/fields.entity";
 import { User } from "src/user/entities/user-entity";
 import { Cohort } from "src/cohort/entities/cohort.entity";
+import { Role } from "src/rbac/role/entities/role.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CohortMembers, Fields, User, Cohort]),
+    TypeOrmModule.forFeature([CohortMembers, Fields, User, Cohort, Role]),
     HttpModule,
     HasuraModule,
     PostgresModule,

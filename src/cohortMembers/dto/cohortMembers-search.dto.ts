@@ -9,14 +9,14 @@ export class CohortMembersSearchDto {
 
   @ApiProperty({
     type: Number,
-    description: "Page",
+    description: "Offset",
   })
-  page: number;
+  offset: number;
 
   @ApiProperty({
     type: Object,
     description: "Filters",
-    example: { cohortId: "", userId: "", role:"" }, // Adding example for Swagger
+    example: { cohortId: "", userId: "", role: "" }, // Adding example for Swagger
   })
   @ApiPropertyOptional()
   filters: { cohortId?: string; userId?: string; role?: string }; // Define cohortId and userId properties

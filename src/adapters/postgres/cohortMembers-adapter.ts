@@ -167,6 +167,7 @@ export class PostgresCohortMembersService {
 
   public async searchCohortMembers(
     cohortMembersSearchDto: CohortMembersSearchDto,
+    fieldvalue: boolean,
     tenantId: string,
     res: Response
   ) {
@@ -244,7 +245,7 @@ export class PostgresCohortMembersService {
 
       results = await this.getCohortMemberUserDetails(
         where,
-        "true",
+        fieldvalue,
         options
       );
       if (results == false) {
@@ -266,7 +267,7 @@ export class PostgresCohortMembersService {
     }
   }
 
-  async getCohortMemberUserDetails(where: any, fieldShowHide: any, options: any) {
+  async getCohortMemberUserDetails(where: any, fieldShowHide: boolean, options: any) {
     let results = {
       userDetails: [],
     };
@@ -285,11 +286,11 @@ export class PostgresCohortMembersService {
           mobile: data?.mobile
         };
 
-        if (fieldShowHide === "false") {
-          results.userDetails.push(userDetails);
-        } else {
+        if (fieldShowHide == true) {
           const fieldValues = await this.getFieldandFieldValues(data.userId);
           userDetails['customField'] = fieldValues;
+          results.userDetails.push(userDetails);
+        } else {
           results.userDetails.push(userDetails);
         }
       }

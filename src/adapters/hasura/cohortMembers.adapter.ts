@@ -10,9 +10,8 @@ import { CohortMembersUpdateDto } from "src/cohortMembers/dto/cohortMember-updat
 
 @Injectable()
 export class HasuraCohortMembersService
-  implements IServicelocatorcohortMembers
-{
-  constructor(private httpService: HttpService) {}
+  implements IServicelocatorcohortMembers {
+  constructor(private httpService: HttpService) { }
 
   public async createCohortMembers(
     request: any,
@@ -75,8 +74,8 @@ export class HasuraCohortMembersService
     }
   }
 
-  public async searchCohortMembers(cohortMembersSearchDto, tenantId, res) {}
-  public async getCohortMembers(cohortMemberId, tenantId, fieldvalue, res) {}
+  public async searchCohortMembers(cohortMembersSearchDto, fieldvalue, tenantId, res) { }
+  public async getCohortMembers(cohortMemberId, tenantId, fieldvalue, res) { }
   public async updateCohortMembers(
     cohortMembershipId: string,
     request: any,
@@ -106,5 +105,5 @@ export class HasuraCohortMembersService
     return cohortMembersResponse;
   }
 
-  public async deleteCohortMemberById() {}
+  public async deleteCohortMemberById() { }
 }

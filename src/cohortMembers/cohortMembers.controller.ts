@@ -34,7 +34,7 @@ import { CohortMembersDto } from "./dto/cohortMembers.dto";
 import { CohortMembersAdapter } from "./cohortMembersadapter";
 import { CohortMembersUpdateDto } from "./dto/cohortMember-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
-import { Response } from "express";
+import { Response, query } from "express";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
 
@@ -113,17 +113,24 @@ export class CohortMembersController {
   @ApiHeader({
     name: "tenantid",
   })
+  @ApiQuery({
+    name: "fieldvalue",
+    description: "Send True to Fetch Custom Field of User",
+    required: false,
+  })
   public async searchCohortMembers(
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
-    @Body() cohortMembersSearchDto: CohortMembersSearchDto
+    @Body() cohortMembersSearchDto: CohortMembersSearchDto,
+    @Query("fieldvalue") fieldvalue: boolean | null = null
   ) {
     const tenantId = headers["tenantid"];
+    const finalFieldValue = fieldvalue !== null ? fieldvalue : false;
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .searchCohortMembers(cohortMembersSearchDto, tenantId, response);
+      .searchCohortMembers(cohortMembersSearchDto, finalFieldValue, tenantId, response);
   }
 
   //update

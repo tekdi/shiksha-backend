@@ -123,10 +123,10 @@ export class CohortMembersController {
     @Req() request: Request,
     @Res() response: Response,
     @Body() cohortMembersSearchDto: CohortMembersSearchDto,
-    @Query("fieldvalue") fieldvalue: boolean | null = null
+    @Query("fieldvalue") fieldvalue: string | null = null
   ) {
     const tenantId = headers["tenantid"];
-    const finalFieldValue = fieldvalue !== null ? fieldvalue : false;
+    const finalFieldValue = fieldvalue !== null ? fieldvalue : 'false';
 
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()

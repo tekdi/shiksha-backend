@@ -167,7 +167,7 @@ export class PostgresCohortMembersService {
 
   public async searchCohortMembers(
     cohortMembersSearchDto: CohortMembersSearchDto,
-    fieldvalue: boolean,
+    fieldvalue: string,
     tenantId: string,
     res: Response
   ) {
@@ -243,18 +243,17 @@ export class PostgresCohortMembersService {
         options.push(['offset', offset]);
       }
 
-      results = await this.getCohortMemberUserDetails(
+      let CohortMemberUserDetails = await this.getCohortMemberUserDetails(
         where,
         fieldvalue,
         options
       );
-      if (results == false) {
-        return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
-      }
-      const totalCount = results['userDetails'].length;
+      console.log(CohortMemberUserDetails);
 
+      results = CohortMemberUserDetails['results']
+      const totalCount = CohortMemberUserDetails['totalCount'];
 
-      if (results['userDetails'].length == 0) {
+      if (CohortMemberUserDetails == false) {
         return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
       }
 
@@ -267,15 +266,18 @@ export class PostgresCohortMembersService {
     }
   }
 
-  async getCohortMemberUserDetails(where: any, fieldShowHide: boolean, options: any) {
+  async getCohortMemberUserDetails(where: any, fieldShowHide: string, options: any) {
     let results = {
       userDetails: [],
     };
+    let totalCount = 0;
 
     try {
       let getUserDetails = await this.getUsers(where, options);
+      totalCount = getUserDetails.totalCount;
 
-      for (let data of getUserDetails) {
+
+      for (let data of getUserDetails.result) {
         let userDetails = {
           userId: data?.userId,
           userName: data?.userName,
@@ -286,7 +288,7 @@ export class PostgresCohortMembersService {
           mobile: data?.mobile
         };
 
-        if (fieldShowHide == true) {
+        if (fieldShowHide.toLowerCase() === 'true') {
           const fieldValues = await this.getFieldandFieldValues(data.userId);
           userDetails['customField'] = fieldValues;
           results.userDetails.push(userDetails);
@@ -295,7 +297,10 @@ export class PostgresCohortMembersService {
         }
       }
 
-      return results;
+      return {
+        totalCount,
+        results
+      }
     } catch {
       return false;
     }
@@ -391,14 +396,22 @@ export class PostgresCohortMembersService {
         let roleResult = await this.usersRepository.query(getRoleUserId);
         let roleId = roleResult[0]?.roleId;
 
-        let getCohortMember = `SELECT "userId" FROM public."CohortMembers" CM WHERE ${whereCase} ${optionsCase};`
+        const baseQuery = `FROM public."CohortMembers" CM WHERE ${whereCase}`;
+
+        const countQuery = `SELECT COUNT(*) ${baseQuery}`;
+
+        let getCohortMember = `SELECT "userId" ${baseQuery} ${optionsCase}`
+
+        const countResult = await this.usersRepository.query(countQuery);
+        const totalCount = parseInt(countResult[0].count, 10);
+
         let cohortMemberIds = await this.usersRepository.query(getCohortMember);
         let userIds = cohortMemberIds.map(userId => `'${userId.userId}'`).join(`,`);
 
         let cohortMembers = `SELECT U."userId", U."username", U."name", U."district", U."state",U."mobile" FROM public."UserRolesMapping" URM
-      INNER JOIN public."Users" U
-      ON URM."userId" = U."userId"
-      WHERE URM."userId" IN(${userIds}) AND URM."roleId"='${roleId}'`;
+        INNER JOIN public."Users" U
+        ON URM."userId" = U."userId"
+        WHERE URM."userId" IN(${userIds}) AND URM."roleId"='${roleId}'`;
 
         let allCohortMembers = await this.usersRepository.query(cohortMembers);
 
@@ -406,28 +419,28 @@ export class PostgresCohortMembersService {
           ...member,
           role: fieldValue ?? null
         }));
-        return result;
+        return {
+          totalCount,
+          result
+        };
+        // return result;
 
       } else {
 
         query = `SELECT U."userId", U.username, U.name, U.district, U.state,U.mobile FROM public."CohortMembers" CM
-    INNER JOIN public."Users" U
-    ON CM."userId" = U."userId"
-      WHERE ${whereCase} ${optionsCase}`;
-
-        if (!query) {
-          return false;
-        }
+        INNER JOIN public."Users" U
+        ON CM."userId" = U."userId"
+        WHERE ${whereCase} ${optionsCase}`;
 
         let cohortMember = await this.usersRepository.query(query);
 
         let userIds = (cohortMember.map(userId => `'${userId.userId}'`).join(`,`));
 
         let getRole = `
-      SELECT R."name", URM."userId" FROM public."Roles" R
-      INNER JOIN "UserRolesMapping" URM
-      ON URM."roleId" = R."roleId"
-      WHERE URM."userId" IN (${userIds})`
+        SELECT R."name", URM."userId" FROM public."Roles" R 
+        INNER JOIN "UserRolesMapping" URM 
+        ON URM."roleId" = R."roleId"
+        WHERE URM."userId" IN (${userIds})`
         let roleName = await this.usersRepository.query(getRole);
 
         let roleMap = {};

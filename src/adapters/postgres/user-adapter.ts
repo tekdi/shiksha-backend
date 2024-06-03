@@ -155,7 +155,7 @@ export class PostgresUserService implements IServicelocator {
 
         const customField = {
           fieldId: data.fieldId,
-          name: data.name,
+          name: data?.name,
           label: data.label,
           order: data.ordering,
           value: fieldValue || '',
@@ -408,7 +408,7 @@ export class PostgresUserService implements IServicelocator {
       for (let value of data.value) {
         dataArray.push(value.toLowerCase().replace(/ /g, '_'));
       }
-      data.value = dataArray.join(', ');
+      data.value = dataArray.join(',');
     }
 
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });

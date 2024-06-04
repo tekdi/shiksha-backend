@@ -21,15 +21,12 @@ import { isUUID } from "class-validator";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
-import { State } from "src/cohort/entities/state.entity";
 
 @Injectable()
 export class PostgresCohortService {
 
 
   constructor(
-    @InjectRepository(State)
-    private stateRepository: Repository<State>,
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(CohortMembers)
@@ -41,7 +38,6 @@ export class PostgresCohortService {
     @InjectRepository(UserTenantMapping)
     private UserTenantMappingRepository: Repository<UserTenantMapping>,
     private fieldsService: PostgresFieldsService,
-    
   ) { }
 
   public async getCohortList(
@@ -97,6 +93,7 @@ export class PostgresCohortService {
       if (checkData === true) {
         const result = await this.getCohortDataWithCustomfield(cohortId);
         return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched succcessfully.");
+
       } else {
         return APIResponse.error(
           res,
@@ -138,48 +135,12 @@ export class PostgresCohortService {
         options: data?.fieldParams?.['options'] || {},
         type: data.type || ''
       };
-      customField["dependsOn"] = null;
-      if(data.source_details){
-        // We need to add the dependence Condition here.
-        if(data?.source_details?.source === 'table' && data?.source_details.depends_on === "null"){ 
-          let dynamicOptions = await this.findDynamicOptions(data?.source_details?.table);
-          customField.options = dynamicOptions
-          customField["dependsOn"] = null;
-        }else if(data?.source_details?.source === 'table' && data?.source_details.depends_on){
-          customField.options = {};
-          customField["dependsOn"] = data?.source_details.depends_on;
-        }else{
-          customField["dependsOn"] = null;
-          customField.options = data.fieldParams;
-        }
-      }
       customFieldsArray.push(customField);
     }
     result.cohortData['customFields'] = customFieldsArray;
     return result
   }
 
-  async findDynamicOptions(tableName,whereClause?:{}){
-    let query:string;
-    let result;
-    if(whereClause){
-      query = `select * from public."${tableName} where=${whereClause}"`
-      result = await this.cohortRepository.query(query);
-      if(!result){
-        return null;
-      }
-      return result;
-    }
-    query = `select * from public."${tableName}"`
-    result = await this.cohortRepository.query(query);
-    if(!result){
-      return null;
-    }
-    return result.map(result => ({
-      value: result.value, 
-      label: result.name
-  }));
-  }
 
   async findFilledValues(cohortId: string) {
     let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
@@ -206,7 +167,6 @@ export class PostgresCohortService {
     })
     return customFields;
   }
-
 
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId",c."parentId"
@@ -242,7 +202,9 @@ export class PostgresCohortService {
     }
     return { valid: true, fieldId: "true" };
   };
-  
+
+
+
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto, res) {
     const apiId = APIID.COHORT_CREATE;
 

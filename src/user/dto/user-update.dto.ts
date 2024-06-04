@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNotEmpty, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested, IsNotEmpty, IsEnum, ValidateIf } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 class UserDataDTO {
@@ -70,6 +70,7 @@ class CustomFieldDTO {
     @IsNotEmpty()
     fieldId: string;
 
+    @ValidateIf(o => o.value !== '')
     @IsNotEmpty()
     @Expose()
     value: string | string[];

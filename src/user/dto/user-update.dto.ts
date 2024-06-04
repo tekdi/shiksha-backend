@@ -1,18 +1,22 @@
-import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested, IsNotEmpty, IsEnum } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 class UserDataDTO {
 
     @IsString()
+    @IsOptional()
     username: string;
 
     @IsString()
+    @IsNotEmpty()
     name: string;
 
     @IsString()
+    @IsOptional()
     role: string;
 
     @IsOptional()
+    @IsString()
     dob: string | null;
 
     @IsOptional()
@@ -36,44 +40,55 @@ class UserDataDTO {
     pincode: string | null;
 
     @IsString()
+    @IsOptional()
     createdAt: string;
 
     @IsString()
+    @IsOptional()
     updatedAt: string;
 
     @IsString()
+    @IsOptional()
     createdBy: string;
 
     @IsString()
+    @IsOptional()
     updatedBy: string;
 
     @IsString()
+    @IsOptional()
     tenantId: string;
 
     @IsString()
+    @IsOptional()
     status: string;
 }
-
 class CustomFieldDTO {
+
     @IsString()
+    @Expose()
+    @IsNotEmpty()
     fieldId: string;
 
-    @IsString()
-    value: string;
+    @IsNotEmpty()
+    @Expose()
+    value: string | string[];
 }
 
 export class UserUpdateDTO {
 
-    @IsString()
     userId: string;
 
     @Expose()
     @ValidateNested()
+    @IsNotEmpty()
     @Type(() => UserDataDTO)
     userData: UserDataDTO;
 
     @IsArray()
+    @IsOptional()
     @ValidateNested({ each: true })
     @Type(() => CustomFieldDTO)
+    @Expose()
     customFields: CustomFieldDTO[];
 }

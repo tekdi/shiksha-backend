@@ -7,7 +7,7 @@ import { Fields } from "./entities/fields.entity";
 import { FieldValues } from "./entities/fields-values.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { FieldsService } from "./fields.service";
-import { PostgresModule } from "src/adapters/postgres/potsgres-module";
+import { PostgresModule } from "src/adapters/postgres/postgres-module";
 
 @Module({
   imports: [

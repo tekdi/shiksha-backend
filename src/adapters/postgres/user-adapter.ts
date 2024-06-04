@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
-import { FieldValues } from '../../user/entities/field-value-entities';
+import { FieldValues } from 'src/fields/entities/fields-values.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCreateDto } from '../../user/dto/user-create.dto';
@@ -13,7 +13,7 @@ import {
 } from "../../common/utils/keycloak.adapter.util"
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
-import { Field } from '../../user/entities/field-entity';
+import { Fields } from 'src/fields/entities/fields.entity';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
 import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { isUUID } from 'class-validator';
@@ -39,8 +39,8 @@ export class PostgresUserService implements IServicelocator {
     private usersRepository: Repository<User>,
     @InjectRepository(FieldValues)
     private fieldsValueRepository: Repository<FieldValues>,
-    @InjectRepository(Field)
-    private fieldsRepository: Repository<Field>,
+    @InjectRepository(Fields)
+    private fieldsRepository: Repository<Fields>,
     @InjectRepository(CohortMembers)
     private cohortMemberRepository: Repository<CohortMembers>,
     @InjectRepository(UserTenantMapping)

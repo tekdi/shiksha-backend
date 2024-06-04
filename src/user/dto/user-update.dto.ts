@@ -70,7 +70,6 @@ class CustomFieldDTO {
     @IsNotEmpty()
     fieldId: string;
 
-    @IsNotEmpty()
     @Expose()
     value: string | string[];
 }

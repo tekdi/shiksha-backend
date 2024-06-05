@@ -95,4 +95,7 @@ export class Fields {
 
   @Column({ type: 'jsonb' })
   fieldParams: object;
+
+  @Column({ type: 'jsonb',nullable: true }) 
+  source_details: any;
 }

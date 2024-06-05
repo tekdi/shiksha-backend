@@ -36,15 +36,6 @@ jobs:
            echo "Current Working Directory: pwd"
            pwd
            ls -ltra
-    - name: Creating Dockerfile
-      env:
-       DOCKERFILE_FILE_CONTENT: ${{ secrets.DOCKERFILE_FILE_CONTENT }}
-      run: echo "$DOCKERFILE_FILE_CONTENT" > Dockerfile
-    - name: Show PWD and list content
-      run: |
-          echo "Current Working Directory: pwd"
-          pwd
-          ls -ltra
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:

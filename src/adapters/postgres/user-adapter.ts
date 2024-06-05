@@ -395,9 +395,26 @@ export class PostgresUserService implements IServicelocator {
     if (!user) {
       return null;
     }
-    Object.assign(user, userData);
 
-    return this.usersRepository.save(user);
+    if (userData['isEmailMasked'] == 'false') {
+      userData['encryptedEmail'] = encrypt(userData['email'])
+      userData['email'] = maskEmail(userData['email'])
+    }
+
+    if (userData['isMobileMasked'] == 'false') {
+      userData['encryptedMobile'] = encrypt(userData['mobile'])
+      userData['mobile'] = maskMobileNumber(userData['mobile'])
+    }
+
+
+    if (userData['isDobMasked'] == 'false') {
+      userData['encryptedDob'] = encrypt(userData['dob'])
+      userData['dob'] = maskDateOfBirth(userData['dob']);
+    }
+
+    // Object.assign(user, userData);
+
+    return this.usersRepository.save(userData);
   }
 
 

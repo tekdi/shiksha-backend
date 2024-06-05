@@ -402,6 +402,9 @@ export class PostgresUserService implements IServicelocator {
 
     if (Array.isArray(data.value) === true) {
       let dataArray = [];
+      for (let value of data.value) {
+        dataArray.push(value.toLowerCase().replace(/ /g, '_'));
+      }
       data.value = dataArray.join(',');
     }
 

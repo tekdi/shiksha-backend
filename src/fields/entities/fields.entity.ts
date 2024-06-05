@@ -86,7 +86,7 @@ export class Fields {
   contextType?: string;
 
   @Column('jsonb', { nullable: true })
-  fieldParams?: any;
+  fieldParams?: object;
 
   @Column('json', { nullable: true })
   fieldAttributes?: any;
@@ -97,4 +97,7 @@ export class Fields {
   )
   @JoinColumn({ name: 'fieldValuesId' })
   fieldValues: FieldValues[];
+  
+  @Column({ type: 'jsonb',nullable: true }) 
+  source_details: any;
 }

@@ -9,12 +9,11 @@ import { Fields } from "../../fields/entities/fields.entity";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { SuccessResponse } from "src/success-response";
-import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
+import { maskFieldValue, encrypt } from "@utils/mask-data";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -25,7 +24,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         private fieldsValuesRepository: Repository<FieldValues>,
     ) { }
 
-    //fields
+    //fields api - no change needed
     async createFields(request: any, fieldsDto: FieldsDto, response: Response,) {
         const apiId = APIID.FIELDS_CREATE;
         try {
@@ -54,6 +53,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
+    // api
     async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto,response :Response) {
         const apiId = APIID.FIELDS_SEARCH;
         try {
@@ -101,6 +101,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { mappedResponse, totalCount };
     }
 
+    // api 
     async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res:Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
 
@@ -111,23 +112,24 @@ export class PostgresFieldsService implements IServicelocatorfields {
                     APIResponse.error(
                         res,
                         apiId,
-                        `Fields not found`,
-                        `Fields not found`,
+                        `Fields not found or already exist`,
+                        `Fields not found or already exist`,
                         (HttpStatus.NOT_FOUND)
                       )
 
                 }
-               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
+               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
 
 
         } catch (error) {
-            const errorMessage = error.message || 'Internal server error';
+            const errorMessage = error.message || 'Something went wrong';
            return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
 
         }
     }
 
-    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) {
+    // api 
+    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) { 
         const apiId = APIID.FIELDVALUES_SEARCH;
         try {
             const getConditionalData = await this.search(fieldValuesSearchDto)
@@ -210,7 +212,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return results;
     }
 
-
     public async mappedResponse(result: any) {
         const fieldValueResponse = result.map((item: any) => {
             const fieldValueMapping = {
@@ -267,19 +268,36 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return fieldResponse;
     }
 
-    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto){
-
+    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto) {
+// TODO
+        const field = await this.fieldsRepository.findOne({ where : {fieldId: fieldValuesDto.fieldId}})
         const checkFieldValueExist = await this.fieldsValuesRepository.find({
-            where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId },
+            where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId }
         });
         
+        console.log(checkFieldValueExist,"fdto")
+
+        const { isPII } = field?.fieldAttributes;
+       
+        if(isPII && checkFieldValueExist.length === 0) {
+            const maskedFieldValue = maskFieldValue(fieldValuesDto.value);
+            const encryptedFieldValue = encrypt(fieldValuesDto.value);
+            fieldValuesDto.value = maskedFieldValue;
+            fieldValuesDto["encryptedValue"] = encryptedFieldValue;
+        }
+
+        console.log(fieldValuesDto,"is")
+
         if (checkFieldValueExist.length == 0) {
-            let result = await this.fieldsValuesRepository.save(fieldValuesDto);
-            return result
+
+            console.log(fieldValuesDto, "fval")
+            const { value, encryptedValue, ...result } = await this.fieldsValuesRepository.save(fieldValuesDto);
+
+            console.log(result,"reeeee")
+            return result;
         }
         return false;
     }
-
 
     public async search(dtoFileName){
         let { limit, page, filters } = dtoFileName;

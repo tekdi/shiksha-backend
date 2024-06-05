@@ -21,15 +21,12 @@ import { isUUID } from "class-validator";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
-import { State } from "src/cohort/entities/state.entity";
 
 @Injectable()
 export class PostgresCohortService {
 
 
   constructor(
-    @InjectRepository(State)
-    private stateRepository: Repository<State>,
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(CohortMembers)
@@ -41,7 +38,7 @@ export class PostgresCohortService {
     @InjectRepository(UserTenantMapping)
     private UserTenantMappingRepository: Repository<UserTenantMapping>,
     private fieldsService: PostgresFieldsService,
-    
+
   ) { }
 
   public async getCohortList(
@@ -138,14 +135,14 @@ export class PostgresCohortService {
         options: data?.fieldParams?.['options'] || {},
         type: data.type || ''
       };
-      if(data.source_details){
+      if (data.source_details) {
         // We need to add teh dependence Condition here.
-        if(data?.source_details?.source === 'table'){ 
+        if (data?.source_details?.source === 'table') {
           let dynamicOptions = await this.findDynamicOptions(data?.source_details?.table);
           customField.options = dynamicOptions
-        }else if(data.source_details.source === 'jsonFile'){
+        } else if (data.source_details.source === 'jsonFile') {
           // let findDataFromJson = 
-        }else{
+        } else {
           customField.options = data.fieldParams;
         }
       }
@@ -155,26 +152,26 @@ export class PostgresCohortService {
     return result
   }
 
-  async findDynamicOptions(tableName,whereClause?:{}){
-    let query:string;
+  async findDynamicOptions(tableName, whereClause?: {}) {
+    let query: string;
     let result;
-    if(whereClause){
+    if (whereClause) {
       query = `select * from public."${tableName} where=${whereClause}"`
       result = await this.cohortRepository.query(query);
-      if(!result){
+      if (!result) {
         return null;
       }
       return result;
     }
     query = `select * from public."${tableName}"`
     result = await this.cohortRepository.query(query);
-    if(!result){
+    if (!result) {
       return null;
     }
     return result.map(result => ({
-      value: result.value, 
+      value: result.value,
       label: result.name
-  }));
+    }));
   }
 
   async findFilledValues(cohortId: string) {
@@ -238,7 +235,7 @@ export class PostgresCohortService {
     }
     return { valid: true, fieldId: "true" };
   };
-  
+
   public async createCohort(request: any, cohortCreateDto: CohortCreateDto, res) {
     const apiId = APIID.COHORT_CREATE;
 
@@ -588,7 +585,7 @@ export class PostgresCohortService {
         cohortDetails: [],
       };
 
-      let count=0
+      let count = 0
 
       if (whereClause['userId']) {
         const additionalFields = Object.keys(whereClause).filter(key => key !== 'userId');
@@ -618,33 +615,33 @@ export class PostgresCohortService {
             (HttpStatus.BAD_REQUEST)
           )
         }
-        const [data,totalCount] = await this.cohortMembersRepository.findAndCount({
+        const [data, totalCount] = await this.cohortMembersRepository.findAndCount({
           where: whereClause,
           skip: offset,
         });
         const cohortData = data.slice(offset, offset + (limit));
-        count=totalCount
+        count = totalCount
         for (let data of cohortData) {
           let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
           results.cohortDetails.push(cohortDetails);
         }
       } else {
-        const [data,totalcount] = await this.cohortRepository.findAndCount({
+        const [data, totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
           skip: offset
         });
         const cohortData = data.slice(offset, offset + (limit));
-        count=totalcount
+        count = totalcount
 
         for (let data of cohortData) {
           let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
           results.cohortDetails.push(cohortDetails);
         }
       }
-      
+
       if (results.cohortDetails.length > 0) {
         const totalCount = results.cohortDetails.length
-        return APIResponse.success(response, apiId, {count,results}, (HttpStatus.OK), "Cohort details fetched successfully");
+        return APIResponse.success(response, apiId, { count, results }, (HttpStatus.OK), "Cohort details fetched successfully");
 
       } else {
         return APIResponse.error(

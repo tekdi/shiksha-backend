@@ -21,3 +21,24 @@ export class FieldValuesCreateDto {
     Object.assign(this, obj);
   }
 }
+
+export class FieldOptionsDto {
+  @ApiPropertyOptional({
+    type: String,
+    description: "Field Name",
+  })
+  @Expose()
+  @IsNotEmpty()
+  fieldName: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "Associated To",
+  })
+  @Expose()
+  associatedTo: string;
+
+  constructor(obj: any) {
+    Object.assign(this, obj);
+  }
+}

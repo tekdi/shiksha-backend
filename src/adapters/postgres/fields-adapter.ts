@@ -15,6 +15,7 @@ import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
+import { FieldOptionsDto } from "src/fields/dto/field-values-create.dto";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -44,7 +45,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             });
 
             let result = await this.fieldsRepository.save(fieldsData);
-       
+
             return await APIResponse.success(response, apiId, result,
                 HttpStatus.CREATED, 'Fields created successfully.')
 
@@ -54,7 +55,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
-    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto,response :Response) {
+    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto, response: Response) {
         const apiId = APIID.FIELDS_SEARCH;
         try {
 
@@ -101,28 +102,28 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { mappedResponse, totalCount };
     }
 
-    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res:Response) {
+    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto, res: Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
 
 
         try {
-                let result = await this.findAndSaveFieldValues(fieldValuesDto);
-                if(!result){
-                    APIResponse.error(
-                        res,
-                        apiId,
-                        `Fields not found`,
-                        `Fields not found`,
-                        (HttpStatus.NOT_FOUND)
-                      )
+            let result = await this.findAndSaveFieldValues(fieldValuesDto);
+            if (!result) {
+                APIResponse.error(
+                    res,
+                    apiId,
+                    `Fields not found`,
+                    `Fields not found`,
+                    (HttpStatus.NOT_FOUND)
+                )
 
-                }
-               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
+            }
+            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
 
 
         } catch (error) {
             const errorMessage = error.message || 'Internal server error';
-           return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
+            return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
         }
     }
@@ -267,12 +268,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return fieldResponse;
     }
 
-    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto){
+    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto) {
 
         const checkFieldValueExist = await this.fieldsValuesRepository.find({
             where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId },
         });
-        
+
         if (checkFieldValueExist.length == 0) {
             let result = await this.fieldsValuesRepository.save(fieldValuesDto);
             return result
@@ -281,25 +282,27 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
 
-    public async search(dtoFileName){
+    public async search(dtoFileName) {
         let { limit, page, filters } = dtoFileName;
-    
+
         let offset = 0;
         if (page > 1) {
             offset = parseInt(limit) * (page - 1);
         }
-        
+
         if (limit.trim() === '') {
             limit = '0';
         }
-    
+
         const whereClause = {};
         if (filters && Object.keys(filters).length > 0) {
             Object.entries(filters).forEach(([key, value]) => {
                 whereClause[key] = value;
             });
         }
-        return {offset,limit,whereClause};
-      }
+        return { offset, limit, whereClause };
+    }
+
+    public async getFieldOptions() { }
 
 }

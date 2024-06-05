@@ -400,13 +400,19 @@ export class PostgresUserService implements IServicelocator {
 
   async updateCustomFields(itemId, data) {
 
+    console.log("hi");
+
     if (Array.isArray(data.value) === true) {
+
       let dataArray = [];
+      for (let value of data.value) {
+        dataArray.push(value);
+      }
       data.value = dataArray.join(',');
     }
-
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
     let newResult;
+
     if (result.affected === 0) {
       newResult = await this.fieldsValueRepository.save({
         itemId,

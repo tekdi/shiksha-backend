@@ -155,6 +155,6 @@ export class FieldsController {
     @Body() fieldOptionsDto: FieldOptionsDto,
     @Res() response: Response
   ) {
-    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions();
+    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldOptionsDto, response);
   }
 }

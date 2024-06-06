@@ -303,6 +303,123 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { offset, limit, whereClause };
     }
 
-    public async getFieldOptions() { }
+    public async getFieldOptions(request: any, fieldOptionsDto: FieldOptionsDto, response: Response) {
+        const apiId = APIID.FIELDVALUES_SEARCH;
+        let context = 'COHORT';
+        let contextType = 'COHORT'
+
+        const customFields = await this.findCustomFields(context, contextType);
+
+        let dynamicOptions;
+        for (let data of customFields) {
+            if (data?.dependsOn === false) {
+                if (data.sourceDetails) {
+                    if (data?.sourceDetails?.source === 'table') {
+                        const whereClause = `"controllingfieldfk" = '${fieldOptionsDto?.associatedTo}'`;
+                        dynamicOptions = await this.findDynamicOptions(fieldOptionsDto?.fieldName, whereClause);
+                    } else if (data?.sourceDetails?.source === 'jsonFile') {
+                    }
+                }
+            }
+        }
+        return await APIResponse.success(response, apiId, dynamicOptions,
+            HttpStatus.OK, 'Field Values fetched successfully.')
+    }
+    async findDynamicOptions(tableName, whereClause?: {}) {
+        let query: string;
+        let result;
+
+        if (whereClause) {
+
+            query = `select * from public."${tableName}" where ${whereClause}`
+
+            result = await this.fieldsRepository.query(query);
+            if (!result) {
+                return null;
+            }
+            return result.map(result => ({
+                value: result.value,
+                label: result.name
+            }));
+        }
+
+        query = `select * from public."${tableName}"`
+        result = await this.fieldsRepository.query(query);
+        if (!result) {
+            return null;
+        }
+
+        return result.map(result => ({
+            value: result.value,
+            label: result.name
+        }));
+    }
+    async findCustomFields(context, contextType) {
+        let customFields = await this.fieldsRepository.find({
+            where: {
+                context: context,
+                contextType: contextType
+            }
+        })
+        return customFields;
+    }
+
+    async findFilledValues(cohortId: string) {
+        let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
+    LEFT JOIN public."FieldValues" F
+    ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
+        let result = await this.fieldsRepository.query(query, [cohortId]);
+        return result;
+    }
+
+    async getFieldValuesData(cohortId: string) {
+
+        let context = 'COHORT';
+        let contextType = 'COHORT'
+        let customField;
+        let fieldsArr = [];
+        const [filledValues, customFields] = await Promise.all([
+            this.findFilledValues(cohortId),
+            this.findCustomFields(context, contextType)
+        ]);
+
+
+        const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+        for (let data of customFields) {
+
+            const fieldValue = filledValuesMap.get(data.fieldId);
+            customField = {
+                fieldId: data.fieldId,
+                label: data.label,
+                value: fieldValue || '',
+                options: data?.fieldParams?.['options'] || {},
+                type: data.type || ''
+            };
+
+
+            if (data.sourceDetails) {
+                // We need to add teh dependence Condition here.
+                if (data?.dependsOn === false) {
+
+                    if (data?.sourceDetails?.source === 'table') {
+                        let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
+                        customField.options = dynamicOptions
+                    } else if (data.sourceDetails.source === 'jsonFile') { }
+                    // let findDataFromJson = 
+                } else {
+                    customField.options = data.fieldParams;
+                }
+            } else {
+                customField.options = data.fieldParams;
+            }
+
+            fieldsArr.push(customField);
+
+        }
+
+        return fieldsArr;
+    }
+
+
 
 }

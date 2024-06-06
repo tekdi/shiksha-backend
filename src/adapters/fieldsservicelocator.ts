@@ -15,5 +15,5 @@ export interface IServicelocatorfields {
   // getFieldValues(id, request);
   searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response);
   updateFieldValues(id: string, request: any, fieldValuesDto: FieldValuesDto);
-  getFieldOptions();
+  getFieldOptions(request: any, fieldOptionsDto: FieldOptionsDto, response: Response);
 }

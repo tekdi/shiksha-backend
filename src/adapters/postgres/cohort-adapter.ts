@@ -122,33 +122,9 @@ export class PostgresCohortService {
       this.findCohortDetails(cohortId),
       this.findCustomFields()
     ]);
-
-
-    result.cohortData = cohortDetails;
-    const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-    for (let data of customFields) {
-      const fieldValue = filledValuesMap.get(data.fieldId);
-      const customField = {
-        fieldId: data.fieldId,
-        label: data.label,
-        value: fieldValue || '',
-        options: data?.fieldParams?.['options'] || {},
-        type: data.type || ''
-      };
-      if (data.source_details) {
-        // We need to add teh dependence Condition here.
-        if (data?.source_details?.source === 'table') {
-          let dynamicOptions = await this.findDynamicOptions(data?.source_details?.table);
-          customField.options = dynamicOptions
-        } else if (data.source_details.source === 'jsonFile') {
-          // let findDataFromJson = 
-        } else {
-          customField.options = data.fieldParams;
-        }
-      }
-      customFieldsArray.push(customField);
-    }
-    result.cohortData['customFields'] = customFieldsArray;
+    // let fieldValue = [];
+    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId);
+    result.cohortData['customFields'] = fieldValue;
     return result
   }
 

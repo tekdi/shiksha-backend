@@ -88,21 +88,23 @@ export class PostgresCohortService {
           (HttpStatus.BAD_REQUEST)
         )
       }
-      const checkData = await this.checkAuthAndValidData(cohortId);
 
-      if (checkData === true) {
-        const result = await this.getCohortDataWithCustomfield(cohortId);
-        return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched succcessfully.");
-
-      } else {
+      //Check id cohort is there and is active
+      const checkData = await this.findCohortDetails(cohortId);
+      
+      if (!checkData || !checkData.status) {
         return APIResponse.error(
           res,
           apiId,
-          `Cohort not found`,
+          `Cohort is either does not exist or not active`,
           'Invalid cohortId',
           (HttpStatus.NOT_FOUND)
         )
       }
+  
+      const result = await this.getCohortDataWithCustomfield(checkData);
+      return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched succcessfully.");
+
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
@@ -110,24 +112,23 @@ export class PostgresCohortService {
     }
   }
 
-  public async getCohortDataWithCustomfield(cohortId: string) {
+  public async getCohortDataWithCustomfield(cohortData: any) {
+    let cohortId = cohortData.cohortId;
     const result = {
-      cohortData: {}
+      cohortData: cohortData
     };
 
     let customFieldsArray = [];
 
-    const [filledValues, cohortDetails, customFields] = await Promise.all([
-      this.findFilledValues(cohortId),
-      this.findCohortDetails(cohortId),
+    const [fieldValues, customFields] = await Promise.all([
+      this.findFieldValues(cohortId),
       this.findCustomFields()
     ]);
 
-
-    result.cohortData = cohortDetails;
-    const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+    const fieldValuesMap = new Map(fieldValues.map(item => [item.fieldId, item.value]));
+    
     for (let data of customFields) {
-      const fieldValue = filledValuesMap.get(data.fieldId);
+      const fieldValue = fieldValuesMap.get(data.fieldId);
       const customField = {
         fieldId: data.fieldId,
         label: data.label,
@@ -142,7 +143,7 @@ export class PostgresCohortService {
   }
 
 
-  async findFilledValues(cohortId: string) {
+  async findFieldValues(cohortId: string) {
     let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
     LEFT JOIN public."FieldValues" F
     ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
@@ -344,7 +345,7 @@ export class PostgresCohortService {
         )
       }
 
-      const checkData = await this.checkAuthAndValidData(cohortId);
+      const checkData = await this.checkIfCohortExist(cohortId);
 
       if (checkData === true) {
         let updateData = {};
@@ -650,7 +651,7 @@ export class PostgresCohortService {
           (HttpStatus.BAD_REQUEST)
         )
       }
-      const checkData = await this.checkAuthAndValidData(cohortId);
+      const checkData = await this.checkIfCohortExist(cohortId);
 
       if (checkData === true) {
         let query = `UPDATE public."Cohort"
@@ -683,7 +684,7 @@ export class PostgresCohortService {
     }
   }
 
-  public async checkAuthAndValidData(id: any) {
+  public async checkIfCohortExist(id: any) {
 
     const existData = await this.cohortRepository.find({
       where: {

@@ -142,7 +142,7 @@ export class FieldsController {
   @Post("/fieldOptions")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Field Options list." })
-  @ApiBody({ type: FieldsSearchDto })
+  @ApiBody({ type: FieldOptionsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({

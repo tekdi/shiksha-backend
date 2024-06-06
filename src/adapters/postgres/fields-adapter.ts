@@ -307,30 +307,37 @@ export class PostgresFieldsService implements IServicelocatorfields {
         const apiId = APIID.FIELDVALUES_SEARCH;
         let context = 'COHORT';
         let contextType = 'COHORT'
-
-        const customFields = await this.findCustomFields(context, contextType);
-
         let dynamicOptions;
-        for (let data of customFields) {
-            if (data?.dependsOn === false) {
-                if (data.sourceDetails) {
-                    if (data?.sourceDetails?.source === 'table') {
-                        const whereClause = `"controllingfieldfk" = '${fieldOptionsDto?.associatedTo}'`;
-                        dynamicOptions = await this.findDynamicOptions(fieldOptionsDto?.fieldName, whereClause);
-                    } else if (data?.sourceDetails?.source === 'jsonFile') {
-                    }
-                }
+
+        const associatedTo = fieldOptionsDto?.associatedTo
+        const fetchFieldParams = await this.fieldsRepository.findOne({
+            where: {
+                name: fieldOptionsDto.fieldName,
+                context: context,
+                contextType: contextType
             }
+        })
+
+        if (fetchFieldParams?.sourceDetails?.source === 'table') {
+            let whereClause;
+            if (fieldOptionsDto.associatedTo) {
+                whereClause = `"controllingfieldfk" = '${fieldOptionsDto.associatedTo}'`;
+            }
+            dynamicOptions = await this.findDynamicOptions(fieldOptionsDto?.fieldName, whereClause);
+        } else if (fetchFieldParams?.sourceDetails?.source === 'jsonFile') {
+        } else {
+            fetchFieldParams.fieldParams['options'] && fieldOptionsDto.associatedTo ? dynamicOptions = fetchFieldParams.fieldParams['options'].filter((option: any) => option.associatedTo === associatedTo) : dynamicOptions = fetchFieldParams.fieldParams['options'];
         }
+
         return await APIResponse.success(response, apiId, dynamicOptions,
             HttpStatus.OK, 'Field Values fetched successfully.')
     }
+
     async findDynamicOptions(tableName, whereClause?: {}) {
         let query: string;
         let result;
 
         if (whereClause) {
-
             query = `select * from public."${tableName}" where ${whereClause}`
 
             result = await this.fieldsRepository.query(query);
@@ -344,6 +351,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
 
         query = `select * from public."${tableName}"`
+        console.log(query);
+
         result = await this.fieldsRepository.query(query);
         if (!result) {
             return null;
@@ -372,14 +381,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    async getFieldValuesData(cohortId: string) {
-
-        let context = 'COHORT';
-        let contextType = 'COHORT'
+    async getFieldValuesData(id: string, context: string, contextType: string) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
-            this.findFilledValues(cohortId),
+            this.findFilledValues(id),
             this.findCustomFields(context, contextType)
         ]);
 
@@ -398,16 +404,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
 
             if (data.sourceDetails) {
-                // We need to add teh dependence Condition here.
+                //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
                 if (data?.dependsOn === false) {
-
                     if (data?.sourceDetails?.source === 'table') {
                         let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
-                        customField.options = dynamicOptions
+                        customField.options = dynamicOptions;
                     } else if (data.sourceDetails.source === 'jsonFile') { }
-                    // let findDataFromJson = 
                 } else {
-                    customField.options = data.fieldParams;
+                    customField.options = [];
                 }
             } else {
                 customField.options = data.fieldParams;

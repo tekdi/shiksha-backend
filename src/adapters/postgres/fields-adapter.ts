@@ -351,7 +351,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
 
         query = `select * from public."${tableName}"`
-        console.log(query);
 
         result = await this.fieldsRepository.query(query);
         if (!result) {

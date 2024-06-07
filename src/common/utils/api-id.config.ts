@@ -34,5 +34,9 @@ export const APIID = {
     FIELDS_CREATE: "api.fields.create",
     FIELDS_SEARCH: "api.fields.search",
     FIELDVALUES_CREATE: "api.fieldValues.create",
-    FIELDVALUES_SEARCH: "api.fieldValues.search"
+    FIELDVALUES_SEARCH: "api.fieldValues.search",
+    LOGIN: "api.login",
+    LOGOUT: "api.logout",
+    REFRESH: "api.refresh",
+    USER_AUTH: "api.user.auth"
 }

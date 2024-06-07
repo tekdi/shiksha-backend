@@ -30,7 +30,7 @@ jobs:
     - name: Copy .env file
       env:
        ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
-      run: echo "$ENV_FILE_CONTENT" > .env
+      run: echo "$ENV_FILE_CONTENT" > manifest/configmap.yaml
     - name: Show PWD and list content
       run: |
            echo "Current Working Directory: pwd"
@@ -70,6 +70,7 @@ jobs:
         kubectl delete deployment backend
         kubectl delete service backend
         kubectl apply -f manifest/backend-updated.yaml
+        kubectl apply -f manifest/configmap.yaml
         sleep 10
         kubectl get pods
         kubectl get services

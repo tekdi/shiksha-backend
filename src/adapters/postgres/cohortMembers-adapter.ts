@@ -248,7 +248,6 @@ export class PostgresCohortMembersService {
         fieldvalue,
         options
       );
-      console.log(CohortMemberUserDetails);
 
       results = CohortMemberUserDetails['results']
       const totalCount = CohortMemberUserDetails['totalCount'];
@@ -276,8 +275,8 @@ export class PostgresCohortMembersService {
       let getUserDetails = await this.getUsers(where, options);
       totalCount = getUserDetails.totalCount;
 
+      for (let data of getUserDetails) {
 
-      for (let data of getUserDetails.result) {
         let userDetails = {
           userId: data?.userId,
           userName: data?.userName,
@@ -367,6 +366,9 @@ export class PostgresCohortMembersService {
       let isRoleCondition = 0;
       let roleCase;
       let fieldValue
+      let roleMap = {};
+      let result;
+
       if (where.length > 0) {
         where.forEach((value, index) => {
           if (value[0] == "role") {
@@ -379,30 +381,24 @@ export class PostgresCohortMembersService {
               whereCase += ` AND `
             }
           }
-
         })
       }
-
 
       if (options.length > 0) {
         options.forEach((value, index) => {
           optionsCase = `${value[0]} ${value[1]} `;
         })
       }
-      let result;
       if (isRoleCondition == 1) {
-
         let getRoleUserId = `SELECT R."roleId" FROM public."Roles" R WHERE ${roleCase}`
         let roleResult = await this.usersRepository.query(getRoleUserId);
         let roleId = roleResult[0]?.roleId;
 
         const baseQuery = `FROM public."CohortMembers" CM WHERE ${whereCase}`;
-
         const countQuery = `SELECT COUNT(*) ${baseQuery}`;
-
         let getCohortMember = `SELECT "userId" ${baseQuery} ${optionsCase}`
-
         const countResult = await this.usersRepository.query(countQuery);
+
         const totalCount = parseInt(countResult[0].count, 10);
 
         let cohortMemberIds = await this.usersRepository.query(getCohortMember);
@@ -412,7 +408,6 @@ export class PostgresCohortMembersService {
         INNER JOIN public."Users" U
         ON URM."userId" = U."userId"
         WHERE URM."userId" IN(${userIds}) AND URM."roleId"='${roleId}'`;
-
         let allCohortMembers = await this.usersRepository.query(cohortMembers);
 
         let result = allCohortMembers.map(member => ({
@@ -423,17 +418,13 @@ export class PostgresCohortMembersService {
           totalCount,
           result
         };
-        // return result;
-
       } else {
-
         query = `SELECT U."userId", U.username, U.name, U.district, U.state,U.mobile FROM public."CohortMembers" CM
         INNER JOIN public."Users" U
         ON CM."userId" = U."userId"
         WHERE ${whereCase} ${optionsCase}`;
 
         let cohortMember = await this.usersRepository.query(query);
-
         let userIds = (cohortMember.map(userId => `'${userId.userId}'`).join(`,`));
 
         let getRole = `
@@ -443,15 +434,12 @@ export class PostgresCohortMembersService {
         WHERE URM."userId" IN (${userIds})`
         let roleName = await this.usersRepository.query(getRole);
 
-        let roleMap = {};
-
         for (let role of roleName) {
           if (!roleMap[role.userId]) {
             roleMap[role.userId] = [];
           }
           roleMap[role.userId].push(role.name);
         }
-
         result = cohortMember.map(members => ({
           ...members,
           role: roleMap[members.userId] || []
@@ -461,11 +449,7 @@ export class PostgresCohortMembersService {
     } catch {
       return false;
     }
-
-
-
   }
-
 
 
   public async updateCohortMembers(

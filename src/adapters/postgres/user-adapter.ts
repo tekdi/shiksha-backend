@@ -111,7 +111,7 @@ export class PostgresUserService implements IServicelocator {
       })
 
       if (checkExistUser.length == 0) {
-        return APIResponse.error(response, apiId, "Not Found",`User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
+        return APIResponse.error(response, apiId, "Not Found", `User Id '${userData.userId}' does not exist.`, HttpStatus.NOT_FOUND);
       }
 
       const result = {
@@ -154,7 +154,7 @@ export class PostgresUserService implements IServicelocator {
 
         const customField = {
           fieldId: data.fieldId,
-          name:data?.name,
+          name: data?.name,
           label: data.label,
           order: data.ordering,
           value: fieldValue || '',
@@ -169,7 +169,8 @@ export class PostgresUserService implements IServicelocator {
       result.userData['customFields'] = customFieldsArray;
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
-    } catch (e) {;
+    } catch (e) {
+      ;
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -404,7 +405,7 @@ export class PostgresUserService implements IServicelocator {
       for (let value of data.value) {
         dataArray.push(value.toLowerCase().replace(/ /g, '_'));
       }
-      data.value = dataArray.join(', ');
+      data.value = dataArray.join(',');
     }
 
     let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });

@@ -29,6 +29,9 @@ spec:
         name: backend-pratham
         ports:
         - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: backend-service-config
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""

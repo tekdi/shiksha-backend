@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createCipheriv, createDecipheriv } from 'crypto';
+import { createCipheriv, createDecipheriv } from 'node:crypto';
 
 const secretKey = Buffer.from(process.env.SECRET_KEY, 'base64');
 

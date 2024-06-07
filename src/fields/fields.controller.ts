@@ -29,7 +29,7 @@ import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
-import { FieldOptionsDto } from "src/fields/dto/field-values-create.dto";
+import { FieldOptionsDto } from "src/fields/dto/field-values-search.dto";
 
 @ApiTags("Fields")
 @Controller("fields")
@@ -139,7 +139,7 @@ export class FieldsController {
 
 
   //Get Field Option
-  @Post("/fieldOptions")
+  @Post("/getOptions")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Field Options list." })
   @ApiBody({ type: FieldOptionsDto })

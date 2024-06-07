@@ -15,7 +15,9 @@ import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
-import { FieldOptionsDto } from "src/fields/dto/field-values-create.dto";
+import { FieldOptionsDto } from "src/fields/dto/field-values-search.dto";
+import { readFileSync } from "fs";
+import path, { join } from 'path';
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -325,6 +327,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
             }
             dynamicOptions = await this.findDynamicOptions(fieldOptionsDto?.fieldName, whereClause);
         } else if (fetchFieldParams?.sourceDetails?.source === 'jsonFile') {
+            const filePath = path.join(
+                process.cwd(),
+                `${fetchFieldParams.sourceDetails.filePath}`,
+            );
+            dynamicOptions = JSON.parse(readFileSync(filePath, 'utf-8'));
         } else {
             fetchFieldParams.fieldParams['options'] && fieldOptionsDto.associatedTo ? dynamicOptions = fetchFieldParams.fieldParams['options'].filter((option: any) => option.associatedTo === associatedTo) : dynamicOptions = fetchFieldParams.fieldParams['options'];
         }
@@ -408,7 +415,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
                     if (data?.sourceDetails?.source === 'table') {
                         let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
                         customField.options = dynamicOptions;
-                    } else if (data.sourceDetails.source === 'jsonFile') { }
+                    } else if (data.sourceDetails.source === 'jsonFile') {
+                        const filePath = path.join(
+                            process.cwd(),
+                            `${data.sourceDetails.filePath}`,
+                        );
+                        customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                    }
                 } else {
                     customField.options = [];
                 }

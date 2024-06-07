@@ -11,7 +11,6 @@ import { IServicelocatorfields } from "../fieldsservicelocator";
 import { UserDto } from "src/user/dto/user.dto";
 export const HasuraFieldsToken = "HasuraFields";
 import { FieldsService } from "./services/fields.service";
-import { FieldOptionsDto } from "src/fields/dto/field-values-create.dto";
 
 @Injectable()
 export class HasuraFieldsService implements IServicelocatorfields {

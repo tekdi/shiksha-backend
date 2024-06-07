@@ -1,0 +1,34 @@
+{
+    "options": [
+        {
+            "name": "bangalore",
+            "label": "Bangalore",
+            "value": "BG",
+            "associatedTo": "KA"
+        },
+        {
+            "name": "coimbatore",
+            "label": "Coimbatore",
+            "value": "CBT",
+            "associatedTo": "TN"
+        },
+        {
+            "name": "chennai",
+            "label": "Chennai",
+            "value": "CHN",
+            "associatedTo": "TN"
+        },
+        {
+            "name": "mumbai",
+            "label": "Mumbai",
+            "value": "MUM",
+            "associatedTo": "MH"
+        },
+        {
+            "name": "pune",
+            "label": "Pune",
+            "value": "PN",
+            "associatedTo": "MH"
+        }
+    ]
+}

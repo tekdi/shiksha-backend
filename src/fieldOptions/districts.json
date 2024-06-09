@@ -4,31 +4,31 @@
             "name": "bangalore",
             "label": "Bangalore",
             "value": "BG",
-            "associatedTo": "KA"
+            "controllingfieldfk": "KA"
         },
         {
             "name": "coimbatore",
             "label": "Coimbatore",
             "value": "CBT",
-            "associatedTo": "TN"
+            "controllingfieldfk": "TN"
         },
         {
             "name": "chennai",
             "label": "Chennai",
             "value": "CHN",
-            "associatedTo": "TN"
+            "controllingfieldfk": "TN"
         },
         {
             "name": "mumbai",
             "label": "Mumbai",
             "value": "MUM",
-            "associatedTo": "MH"
+            "controllingfieldfk": "MH"
         },
         {
             "name": "pune",
             "label": "Pune",
             "value": "PN",
-            "associatedTo": "MH"
+            "controllingfieldfk": "MH"
         }
     ]
 }

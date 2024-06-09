@@ -99,6 +99,9 @@ export class Fields {
   @Column({ type: 'jsonb', nullable: true })
   sourceDetails: any;
 
+  @Column({ type: 'jsonb', nullable: true })
+  fieldAttributes: any;
+
   @Column({ type: 'boolean' })
   dependsOn: boolean;
 }

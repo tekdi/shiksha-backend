@@ -40,7 +40,7 @@ export class FieldOptionsDto {
     description: "Associated To",
   })
   @Expose()
-  associatedTo: string;
+  controllingfieldfk: string;
 
   constructor(obj: any) {
     Object.assign(this, obj);

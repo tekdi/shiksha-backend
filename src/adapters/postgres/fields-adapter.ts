@@ -305,16 +305,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { offset, limit, whereClause };
     }
 
-    public async getFieldOptions(request: any, fieldOptionsDto: FieldOptionsDto, response: Response) {
+    public async getFieldOptions(request: any, fieldName: string, controllingfieldfk: string, response: Response) {
         const apiId = APIID.FIELDVALUES_SEARCH;
         let context = 'COHORT';
         let contextType = 'COHORT'
         let dynamicOptions;
 
-        const associatedTo = fieldOptionsDto?.associatedTo
         const fetchFieldParams = await this.fieldsRepository.findOne({
             where: {
-                name: fieldOptionsDto.fieldName,
+                name: fieldName,
                 context: context,
                 contextType: contextType
             }
@@ -322,23 +321,29 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
         if (fetchFieldParams?.sourceDetails?.source === 'table') {
             let whereClause;
-            if (fieldOptionsDto.associatedTo) {
-                whereClause = `"controllingfieldfk" = '${fieldOptionsDto.associatedTo}'`;
+            if (controllingfieldfk) {
+                whereClause = `"controllingfieldfk" = '${controllingfieldfk}'`;
             }
-            dynamicOptions = await this.findDynamicOptions(fieldOptionsDto?.fieldName, whereClause);
+            dynamicOptions = await this.findDynamicOptions(fieldName, whereClause);
         } else if (fetchFieldParams?.sourceDetails?.source === 'jsonFile') {
             const filePath = path.join(
                 process.cwd(),
                 `${fetchFieldParams.sourceDetails.filePath}`,
             );
-            dynamicOptions = JSON.parse(readFileSync(filePath, 'utf-8'));
+            let getFieldValuesFromJson = JSON.parse(readFileSync(filePath, 'utf-8'));
+
+            dynamicOptions = getFieldValuesFromJson.options.filter(option => (option?.controllingfieldfk === controllingfieldfk))
         } else {
-            fetchFieldParams.fieldParams['options'] && fieldOptionsDto.associatedTo ? dynamicOptions = fetchFieldParams.fieldParams['options'].filter((option: any) => option.associatedTo === associatedTo) : dynamicOptions = fetchFieldParams.fieldParams['options'];
+            fetchFieldParams.fieldParams['options'] && controllingfieldfk ?
+                dynamicOptions = fetchFieldParams?.fieldParams['options'].filter((option: any) => option?.controllingfieldfk === controllingfieldfk) :
+                dynamicOptions = fetchFieldParams?.fieldParams['options'];
         }
 
         return await APIResponse.success(response, apiId, dynamicOptions,
             HttpStatus.OK, 'Field Values fetched successfully.')
     }
+
+
 
     async findDynamicOptions(tableName, whereClause?: {}) {
         let query: string;
@@ -395,47 +400,43 @@ export class PostgresFieldsService implements IServicelocatorfields {
             this.findCustomFields(context, contextType)
         ]);
 
-
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
         for (let data of customFields) {
-
-            const fieldValue = filledValuesMap.get(data.fieldId);
+            const fieldValue = filledValuesMap.get(data?.fieldId);
             customField = {
-                fieldId: data.fieldId,
-                label: data.label,
+                fieldId: data?.fieldId,
+                name: data?.name,
+                label: data?.label,
+                order: data?.ordering,
+                isRequired: data?.fieldAttributes?.isRequired,
+                isEditable: data?.fieldAttributes?.isEditable,
                 value: fieldValue || '',
                 options: data?.fieldParams?.['options'] || {},
-                type: data.type || ''
+                type: data?.type || ''
             };
 
-
-            if (data.sourceDetails) {
+            if (data?.sourceDetails) {
                 //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
                 if (data?.dependsOn === false) {
                     if (data?.sourceDetails?.source === 'table') {
                         let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
                         customField.options = dynamicOptions;
-                    } else if (data.sourceDetails.source === 'jsonFile') {
+                    } else if (data?.sourceDetails?.source === 'jsonFile') {
                         const filePath = path.join(
                             process.cwd(),
-                            `${data.sourceDetails.filePath}`,
+                            `${data?.sourceDetails?.filePath}`,
                         );
                         customField = JSON.parse(readFileSync(filePath, 'utf-8'));
                     }
                 } else {
-                    customField.options = [];
+                    customField.options = null;
                 }
             } else {
-                customField.options = data.fieldParams;
+                customField.options = data?.fieldParams?.['options'] || null;
             }
-
             fieldsArr.push(customField);
-
         }
 
         return fieldsArr;
     }
-
-
-
 }

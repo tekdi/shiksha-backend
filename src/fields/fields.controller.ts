@@ -5,6 +5,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiQuery,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -16,6 +17,9 @@ import {
   UseGuards,
   Res,
   UseFilters,
+  Get,
+  Query,
+  Param,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -139,22 +143,23 @@ export class FieldsController {
 
 
   //Get Field Option
-  @Post("/getOptions")
+  @Get("/getOptions/:fieldName")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Field Options list." })
-  @ApiBody({ type: FieldOptionsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
   // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
+  @ApiQuery({ name: 'controllingfieldfk', required: false })
 
   public async getFieldOptions(
     @Headers() headers,
     @Req() request: Request,
-    @Body() fieldOptionsDto: FieldOptionsDto,
+    @Param('fieldName') fieldName: string,
+    @Query("controllingfieldfk") controllingfieldfk: string | null = null,
     @Res() response: Response
   ) {
-    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldOptionsDto, response);
+    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldName, controllingfieldfk, response);
   }
-}
+} 

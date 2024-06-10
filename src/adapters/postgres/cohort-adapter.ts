@@ -97,8 +97,6 @@ export class PostgresCohortService {
       const contextType = cohortDetails.type;
       result.cohortData = cohortDetails;
 
-      console.log(cohortDetails);
-
       if (!checkData) {
         return APIResponse.error(res, apiId, `Cohort is either does not exist or not active`, 'Invalid cohortId', (HttpStatus.NOT_FOUND))
       }

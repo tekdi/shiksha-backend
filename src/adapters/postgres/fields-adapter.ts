@@ -382,12 +382,17 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
-    async findCustomFields(context, contextType) {
+    async findCustomFields(context: string, contextType?: string) {
+        const condition: any = {
+            context: context,
+        };
+
+        if (contextType) {
+            condition.contextType = contextType;
+        }
+
         let customFields = await this.fieldsRepository.find({
-            where: {
-                context: context,
-                contextType: contextType
-            }
+            where: condition
         })
         return customFields;
     }
@@ -400,7 +405,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    async getFieldValuesData(id: string, context: string, contextType: string) {
+    async getFieldValuesData(id: string, context: string, contextType?: string) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([

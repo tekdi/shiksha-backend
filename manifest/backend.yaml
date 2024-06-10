@@ -52,5 +52,4 @@ spec:
     targetPort: 3000
     nodePort: 31265
   selector:
-    io.kompose.service: backend
-    
+    io.kompose.service: backend  

@@ -71,3 +71,4 @@ jobs:
         envsubst < manifest/backend.yaml > manifest/backend-updated.yaml
         cat manifest/backend-updated.yaml 
         kubectl apply -f manifest/backend-updated.yaml
+        

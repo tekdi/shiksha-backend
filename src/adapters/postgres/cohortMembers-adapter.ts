@@ -177,10 +177,6 @@ export class PostgresCohortMembersService {
       }
 
       let { limit, offset, filters } = cohortMembersSearchDto;
-      // let offset = 0;
-      // if (page > 1) {
-      //   offset = limit * (page - 1);
-      // }
 
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {

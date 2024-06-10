@@ -15,7 +15,6 @@ import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
-import { FieldOptionsDto } from "src/fields/dto/field-values-search.dto";
 import { readFileSync } from "fs";
 import path, { join } from 'path';
 

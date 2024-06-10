@@ -26,23 +26,3 @@ export class FieldValuesSearchDto {
     Object.assign(this, partial);
   }
 }
-export class FieldOptionsDto {
-  @ApiPropertyOptional({
-    type: String,
-    description: "Field Name",
-  })
-  @Expose()
-  @IsNotEmpty()
-  fieldName: string;
-
-  @ApiPropertyOptional({
-    type: String,
-    description: "Associated To",
-  })
-  @Expose()
-  controllingfieldfk: string;
-
-  constructor(obj: any) {
-    Object.assign(this, obj);
-  }
-}

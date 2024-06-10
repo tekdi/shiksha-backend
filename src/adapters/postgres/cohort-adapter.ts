@@ -98,7 +98,7 @@ export class PostgresCohortService {
       result.cohortData = cohortDetails;
 
       if (!checkData) {
-        return APIResponse.error(res, apiId, `Cohort is either does not exist or not active`, 'Invalid cohortId', (HttpStatus.NOT_FOUND))
+        return APIResponse.error(res, apiId, `Cohort either does not exist or is not active`, 'Invalid cohortId', (HttpStatus.NOT_FOUND))
       }
 
       let customFieldsArray = await this.getCohortDataWithCustomfield(cohortId, contextType);

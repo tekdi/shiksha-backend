@@ -33,7 +33,6 @@ import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
-import { FieldOptionsDto } from "src/fields/dto/field-values-search.dto";
 
 @ApiTags("Fields")
 @Controller("fields")

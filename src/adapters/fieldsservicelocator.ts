@@ -3,7 +3,6 @@ import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesSearchDto } from "src/fields/dto/field-values-search.dto";
 import { Response } from "express";
-import { FieldOptionsDto } from "src/fields/dto/field-values-search.dto";
 export interface IServicelocatorfields {
   //fields
   createFields(request: any, fieldsDto: FieldsDto, response: Response);

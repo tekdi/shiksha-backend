@@ -25,6 +25,6 @@ export interface IServicelocator {
   resetUserPassword(request: any, username: string, newPassword: string, response: Response);
   checkUser(body: any, response);
   deleteUserById(userId: string, response: Response): Promise<any>;
-  user_decrypt_data(decryptPIIDataDTO: DecryptPIIDataDTO, userId: string, response: Response);
+  userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, userId: string, response: Response);
 
 }

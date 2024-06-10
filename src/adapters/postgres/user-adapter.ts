@@ -731,7 +731,7 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  public async user_decrypt_data(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
+  public async userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
 
     const apiId = APIID.USER_DECRYPT_DATA;
     if (!isUUID(decryptPIIDataDTO.userId)) {

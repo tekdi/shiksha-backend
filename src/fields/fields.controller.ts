@@ -147,19 +147,21 @@ export class FieldsController {
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Field Options list." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  // @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     strategy: "excludeAll",
   })
   @ApiQuery({ name: 'controllingfieldfk', required: false })
+  @ApiQuery({ name: 'contextType', required: false })
 
   public async getFieldOptions(
     @Headers() headers,
     @Req() request: Request,
     @Param('fieldName') fieldName: string,
     @Query("controllingfieldfk") controllingfieldfk: string | null = null,
+    @Query("context") context: string | null = null,
+    @Query("contextType") contextType: string | null = null,
     @Res() response: Response
   ) {
-    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldName, controllingfieldfk, response);
+    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldName, controllingfieldfk, context, contextType, response);
   }
 } 

@@ -305,18 +305,21 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { offset, limit, whereClause };
     }
 
-    public async getFieldOptions(request: any, fieldName: string, controllingfieldfk: string, response: Response) {
+    public async getFieldOptions(request: any, fieldName: string, controllingfieldfk: string, context: string, contextType: string, response: Response) {
         const apiId = APIID.FIELDVALUES_SEARCH;
-        let context = 'COHORT';
-        let contextType = 'COHORT'
         let dynamicOptions;
 
+        const condition: any = {
+            name: fieldName,
+            context: context,
+        };
+
+        if (contextType) {
+            condition.contextType = contextType;
+        }
+
         const fetchFieldParams = await this.fieldsRepository.findOne({
-            where: {
-                name: fieldName,
-                context: context,
-                contextType: contextType
-            }
+            where: condition
         })
 
         if (fetchFieldParams?.sourceDetails?.source === 'table') {
@@ -332,7 +335,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
             );
             let getFieldValuesFromJson = JSON.parse(readFileSync(filePath, 'utf-8'));
 
-            dynamicOptions = getFieldValuesFromJson.options.filter(option => (option?.controllingfieldfk === controllingfieldfk))
+            if (controllingfieldfk) {
+                dynamicOptions = getFieldValuesFromJson.options.filter(option => (option?.controllingfieldfk === controllingfieldfk))
+            } else {
+                dynamicOptions = getFieldValuesFromJson;
+            }
+
         } else {
             fetchFieldParams.fieldParams['options'] && controllingfieldfk ?
                 dynamicOptions = fetchFieldParams?.fieldParams['options'].filter((option: any) => option?.controllingfieldfk === controllingfieldfk) :
@@ -384,7 +392,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return customFields;
     }
 
-    async findFilledValues(cohortId: string) {
+    async findFieldValues(cohortId: string) {
         let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
     LEFT JOIN public."FieldValues" F
     ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
@@ -396,7 +404,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
-            this.findFilledValues(id),
+            this.findFieldValues(id),
             this.findCustomFields(context, contextType)
         ]);
 

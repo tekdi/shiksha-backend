@@ -39,14 +39,17 @@ status: {}
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f backend.yaml
+    kompose.version: 1.21.0 (992df58d8)
   labels:
-    app: backend
+    io.kompose.service: backend
+  name: backend
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
-  - name: http-backend
-    protocol: TCP
-    port: 3000
+  - port: 31265
+    targetPort: 3000
+    nodePort: 31265
   selector:
-    app: backend
+    io.kompose.service: backend

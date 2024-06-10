@@ -29,6 +29,7 @@ import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
 import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "@utils/mask-data";
+import { PostgresFieldsService } from "./fields-adapter"
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -54,6 +55,7 @@ export class PostgresUserService implements IServicelocator {
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private fieldsService: PostgresFieldsService,
   ) { }
 
   async searchUser(tenantId: string,
@@ -127,9 +129,6 @@ export class PostgresUserService implements IServicelocator {
         this.findUserRoles(userData.userId, userData.tenantId)
       ]);
       const roleInUpper = (userRole.title).toUpperCase();
-      if (userData?.fieldValue) {
-        filledValues = await this.findFilledValues(userData.userId, roleInUpper)
-      }
 
       if (userRole) {
         userDetails['role'] = userRole.title;
@@ -142,32 +141,17 @@ export class PostgresUserService implements IServicelocator {
         return await APIResponse.success(response, apiId, { userData: userDetails },
           HttpStatus.OK, 'User details Fetched Successfully.')
       }
-      const customFields = await this.findCustomFields(userData, roleInUpper)
-      result.userData = userDetails;
-      const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
 
-      for (let data of customFields) {
-        let fieldValue: any = filledValuesMap.get(data.fieldId);
-
-        if (fieldValue) {
-          fieldValue = fieldValue.split(',')
-        }
-
-        const customField = {
-          fieldId: data.fieldId,
-          name: data?.name,
-          label: data.label,
-          order: data.ordering,
-          value: fieldValue || '',
-          isRequired: data.fieldAttributes ? data.fieldAttributes['isRequired'] : '',
-          isEditable: data.fieldAttributes ? data.fieldAttributes['isEditable'] : '',
-          options: data?.fieldParams?.['options'] || {},
-          type: data.type || ''
-        };
-        customFieldsArray.push(customField);
+      let customFields;
+      if (userData?.fieldValue) {
+        let context = 'USERS';
+        let contextType = roleInUpper;
+        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
       }
 
-      result.userData['customFields'] = customFieldsArray;
+      result.userData = userDetails;
+
+      result.userData['customFields'] = customFields;
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
     } catch (e) {
@@ -175,71 +159,6 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  async getUsersDetailsByCohortId(userData: Record<string, string>, response: any) {
-    let apiId = 'api.users.getAllUsersDetails'
-    try {
-      if (userData?.fieldValue) {
-        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
-        let result = {
-          userDetails: [],
-        };
-
-        for (let data of getUserDetails) {
-          let userDetails = {
-            userId: data.userId,
-            userName: data.userName,
-            name: data.name,
-            role: data.role,
-            district: data.district,
-            state: data.state,
-            mobile: data.mobile,
-          }
-          result.userDetails.push(userDetails);
-        }
-
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: 'Ok.',
-          data: result,
-        });
-
-      } else {
-        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
-        let result = {
-          userDetails: [],
-        };
-
-        for (let data of getUserDetails) {
-          let userDetails = {
-            userId: data.userId,
-            userName: data.userName,
-            name: data.name,
-            role: data.role,
-            district: data.district,
-            state: data.state,
-            mobile: data.mobile,
-            customField: [],
-          }
-          const fieldValues = await this.getFieldandFieldValues(data.userId)
-          userDetails.customField.push(fieldValues);
-
-          result.userDetails.push(userDetails);
-        }
-
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: 'Ok.',
-          data: result,
-        });
-
-      }
-    } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
-    }
-  }
 
   async findUserName(cohortId: string, role: string) {
     let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
@@ -256,16 +175,6 @@ export class PostgresUserService implements IServicelocator {
       result = await this.usersRepository.query(query, [cohortId]);
     }
     return result;
-  }
-
-  async getFieldandFieldValues(userId: string) {
-    let query = `SELECT Fv."fieldId",F."label" AS FieldName,Fv."value" as FieldValues 
-    FROM public."FieldValues" Fv   
-    LEFT JOIN public."Fields" F
-    ON F."fieldId" = Fv."fieldId"
-    where Fv."itemId" =$1 `
-    let result = await this.usersRepository.query(query, [userId]);
-    return result
   }
 
   async findUserRoles(userId: string, tenantId: string) {
@@ -316,26 +225,7 @@ export class PostgresUserService implements IServicelocator {
     const result = await this.usersRepository.query(query, [userId]);
     return result;
   }
-  async findCustomFields(userData, role) {
-    let customFields = await this.fieldsRepository.find({
-      where: {
-        context: userData.context,
-        contextType: role,
-      }
-    })
-    return customFields;
-  }
-  async findFilledValues(userId: string, role: string) {
-    let query = `SELECT U."userId",FV."fieldId",FV."value", F."fieldAttributes" FROM public."Users" U 
-    LEFT JOIN public."FieldValues" FV
-    ON U."userId" = FV."itemId" 
-    LEFT JOIN public."Fields" F
-    ON F."fieldId" = FV."fieldId" 
-    where U."userId" =$1 AND F."contextType" = $2`;
 
-    let result = await this.usersRepository.query(query, [userId, role]);
-    return result;
-  }
 
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;

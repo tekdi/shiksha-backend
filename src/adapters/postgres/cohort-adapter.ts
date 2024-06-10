@@ -80,6 +80,9 @@ export class PostgresCohortService {
 
     try {
 
+      const result = {
+        cohortData: {}
+      };
       if (!isUUID(cohortId)) {
         return APIResponse.error(
           res,
@@ -90,19 +93,20 @@ export class PostgresCohortService {
         )
       }
       const checkData = await this.checkIfCohortExist(cohortId);
+      const cohortDetails = await this.findCohortDetails(cohortId);
+      const contextType = cohortDetails.type;
+      result.cohortData = cohortDetails;
 
-      if (checkData === true) {
-        const result = await this.getCohortDataWithCustomfield(cohortId);
-        return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched successfully.");
-      } else {
-        return APIResponse.error(
-          res,
-          apiId,
-          `Cohort is either does not exist or not active`,
-          'Invalid cohortId',
-          (HttpStatus.NOT_FOUND)
-        )
+      console.log(cohortDetails);
+
+      if (!checkData) {
+        return APIResponse.error(res, apiId, `Cohort is either does not exist or not active`, 'Invalid cohortId', (HttpStatus.NOT_FOUND))
       }
+
+      let customFieldsArray = await this.getCohortDataWithCustomfield(cohortId, contextType);
+      result.cohortData['customFields'] = customFieldsArray;
+
+      return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched successfully.");
 
     } catch (error) {
       const errorMessage = error.message || 'Internal server error';
@@ -110,38 +114,20 @@ export class PostgresCohortService {
     }
   }
 
-  public async getCohortDataWithCustomfield(cohortId: string) {
-    const result = {
-      cohortData: {}
-    };
-    let context = 'COHORT';
-    let contextType = 'COHORT'
-    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, contextType);
-    result.cohortData['customFields'] = fieldValue;
-    return result
+  async findCohortDetails(cohortId: string) {
+    let whereClause: any = { cohortId: cohortId };
+    let cohortDetails = await this.cohortRepository.findOne({
+      where: whereClause
+    })
+    return new ReturnResponseBody(cohortDetails);
   }
 
-  async findDynamicOptions(tableName, whereClause?: {}) {
-    let query: string;
-    let result;
-    if (whereClause) {
-      query = `select * from public."${tableName} where=${whereClause}"`
-      result = await this.cohortRepository.query(query);
-      if (!result) {
-        return null;
-      }
-      return result;
-    }
-    query = `select * from public."${tableName}"`
-    result = await this.cohortRepository.query(query);
-    if (!result) {
-      return null;
-    }
-    return result.map(result => ({
-      value: result.value,
-      label: result.name
-    }));
+  public async getCohortDataWithCustomfield(cohortId: string, contextType?: string) {
+    let context = 'COHORT';
+    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, contextType);
+    return fieldValue
   }
+
 
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId",c."parentId"
@@ -576,7 +562,7 @@ export class PostgresCohortService {
         count = totalcount
 
         for (let data of cohortData) {
-          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
+          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
           results.cohortDetails.push(cohortDetails);
         }
       }

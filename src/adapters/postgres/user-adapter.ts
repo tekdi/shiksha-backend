@@ -28,7 +28,7 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "@utils/mask-data";
+import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "src/common/utils/mask-data";
 import { PostgresFieldsService } from "./fields-adapter"
 
 @Injectable()

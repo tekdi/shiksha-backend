@@ -18,6 +18,6 @@ import { PostgresModule } from "src/adapters/postgres/postgres-module";
     PostgresModule
   ],
   controllers: [FieldsController],
-  providers: [FieldsAdapter, FieldsService],
+  providers: [FieldsAdapter],
 })
-export class FieldsModule {}
+export class FieldsModule { }

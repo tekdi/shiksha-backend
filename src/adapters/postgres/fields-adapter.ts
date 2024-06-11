@@ -13,7 +13,9 @@ import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
-import { maskFieldValue, encrypt } from "@utils/mask-data";
+import { readFileSync } from "fs";
+import path, { join } from 'path';
+import { maskFieldValue, encrypt } from "src/common/utils/mask-data";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -53,8 +55,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
-    // api
-    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto,response :Response) {
+    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto, response: Response) {
         const apiId = APIID.FIELDS_SEARCH;
         try {
 
@@ -101,29 +102,28 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { mappedResponse, totalCount };
     }
 
-    // api 
     async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res:Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
 
 
         try {
-                let result = await this.findAndSaveFieldValues(fieldValuesDto);
-                if(!result){
-                    APIResponse.error(
-                        res,
-                        apiId,
-                        `Fields not found or already exist`,
-                        `Fields not found or already exist`,
-                        (HttpStatus.NOT_FOUND)
-                      )
+            let result = await this.findAndSaveFieldValues(fieldValuesDto);
+            if (!result) {
+                APIResponse.error(
+                    res,
+                    apiId,
+                    `Fields not found or already exist`,
+                    `Fields not found or already exist`,
+                    (HttpStatus.NOT_FOUND)
+                )
 
-                }
-               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
+            }
+            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
 
 
         } catch (error) {
             const errorMessage = error.message || 'Something went wrong';
-           return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
+            return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
         }
     }
@@ -268,7 +268,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return fieldResponse;
     }
 
-    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto) {
+    public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto)  {
 // TODO
         const field = await this.fieldsRepository.findOne({ where : {fieldId: fieldValuesDto.fieldId}})
         const checkFieldValueExist = await this.fieldsValuesRepository.find({
@@ -299,25 +299,172 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return false;
     }
 
-    public async search(dtoFileName){
+    public async search(dtoFileName) {
         let { limit, page, filters } = dtoFileName;
-    
+
         let offset = 0;
         if (page > 1) {
             offset = parseInt(limit) * (page - 1);
         }
-        
+
         if (limit.trim() === '') {
             limit = '0';
         }
-    
+
         const whereClause = {};
         if (filters && Object.keys(filters).length > 0) {
             Object.entries(filters).forEach(([key, value]) => {
                 whereClause[key] = value;
             });
         }
-        return {offset,limit,whereClause};
-      }
+        return { offset, limit, whereClause };
+    }
 
+    public async getFieldOptions(request: any, fieldName: string, controllingfieldfk: string, context: string, contextType: string, response: Response) {
+        const apiId = APIID.FIELDVALUES_SEARCH;
+        let dynamicOptions;
+
+        const condition: any = {
+            name: fieldName,
+            context: context,
+        };
+
+        if (contextType) {
+            condition.contextType = contextType;
+        }
+
+        const fetchFieldParams = await this.fieldsRepository.findOne({
+            where: condition
+        })
+
+        if (fetchFieldParams?.sourceDetails?.source === 'table') {
+            let whereClause;
+            if (controllingfieldfk) {
+                whereClause = `"controllingfieldfk" = '${controllingfieldfk}'`;
+            }
+            dynamicOptions = await this.findDynamicOptions(fieldName, whereClause);
+        } else if (fetchFieldParams?.sourceDetails?.source === 'jsonFile') {
+            const filePath = path.join(
+                process.cwd(),
+                `${fetchFieldParams.sourceDetails.filePath}`,
+            );
+            let getFieldValuesFromJson = JSON.parse(readFileSync(filePath, 'utf-8'));
+
+            if (controllingfieldfk) {
+                dynamicOptions = getFieldValuesFromJson.options.filter(option => (option?.controllingfieldfk === controllingfieldfk))
+            } else {
+                dynamicOptions = getFieldValuesFromJson;
+            }
+
+        } else {
+            fetchFieldParams.fieldParams['options'] && controllingfieldfk ?
+                dynamicOptions = fetchFieldParams?.fieldParams['options'].filter((option: any) => option?.controllingfieldfk === controllingfieldfk) :
+                dynamicOptions = fetchFieldParams?.fieldParams['options'];
+        }
+
+        return await APIResponse.success(response, apiId, dynamicOptions,
+            HttpStatus.OK, 'Field Values fetched successfully.')
+    }
+
+
+
+    async findDynamicOptions(tableName, whereClause?: {}) {
+        let query: string;
+        let result;
+
+        if (whereClause) {
+            query = `select * from public."${tableName}" where ${whereClause}`
+
+            result = await this.fieldsRepository.query(query);
+            if (!result) {
+                return null;
+            }
+            return result.map(result => ({
+                value: result.value,
+                label: result.name
+            }));
+        }
+
+        query = `select * from public."${tableName}"`
+
+        result = await this.fieldsRepository.query(query);
+        if (!result) {
+            return null;
+        }
+
+        return result.map(result => ({
+            value: result.value,
+            label: result.name
+        }));
+    }
+    async findCustomFields(context: string, contextType?: string) {
+        const condition: any = {
+            context: context,
+        };
+
+        if (contextType) {
+            condition.contextType = contextType;
+        }
+
+        let customFields = await this.fieldsRepository.find({
+            where: condition
+        })
+        return customFields;
+    }
+
+    async findFieldValues(cohortId: string) {
+        let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
+    LEFT JOIN public."FieldValues" F
+    ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
+        let result = await this.fieldsRepository.query(query, [cohortId]);
+        return result;
+    }
+
+    async getFieldValuesData(id: string, context: string, contextType?: string) {
+        let customField;
+        let fieldsArr = [];
+        const [filledValues, customFields] = await Promise.all([
+            this.findFieldValues(id),
+            this.findCustomFields(context, contextType)
+        ]);
+
+        const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
+        for (let data of customFields) {
+            const fieldValue = filledValuesMap.get(data?.fieldId);
+            customField = {
+                fieldId: data?.fieldId,
+                name: data?.name,
+                label: data?.label,
+                order: data?.ordering,
+                isRequired: data?.fieldAttributes?.isRequired,
+                isEditable: data?.fieldAttributes?.isEditable,
+                value: fieldValue || '',
+                options: data?.fieldParams?.['options'] || {},
+                type: data?.type || ''
+            };
+
+            if (data?.sourceDetails) {
+                //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
+                if (data?.dependsOn === false) {
+                    if (data?.sourceDetails?.source === 'table') {
+                        let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
+                        customField.options = dynamicOptions;
+                    } else if (data?.sourceDetails?.source === 'jsonFile') {
+                        const filePath = path.join(
+                            process.cwd(),
+                            `${data?.sourceDetails?.filePath}`,
+                        );
+                        customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                    }
+                } else {
+                    customField.options = null;
+                }
+            } else {
+                customField.options = data?.fieldParams?.['options'] || null;
+            }
+            fieldsArr.push(customField);
+        }
+
+        return fieldsArr;
+    }
 }

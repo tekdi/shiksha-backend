@@ -98,6 +98,9 @@ export class Fields {
   @JoinColumn({ name: 'fieldValuesId' })
   fieldValues: FieldValues[];
   
-  @Column({ type: 'jsonb',nullable: true }) 
-  source_details: any;
+  @Column({ type: 'jsonb', nullable: true })
+  sourceDetails: any;
+
+  @Column({ type: 'boolean' })
+  dependsOn: boolean;
 }

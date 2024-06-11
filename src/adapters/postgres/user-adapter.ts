@@ -333,15 +333,9 @@ export class PostgresUserService implements IServicelocator {
         }
       }
 
-      // return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
-
       // check and validate all fields
       let validateRequestBody = await this.validateRequestBody(userCreateDto, response, apiId)
-      // for (let fields in userCreateDto) {
-      //   console.log(fields);
 
-
-      // }
       // return false;
       if (validateRequestBody == true) {
         userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
@@ -400,6 +394,7 @@ export class PostgresUserService implements IServicelocator {
 
   async validateRequestBody(userCreateDto, response, apiId) {
     for (const [key, value] of Object.entries(userCreateDto)) {
+
       if (key === 'email') {
         const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
         if (!checkValidEmail) {
@@ -408,15 +403,15 @@ export class PostgresUserService implements IServicelocator {
       }
 
       if (key === 'mobile') {
-        const checkValidEmail = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
-        if (!checkValidEmail) {
+        const checkValidMobile = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
+        if (!checkValidMobile) {
           return APIResponse.error(response, apiId, "BAD_REQUEST", `Mobile number must be 10 digits long`, HttpStatus.BAD_REQUEST);
         }
       }
 
       if (key === 'dob') {
-        const checkValidEmail = CustomFieldsValidation.validate('dob', userCreateDto.dob);
-        if (!checkValidEmail) {
+        const checkValidDob = CustomFieldsValidation.validate('date', userCreateDto.dob);
+        if (!checkValidDob) {
           return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
         }
       }
@@ -517,7 +512,7 @@ export class PostgresUserService implements IServicelocator {
 
     if (userCreateDto?.dob) {
       user.encryptedDob = encrypt(user.dob)
-      user.dob = maskPiiData('dob', user.dob);
+      user.dob = maskPiiData('date', user.dob);
     }
 
     let result = await this.usersRepository.save(user);

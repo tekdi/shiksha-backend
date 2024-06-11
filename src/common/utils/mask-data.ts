@@ -17,9 +17,9 @@ export function decrypt(encryptedData: string): string {
 }
 
 // Masks the given data
-export function maskPiiData(fieldName: string, fieldValue: string) {
+export function maskPiiData(fieldType: string, fieldValue: string) {
     let maskData;
-    switch (fieldName) {
+    switch (fieldType) {
 
         case 'email':
             const [localPart, domain] = fieldValue.split('@');
@@ -33,7 +33,7 @@ export function maskPiiData(fieldName: string, fieldValue: string) {
             maskData = `${prefix}******${suffix}`;
             break;
 
-        case 'dob':
+        case 'date':
             maskData = `****${fieldValue.substring(4)}`;
             break;
 

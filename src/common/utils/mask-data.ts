@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createCipheriv, createDecipheriv } from 'node:crypto';
+import { CustomFieldsValidation } from "src/common/utils/custom-field-validation";
 
 const secretKey = Buffer.from(process.env.SECRET_KEY, 'base64');
 
@@ -17,40 +18,47 @@ export function decrypt(encryptedData: string): string {
     return decrypted;
 }
 
-// Masks the given mobile number
-export function maskMobileNumber(mobileNumber: string): string {
-    const mobileNumberStr = String(mobileNumber);
-    if (mobileNumberStr.length !== 10) {
-        throw new Error('Mobile number must be 10 digits long');
+// Masks the given data
+export function maskPiiData(fieldName: string, fieldValue: string) {
+    let maskData;
+    switch (fieldName) {
+
+        case 'email':
+            const validateEmail = CustomFieldsValidation.validate(fieldName, fieldValue);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (typeof fieldValue !== 'string' || !emailRegex.test(fieldValue)) {
+                return false;
+            }
+            const [localPart, domain] = fieldValue.split('@');
+            const maskedLocalPart = localPart[0] + '*'.repeat(localPart.length - 2) + localPart[localPart.length - 1];
+            maskData = `${maskedLocalPart}@${domain}`;
+            break;
+
+        case 'mobile':
+            const validateMobile = CustomFieldsValidation.validate(fieldName, fieldValue);
+            if (!validateMobile) {
+                return false
+            }
+            const prefix = fieldValue.substring(0, 2);
+            const suffix = fieldValue.substring(8, 10);
+            maskData = `${prefix}******${suffix}`;
+            break;
+
+        case 'dob':
+            const validateDob = CustomFieldsValidation.validate(fieldName, fieldValue);
+            if (!validateDob) {
+                return false
+            }
+            maskData = `****${fieldValue.substring(4)}`;
+            break;
+
+        default:
+            break;
     }
-    const prefix = mobileNumberStr.substring(0, 2);
-    const suffix = mobileNumberStr.substring(8, 10);
-    return `${prefix}******${suffix}`;
+    return maskData;
 }
 
-// Masks the given email address
-export function maskEmail(email: string): string {
-    if (typeof email !== 'string' || !email.includes('@')) {
-        throw new Error('Invalid email address');
-    }
-    const [localPart, domain] = email.split('@');
-    if (localPart.length < 2) {
-        throw new Error('Invalid email address');
-    }
-    const maskedLocalPart = localPart[0] + '*'.repeat(localPart.length - 2) + localPart[localPart.length - 1];
-    return `${maskedLocalPart}@${domain}`;
-}
 
 // Validates the date format
-export function isValidDateFormat(date: string): boolean {
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    return regex.test(date);
-}
 
-// Masks the given date of birth
-export function maskDateOfBirth(dob: string): string {
-    if (!isValidDateFormat(dob)) {
-        throw new Error('Invalid date of birth format. Expected format: YYYY-MM-DD');
-    }
-    return `****${dob.substring(4)}`;
-}
+

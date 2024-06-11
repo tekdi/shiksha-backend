@@ -28,8 +28,9 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "src/common/utils/mask-data";
-import { PostgresFieldsService } from "./fields-adapter"
+import { maskPiiData, encrypt, decrypt } from "src/common/utils/mask-data";
+import { PostgresFieldsService } from "./fields-adapter";
+import { CustomFieldsValidation } from "src/common/utils/custom-field-validation";
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -158,7 +159,6 @@ export class PostgresUserService implements IServicelocator {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
 
   async findUserName(cohortId: string, role: string) {
     let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
@@ -333,10 +333,17 @@ export class PostgresUserService implements IServicelocator {
         }
       }
 
-      // check and validate all fields
-      let validateBodyFields = await this.validateBodyFields(userCreateDto)
+      // return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
 
-      if (validateBodyFields == true) {
+      // check and validate all fields
+      let validateRequestBody = await this.validateRequestBody(userCreateDto, response, apiId)
+      // for (let fields in userCreateDto) {
+      //   console.log(fields);
+
+
+      // }
+      // return false;
+      if (validateRequestBody == true) {
         userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
         const userSchema = new UserCreateDto(userCreateDto);
 
@@ -358,7 +365,7 @@ export class PostgresUserService implements IServicelocator {
         );
         userCreateDto.userId = resKeycloak;
 
-        let result = await this.createUserInDatabase(request, userCreateDto);
+        let result = await this.createUserInDatabase(request, userCreateDto, response, apiId);
 
         let fieldData = {};
         if (userCreateDto.fieldValues) {
@@ -391,7 +398,31 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  async validateBodyFields(userCreateDto) {
+  async validateRequestBody(userCreateDto, response, apiId) {
+    for (const [key, value] of Object.entries(userCreateDto)) {
+      if (key === 'email') {
+        const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Invalid email address`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'mobile') {
+        const checkValidEmail = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Mobile number must be 10 digits long`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'dob') {
+        const checkValidEmail = CustomFieldsValidation.validate('dob', userCreateDto.dob);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+    }
+
     for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
 
       const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
@@ -403,24 +434,15 @@ export class PostgresUserService implements IServicelocator {
       ]);
 
       if (tenantExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Tenant Id '${tenantId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
 
       if (cohortExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
       }
 
       if (roleExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Role Id '${roleId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
     }
     return true;
@@ -468,7 +490,7 @@ export class PostgresUserService implements IServicelocator {
   }
 
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response, apiId: string) {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
@@ -485,15 +507,17 @@ export class PostgresUserService implements IServicelocator {
 
     if (userCreateDto?.email) {
       user.encryptedEmail = encrypt(user.email)
-      user.email = maskEmail(user.email)
+      user.email = maskPiiData('email', user.email)
     }
+
     if (userCreateDto?.mobile) {
       user.encryptedMobile = encrypt(user.mobile)
-      user.mobile = maskMobileNumber(user.mobile)
+      user.mobile = maskPiiData('mobile', user.mobile)
     }
+
     if (userCreateDto?.dob) {
       user.encryptedDob = encrypt(user.dob)
-      user.dob = maskDateOfBirth(user.dob);
+      user.dob = maskPiiData('dob', user.dob);
     }
 
     let result = await this.usersRepository.save(user);

@@ -45,7 +45,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             });
 
             let result = await this.fieldsRepository.save(fieldsData);
-       
+
             return await APIResponse.success(response, apiId, result,
                 HttpStatus.CREATED, 'Fields created successfully.')
 
@@ -102,7 +102,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return { mappedResponse, totalCount };
     }
 
-    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto,res:Response) {
+    async createFieldValues(request: any, fieldValuesDto: FieldValuesDto, res: Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
 
 
@@ -117,13 +117,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
                     (HttpStatus.NOT_FOUND)
                 )
 
-            }
-            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
+                }
+               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
 
 
         } catch (error) {
-            const errorMessage = error.message || 'Something went wrong';
-            return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
+            const errorMessage = error.message || 'Internal server error';
+           return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
 
         }
     }
@@ -299,7 +299,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return false;
     }
 
-    public async search(dtoFileName) {
+    public async search(dtoFileName)  {
         let { limit, page, filters } = dtoFileName;
 
         let offset = 0;

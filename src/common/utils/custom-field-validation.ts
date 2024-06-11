@@ -3,7 +3,8 @@ export class CustomFieldsValidation {
         let result = true;
         switch (fieldName) {
             case 'email':
-                if (typeof fieldValue !== 'string' || !fieldValue.includes('@')) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (typeof fieldValue !== 'string' || !emailRegex.test(fieldValue)) {
                     result = false;
                 }
                 break;

@@ -1,7 +1,7 @@
 export class CustomFieldsValidation {
-    static validate(fieldName: string, fieldValue: string) {
+    static validate(fieldType: string, fieldValue: string) {
         let result = true;
-        switch (fieldName) {
+        switch (fieldType) {
             case 'email':
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (typeof fieldValue !== 'string' || !emailRegex.test(fieldValue)) {

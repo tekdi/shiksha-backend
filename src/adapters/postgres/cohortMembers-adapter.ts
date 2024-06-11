@@ -35,6 +35,7 @@ export class PostgresCohortMembersService {
     private cohortRepository: Repository<Cohort>
   ) { }
 
+  //Get cohort member 
   async getCohortMembers(cohortId: any, tenantId: any, fieldvalue: any, res: Response) {
     const apiId = APIID.COHORT_MEMBER_GET
     try {

@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { UserCreateDto } from "src/user/dto/user-create.dto";
+import { UserCreateDto, DecryptPIIDataDTO } from "src/user/dto/user-create.dto";
 import { UserSearchDto } from "src/user/dto/user-search.dto";
 import { UserData } from "src/user/user.controller";
 
@@ -25,5 +25,6 @@ export interface IServicelocator {
   resetUserPassword(request: any, username: string, newPassword: string, response: Response);
   checkUser(body: any, response);
   deleteUserById(userId: string, response: Response): Promise<any>;
+  userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, userId: string, response: Response);
 
 }

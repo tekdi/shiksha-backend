@@ -37,12 +37,12 @@ import { Role } from "src/rbac/role/entities/role.entity";
     providers: [
         PostgresUserService,
         PostgresAttendanceService,
-        PostgresFieldsService
+        PostgresFieldsService,
     ],
     exports: [
         PostgresUserService,
         PostgresAttendanceService,
-        PostgresFieldsService
+        PostgresFieldsService,
     ],
 })
 export class PostgresModule { }

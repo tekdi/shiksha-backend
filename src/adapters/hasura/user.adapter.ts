@@ -15,7 +15,7 @@ import {
   createUserInKeyCloak,
   checkIfUsernameExistsInKeycloak,
 } from "../../common/utils/keycloak.adapter.util";
-import { UserCreateDto } from "src/user/dto/user-create.dto";
+import { DecryptPIIDataDTO, UserCreateDto } from "src/user/dto/user-create.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { Response } from "express";
 
@@ -26,14 +26,14 @@ export class HasuraUserService implements IServicelocator {
   constructor(
     private httpService: HttpService,
     private fieldsService: FieldsService
-  ) {}
+  ) { }
   checkUser(body: any, response: any) {
     throw new Error("Method not implemented.");
   }
   public async findUserDetails(userID: any, username: String) {
-    
+
   }
-  public async getUsersDetailsById(userData: UserData, response:any) {}
+  public async getUsersDetailsById(userData: UserData, response: any) { }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     // try {
@@ -112,7 +112,7 @@ export class HasuraUserService implements IServicelocator {
   }
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-    try{
+    try {
       let query = "";
       Object.keys(userCreateDto).forEach((e) => {
         if (
@@ -160,7 +160,7 @@ export class HasuraUserService implements IServicelocator {
         });
       } else {
       }
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return e;
     }
@@ -248,7 +248,7 @@ export class HasuraUserService implements IServicelocator {
 
         // searchfieldValuesFilter returns the contexts here userId that match the fieldId and value pair
         const responseFieldsValue =
-          await this.fieldsService.searchFieldValuesFilter(request,fieldsFilter);
+          await this.fieldsService.searchFieldValuesFilter(request, fieldsFilter);
 
         if (responseFieldsValue?.data?.errors) {
           return response.status(400).send({
@@ -302,7 +302,7 @@ export class HasuraUserService implements IServicelocator {
 
           const count = result.length;
           //get user fields value
-          let result_data = await this.searchUserFields(request,tenantId, userResponse);
+          let result_data = await this.searchUserFields(request, tenantId, userResponse);
 
           return response.status(200).send({
             statusCode: 200,
@@ -604,7 +604,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async searchUserFields(request:any, tenantId: string, users: any) {
+  public async searchUserFields(request: any, tenantId: string, users: any) {
     // function uses field service to get extra field and respective fieldValues for each user
     // ****Need extra field for access via role
     let userWithFields = [];
@@ -710,6 +710,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async deleteUserById(userId){}
+  public async deleteUserById(userId) { }
+  public async userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) { }
 
 }

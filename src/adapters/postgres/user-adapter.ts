@@ -3,7 +3,7 @@ import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserCreateDto } from '../../user/dto/user-create.dto';
+import { UserCreateDto, DecryptPIIDataDTO } from '../../user/dto/user-create.dto';
 import jwt_decode from "jwt-decode";
 import {
   getKeycloakAdminToken,
@@ -28,7 +28,9 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { PostgresFieldsService } from "./fields-adapter"
+import { maskPiiData, encrypt, decrypt } from "src/common/utils/mask-data";
+import { PostgresFieldsService } from "./fields-adapter";
+import { CustomFieldsValidation } from "src/common/utils/custom-field-validation";
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -154,11 +156,9 @@ export class PostgresUserService implements IServicelocator {
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
     } catch (e) {
-      ;
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
 
   async findUserName(cohortId: string, role: string) {
     let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
@@ -256,6 +256,7 @@ export class PostgresUserService implements IServicelocator {
         let unEditableIdes = [];
         for (let data of userDto.customFields) {
           if (isEditableFieldId.includes(data.fieldId)) {
+
             const result = await this.updateCustomFields(userDto.userId, data);
             if (result) {
               if (!updatedData['customFields'])
@@ -263,9 +264,11 @@ export class PostgresUserService implements IServicelocator {
               updatedData['customFields'].push(result);
             }
           } else {
+
             unEditableIdes.push(data.fieldId)
           }
         }
+
         if (unEditableIdes.length > 0) {
           errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
         }
@@ -308,6 +311,7 @@ export class PostgresUserService implements IServicelocator {
       });
     }
     Object.assign(result, newResult);
+
     return result;
   }
 
@@ -330,9 +334,10 @@ export class PostgresUserService implements IServicelocator {
       }
 
       // check and validate all fields
-      let validateBodyFields = await this.validateBodyFields(userCreateDto)
+      let validateRequestBody = await this.validateRequestBody(userCreateDto, response, apiId)
 
-      if (validateBodyFields == true) {
+      // return false;
+      if (validateRequestBody == true) {
         userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
         const userSchema = new UserCreateDto(userCreateDto);
 
@@ -354,7 +359,7 @@ export class PostgresUserService implements IServicelocator {
         );
         userCreateDto.userId = resKeycloak;
 
-        let result = await this.createUserInDatabase(request, userCreateDto);
+        let result = await this.createUserInDatabase(request, userCreateDto, response, apiId);
 
         let fieldData = {};
         if (userCreateDto.fieldValues) {
@@ -387,7 +392,32 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  async validateBodyFields(userCreateDto) {
+  async validateRequestBody(userCreateDto, response, apiId) {
+    for (const [key, value] of Object.entries(userCreateDto)) {
+
+      if (key === 'email') {
+        const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Invalid email address`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'mobile') {
+        const checkValidMobile = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
+        if (!checkValidMobile) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Mobile number must be 10 digits long`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'dob') {
+        const checkValidDob = CustomFieldsValidation.validate('date', userCreateDto.dob);
+        if (!checkValidDob) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+    }
+
     for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
 
       const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
@@ -399,24 +429,15 @@ export class PostgresUserService implements IServicelocator {
       ]);
 
       if (tenantExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Tenant Id '${tenantId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
 
       if (cohortExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
       }
 
       if (roleExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Role Id '${roleId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
     }
     return true;
@@ -464,13 +485,14 @@ export class PostgresUserService implements IServicelocator {
   }
 
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response, apiId: string) {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
     user.email = userCreateDto?.email
-    user.mobile = Number(userCreateDto?.mobile) || null,
-      user.createdBy = userCreateDto?.createdBy
+    user.mobile = userCreateDto?.mobile
+    user.dob = userCreateDto?.dob
+    user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
       user.state = userCreateDto?.state,
@@ -478,8 +500,19 @@ export class PostgresUserService implements IServicelocator {
       user.address = userCreateDto?.address,
       user.pincode = userCreateDto?.pincode
 
+    if (userCreateDto?.email) {
+      user.encryptedEmail = encrypt(user.email)
+      user.email = maskPiiData('email', user.email)
+    }
+
+    if (userCreateDto?.mobile) {
+      user.encryptedMobile = encrypt(user.mobile)
+      user.mobile = maskPiiData('mobile', user.mobile)
+    }
+
     if (userCreateDto?.dob) {
-      user.dob = new Date(userCreateDto.dob);
+      user.encryptedDob = encrypt(user.dob)
+      user.dob = maskPiiData('date', user.dob);
     }
 
     let result = await this.usersRepository.save(user);
@@ -715,5 +748,59 @@ export class PostgresUserService implements IServicelocator {
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${e?.response?.data.error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  public async userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
+
+    const apiId = APIID.USER_DECRYPT_DATA;
+    if (!isUUID(decryptPIIDataDTO.userId)) {
+      return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid UUID for userId`, HttpStatus.BAD_REQUEST);
+    }
+
+
+    const selectField = [];
+    switch (decryptPIIDataDTO.fieldName.toLowerCase()) {
+      case 'email':
+        selectField.push("encryptedEmail");
+        break;
+      case 'mobile':
+        selectField.push("encryptedMobile");
+        break;
+      case 'phone':
+        selectField.push("encryptedDob");
+        break;
+      default:
+        // Handle the case where fieldName is not recognized
+        return APIResponse.error(response, apiId, "Bad request", `Invalid field name`, HttpStatus.BAD_REQUEST);
+    }
+
+
+    // Perform repository query
+    const result = await this.usersRepository.findOne({
+      where: {
+        userId: decryptPIIDataDTO.userId,
+      },
+      select: selectField
+    });
+
+
+    if (!result) {
+      return APIResponse.error(response, apiId, "Bad request", `User not exist`, HttpStatus.BAD_REQUEST);
+    }
+    let decryptData
+
+    if (result.encryptedEmail) {
+      decryptData = decrypt(result.encryptedEmail)
+    }
+    if (result.encryptedDob) {
+      decryptData = decrypt(result.encryptedDob)
+    }
+    if (result.encryptedMobile) {
+      decryptData = decrypt(result.encryptedMobile)
+    }
+
+
+    return await APIResponse.success(response, apiId, decryptData,
+      HttpStatus.OK, "User and related entries deleted Successfully.")
   }
 }

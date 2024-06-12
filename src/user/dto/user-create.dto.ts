@@ -1,4 +1,4 @@
-import {Expose, Type } from "class-transformer";
+import { Expose, Type } from "class-transformer";
 import {
   MaxLength,
   IsNotEmpty,
@@ -13,7 +13,7 @@ import {
 import { User } from "../entities/user-entity";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
-export class tenantRoleMappingDto{
+export class tenantRoleMappingDto {
   @ApiProperty({
     type: String,
     description: "Tenant Id",
@@ -42,7 +42,7 @@ export class tenantRoleMappingDto{
   roleId: string;
 }
 
-export class FieldValuesDto{
+export class FieldValuesDto {
   @ApiPropertyOptional({
     type: String,
     description: "Field Id",
@@ -91,8 +91,6 @@ export class UserCreateDto {
     description: "The email of the user",
   })
   @Expose()
-  @IsEmail()
-  @IsNotEmpty()
   email: string;
 
   @ApiProperty({

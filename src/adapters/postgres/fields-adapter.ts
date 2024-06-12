@@ -9,14 +9,13 @@ import { Fields } from "../../fields/entities/fields.entity";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { SuccessResponse } from "src/success-response";
-import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
 import { readFileSync } from "fs";
 import path, { join } from 'path';
+import { maskPiiData, encrypt } from "@utils/mask-data";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -113,17 +112,17 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 APIResponse.error(
                     res,
                     apiId,
-                    `Fields not found`,
-                    `Fields not found`,
+                    `Fields not found or already exist`,
+                    `Fields not found or already exist`,
                     (HttpStatus.NOT_FOUND)
                 )
 
             }
-            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Ok");
+            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
 
 
         } catch (error) {
-            const errorMessage = error.message || 'Internal server error';
+            const errorMessage = error.message || 'Something went wrong';
             return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
         }
@@ -271,12 +270,24 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     public async findAndSaveFieldValues(fieldValuesDto: FieldValuesDto) {
 
+        const field = await this.fieldsRepository.findOne({ where : {fieldId: fieldValuesDto.fieldId} })
         const checkFieldValueExist = await this.fieldsValuesRepository.find({
             where: { itemId: fieldValuesDto.itemId, fieldId: fieldValuesDto.fieldId },
         });
 
+
+        const { isPII } = field?.fieldAttributes;
+
+        if(isPII && checkFieldValueExist.length === 0) {
+            const maskedFieldValue = maskPiiData("text",fieldValuesDto.value);
+            const encryptedFieldValue = encrypt(fieldValuesDto.value);
+            fieldValuesDto.value = maskedFieldValue;
+            fieldValuesDto["encryptedValue"] = encryptedFieldValue;
+        }
+
         if (checkFieldValueExist.length == 0) {
-            let result = await this.fieldsValuesRepository.save(fieldValuesDto);
+            const { value, encryptedValue, ...result } = await this.fieldsValuesRepository.save(fieldValuesDto);
+            
             return result
         }
         return false;

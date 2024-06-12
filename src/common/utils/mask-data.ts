@@ -37,13 +37,29 @@ export function maskPiiData(fieldType: string, fieldValue: string) {
             maskData = `****${fieldValue.substring(4)}`;
             break;
 
+        case 'text':
+            maskData = maskFieldValue(fieldValue)
+            break;
+
         default:
             break;
     }
     return maskData;
 }
 
+export function maskFieldValue(fieldValue: string) : string {
+    const length = fieldValue.length;
+    const numToReplace = Math.floor(length * 0.75);
 
-// Validates the date format
+    // Create an array of characters from the input string
+    let chars = fieldValue.split('');
 
+    // Replace the leading 75% of characters with '*'
+    for (let i = 0; i < numToReplace; i++) {
+        chars[i] = '*';
+    }
+
+    // Join the array back into a string and return it
+    return chars.join('');
+}
 

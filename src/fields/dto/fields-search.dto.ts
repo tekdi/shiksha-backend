@@ -24,3 +24,4 @@ export class FieldsSearchDto {
     Object.assign(this, partial);
   }
 }
+

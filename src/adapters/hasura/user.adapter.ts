@@ -34,7 +34,6 @@ export class HasuraUserService implements IServicelocator {
 
   }
   public async getUsersDetailsById(userData: UserData, response: any) { }
-  public async getUsersDetailsByCohortId(userData: Record<string, string>, response: any) { }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     // try {
@@ -712,6 +711,6 @@ export class HasuraUserService implements IServicelocator {
   }
 
   public async deleteUserById(userId) { }
-  public async user_decrypt_data(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) { }
+  public async userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) { }
 
 }

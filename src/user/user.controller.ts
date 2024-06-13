@@ -220,7 +220,7 @@ export class UserController {
   @SerializeOptions({
     strategy: "excludeAll",
   })
-  public async user_decrypt_data(
+  public async userDecryptData(
     @Headers() headers,
     @Req() request: Request,
     @Res() response: Response,
@@ -229,7 +229,7 @@ export class UserController {
     const tenantId = headers["tenantid"];
     return await this.userAdapter
       .buildUserAdapter()
-      .user_decrypt_data(decryptPIIDataDTO, tenantId, response);
+      .userDecryptData(decryptPIIDataDTO, tenantId, response);
   }
 
 }

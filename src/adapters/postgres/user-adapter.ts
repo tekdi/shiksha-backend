@@ -28,7 +28,9 @@ import APIResponse from 'src/common/responses/response';
 import { Response } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { maskMobileNumber, maskEmail, maskDateOfBirth, encrypt, decrypt } from "@utils/mask-data";
+import { maskPiiData, encrypt, decrypt } from "src/common/utils/mask-data";
+import { PostgresFieldsService } from "./fields-adapter";
+import { CustomFieldsValidation } from "src/common/utils/custom-field-validation";
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -54,6 +56,7 @@ export class PostgresUserService implements IServicelocator {
     private cohortRepository: Repository<Cohort>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private fieldsService: PostgresFieldsService,
   ) { }
 
   async searchUser(tenantId: string,
@@ -127,9 +130,6 @@ export class PostgresUserService implements IServicelocator {
         this.findUserRoles(userData.userId, userData.tenantId)
       ]);
       const roleInUpper = (userRole.title).toUpperCase();
-      if (userData?.fieldValue) {
-        filledValues = await this.findFilledValues(userData.userId, roleInUpper)
-      }
 
       if (userRole) {
         userDetails['role'] = userRole.title;
@@ -142,102 +142,21 @@ export class PostgresUserService implements IServicelocator {
         return await APIResponse.success(response, apiId, { userData: userDetails },
           HttpStatus.OK, 'User details Fetched Successfully.')
       }
-      const customFields = await this.findCustomFields(userData, roleInUpper)
-      result.userData = userDetails;
-      const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
 
-      for (let data of customFields) {
-        let fieldValue: any = filledValuesMap.get(data.fieldId);
-
-        if (fieldValue) {
-          fieldValue = fieldValue.split(',')
-        }
-
-        const customField = {
-          fieldId: data.fieldId,
-          name: data?.name,
-          label: data.label,
-          order: data.ordering,
-          value: fieldValue || '',
-          isRequired: data.fieldAttributes ? data.fieldAttributes['isRequired'] : '',
-          isEditable: data.fieldAttributes ? data.fieldAttributes['isEditable'] : '',
-          options: data?.fieldParams?.['options'] || {},
-          type: data.type || ''
-        };
-        customFieldsArray.push(customField);
+      let customFields;
+      if (userData?.fieldValue) {
+        let context = 'USERS';
+        let contextType = roleInUpper;
+        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
       }
 
-      result.userData['customFields'] = customFieldsArray;
+      result.userData = userDetails;
+
+      result.userData['customFields'] = customFields;
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  async getUsersDetailsByCohortId(userData: Record<string, string>, response: any) {
-    let apiId = 'api.users.getAllUsersDetails'
-    try {
-      if (userData?.fieldValue) {
-        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
-        let result = {
-          userDetails: [],
-        };
-
-        for (let data of getUserDetails) {
-          let userDetails = {
-            userId: data.userId,
-            userName: data.userName,
-            name: data.name,
-            role: data.role,
-            district: data.district,
-            state: data.state,
-            mobile: data.mobile,
-          }
-          result.userDetails.push(userDetails);
-        }
-
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: 'Ok.',
-          data: result,
-        });
-
-      } else {
-        let getUserDetails = await this.findUserName(userData.cohortId, userData.contextType)
-        let result = {
-          userDetails: [],
-        };
-
-        for (let data of getUserDetails) {
-          let userDetails = {
-            userId: data.userId,
-            userName: data.userName,
-            name: data.name,
-            role: data.role,
-            district: data.district,
-            state: data.state,
-            mobile: data.mobile,
-            customField: [],
-          }
-          const fieldValues = await this.getFieldandFieldValues(data.userId)
-          userDetails.customField.push(fieldValues);
-
-          result.userDetails.push(userDetails);
-        }
-
-        return new SuccessResponse({
-          statusCode: HttpStatus.OK,
-          message: 'Ok.',
-          data: result,
-        });
-
-      }
-    } catch (e) {
-      return new ErrorResponseTypeOrm({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        errorMessage: e,
-      });
     }
   }
 
@@ -256,16 +175,6 @@ export class PostgresUserService implements IServicelocator {
       result = await this.usersRepository.query(query, [cohortId]);
     }
     return result;
-  }
-
-  async getFieldandFieldValues(userId: string) {
-    let query = `SELECT Fv."fieldId",F."label" AS FieldName,Fv."value" as FieldValues 
-    FROM public."FieldValues" Fv   
-    LEFT JOIN public."Fields" F
-    ON F."fieldId" = Fv."fieldId"
-    where Fv."itemId" =$1 `
-    let result = await this.usersRepository.query(query, [userId]);
-    return result
   }
 
   async findUserRoles(userId: string, tenantId: string) {
@@ -316,26 +225,7 @@ export class PostgresUserService implements IServicelocator {
     const result = await this.usersRepository.query(query, [userId]);
     return result;
   }
-  async findCustomFields(userData, role) {
-    let customFields = await this.fieldsRepository.find({
-      where: {
-        context: userData.context,
-        contextType: role,
-      }
-    })
-    return customFields;
-  }
-  async findFilledValues(userId: string, role: string) {
-    let query = `SELECT U."userId",FV."fieldId",FV."value", F."fieldAttributes" FROM public."Users" U 
-    LEFT JOIN public."FieldValues" FV
-    ON U."userId" = FV."itemId" 
-    LEFT JOIN public."Fields" F
-    ON F."fieldId" = FV."fieldId" 
-    where U."userId" =$1 AND F."contextType" = $2`;
 
-    let result = await this.usersRepository.query(query, [userId, role]);
-    return result;
-  }
 
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
@@ -395,26 +285,9 @@ export class PostgresUserService implements IServicelocator {
     if (!user) {
       return null;
     }
+    Object.assign(user, userData);
 
-    if (userData['isEmailMasked'] == 'false') {
-      userData['encryptedEmail'] = encrypt(userData['email'])
-      userData['email'] = maskEmail(userData['email'])
-    }
-
-    if (userData['isMobileMasked'] == 'false') {
-      userData['encryptedMobile'] = encrypt(userData['mobile'])
-      userData['mobile'] = maskMobileNumber(userData['mobile'])
-    }
-
-
-    if (userData['isDobMasked'] == 'false') {
-      userData['encryptedDob'] = encrypt(userData['dob'])
-      userData['dob'] = maskDateOfBirth(userData['dob']);
-    }
-
-    // Object.assign(user, userData);
-
-    return this.usersRepository.save(userData);
+    return this.usersRepository.save(user);
   }
 
 
@@ -461,9 +334,10 @@ export class PostgresUserService implements IServicelocator {
       }
 
       // check and validate all fields
-      let validateBodyFields = await this.validateBodyFields(userCreateDto)
+      let validateRequestBody = await this.validateRequestBody(userCreateDto, response, apiId)
 
-      if (validateBodyFields == true) {
+      // return false;
+      if (validateRequestBody == true) {
         userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
         const userSchema = new UserCreateDto(userCreateDto);
 
@@ -485,7 +359,7 @@ export class PostgresUserService implements IServicelocator {
         );
         userCreateDto.userId = resKeycloak;
 
-        let result = await this.createUserInDatabase(request, userCreateDto);
+        let result = await this.createUserInDatabase(request, userCreateDto, response, apiId);
 
         let fieldData = {};
         if (userCreateDto.fieldValues) {
@@ -518,7 +392,32 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  async validateBodyFields(userCreateDto) {
+  async validateRequestBody(userCreateDto, response, apiId) {
+    for (const [key, value] of Object.entries(userCreateDto)) {
+
+      if (key === 'email') {
+        const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Invalid email address`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'mobile') {
+        const checkValidMobile = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
+        if (!checkValidMobile) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Mobile number must be 10 digits long`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'dob') {
+        const checkValidDob = CustomFieldsValidation.validate('date', userCreateDto.dob);
+        if (!checkValidDob) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+    }
+
     for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
 
       const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
@@ -530,24 +429,15 @@ export class PostgresUserService implements IServicelocator {
       ]);
 
       if (tenantExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Tenant Id '${tenantId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
 
       if (cohortExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
       }
 
       if (roleExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Role Id '${roleId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
     }
     return true;
@@ -595,7 +485,7 @@ export class PostgresUserService implements IServicelocator {
   }
 
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response, apiId: string) {
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
@@ -612,15 +502,17 @@ export class PostgresUserService implements IServicelocator {
 
     if (userCreateDto?.email) {
       user.encryptedEmail = encrypt(user.email)
-      user.email = maskEmail(user.email)
+      user.email = maskPiiData('email', user.email)
     }
+
     if (userCreateDto?.mobile) {
       user.encryptedMobile = encrypt(user.mobile)
-      user.mobile = maskMobileNumber(user.mobile)
+      user.mobile = maskPiiData('mobile', user.mobile)
     }
+
     if (userCreateDto?.dob) {
       user.encryptedDob = encrypt(user.dob)
-      user.dob = maskDateOfBirth(user.dob);
+      user.dob = maskPiiData('date', user.dob);
     }
 
     let result = await this.usersRepository.save(user);
@@ -858,7 +750,7 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  public async user_decrypt_data(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
+  public async userDecryptData(decryptPIIDataDTO: DecryptPIIDataDTO, tenantId: string, response: Response) {
 
     const apiId = APIID.USER_DECRYPT_DATA;
     if (!isUUID(decryptPIIDataDTO.userId)) {

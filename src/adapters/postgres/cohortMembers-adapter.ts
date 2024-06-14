@@ -262,22 +262,12 @@ export class PostgresCohortMembersService {
     let getUserDetails = await this.getUsers(where, options);
 
     for (let data of getUserDetails) {
-      let userDetails = {
-        userId: data?.userId,
-        userName: data?.userName,
-        name: data?.name,
-        role: data?.role,
-        district: data?.district,
-        state: data?.state,
-        mobile: data?.mobile
-      };
-
       if (fieldShowHide === "false") {
-        results.userDetails.push(userDetails);
+        results.userDetails.push(data);
       } else {
         const fieldValues = await this.getFieldandFieldValues(data.userId);
-        userDetails['customField'] = fieldValues;
-        results.userDetails.push(userDetails);
+        data['customField'] = fieldValues;
+        results.userDetails.push(data);
       }
     }
 
@@ -363,7 +353,7 @@ export class PostgresCohortMembersService {
     }
 
     if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus" FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -372,7 +362,7 @@ export class PostgresCohortMembersService {
       ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
     }
     else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus" FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -397,21 +387,21 @@ export class PostgresCohortMembersService {
     try {
       cohortMembersUpdateDto.updatedBy = loginUser;
       if (!isUUID(cohortMembershipId)) {
-        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Please Enter a valid UUID for cohortMemberId.", HttpStatus.BAD_REQUEST);
+        return APIResponse.error(res, apiId, "Bad Request", "Invalid input: Please Enter a valid UUID for cohortMembershipId.", HttpStatus.BAD_REQUEST);
       }
 
-      const cohortMemberToUpdate = await this.cohortMembersRepository.findOne({
+      const cohortMembershipToUpdate = await this.cohortMembersRepository.findOne({
         where: { cohortMembershipId: cohortMembershipId },
       });
 
-      if (!cohortMemberToUpdate) {
+      if (!cohortMembershipToUpdate) {
         return APIResponse.error(res, apiId, "Not Found", "Invalid input: Cohort member not found.", HttpStatus.NOT_FOUND);
       }
 
-      Object.assign(cohortMemberToUpdate, cohortMembersUpdateDto);
+      Object.assign(cohortMembershipToUpdate, cohortMembersUpdateDto);
 
       const updatedCohortMember = await this.cohortMembersRepository.save(
-        cohortMemberToUpdate
+        cohortMembershipToUpdate
       );
 
       return APIResponse.success(res, apiId, updatedCohortMember, HttpStatus.OK, "Cohort Member Updated successfully.");

@@ -30,6 +30,9 @@ export class CohortMembers {
   @Column({ type: 'uuid', nullable: true })
   updatedBy: string;
 
+  @Column({ type: 'varchar' })
+  statusReason: string;
+
   @Column({
       type: 'enum',
       enum: MemberStatus,

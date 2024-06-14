@@ -353,7 +353,7 @@ export class PostgresCohortMembersService {
     }
 
     if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus" FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason" FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -362,7 +362,7 @@ export class PostgresCohortMembersService {
       ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
     }
     else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus" FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason" FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -374,7 +374,6 @@ export class PostgresCohortMembersService {
     return result;
 
   }
-
 
   public async updateCohortMembers(
     cohortMembershipId: string,
@@ -411,7 +410,6 @@ export class PostgresCohortMembersService {
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
 
   public async deleteCohortMemberById(
     tenantid: any,

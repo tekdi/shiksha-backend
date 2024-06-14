@@ -56,6 +56,13 @@ export class CohortMembersUpdateDto {
   @IsOptional()
   updatedBy?: string;
 
+  @ApiProperty({
+    type: String,
+    description: "The status change reason",
+  })
+  @IsOptional()
+  statusReason?: string;
+
   constructor(obj: any) {
     Object.assign(this, obj);
   }

@@ -546,10 +546,12 @@ export class PostgresCohortService {
           skip: offset,
         });
         const cohortData = data.slice(offset, offset + (limit));
-        count = totalCount
+        count = totalCount;
+        results.cohortDetails = cohortData;
+
         for (let data of cohortData) {
-          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
-          results.cohortDetails.push(cohortDetails);
+          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId);
+          data['customFields'] = customFieldsData || [];
         }
       } else {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
@@ -557,11 +559,12 @@ export class PostgresCohortService {
           skip: offset
         });
         const cohortData = data.slice(offset, offset + (limit));
-        count = totalcount
+        count = totalcount;
+        results.cohortDetails = cohortData;
 
         for (let data of cohortData) {
-          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
-          results.cohortDetails.push(cohortDetails);
+          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
+          data['customFields'] = customFieldsData || [];
         }
       }
 

@@ -353,7 +353,7 @@ export class PostgresCohortMembersService {
     }
 
     if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason" FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -362,7 +362,7 @@ export class PostgresCohortMembersService {
       ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
     }
     else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason" FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR

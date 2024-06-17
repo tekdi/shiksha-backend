@@ -5,6 +5,7 @@ import {
   ApiCreatedResponse,
   ApiBasicAuth,
   ApiHeader,
+  ApiQuery,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -16,6 +17,9 @@ import {
   UseGuards,
   Res,
   UseFilters,
+  Get,
+  Query,
+  Param,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -26,7 +30,6 @@ import { Response } from "express";
 import { FieldsAdapter } from "./fieldsadapter";
 import { FieldValuesDto } from "./dto/field-values.dto";
 import { FieldValuesSearchDto } from "./dto/field-values-search.dto";
-import { FieldsService } from "./fields.service";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
@@ -37,8 +40,7 @@ import { APIID } from "src/common/utils/api-id.config";
 export class FieldsController {
   constructor(
     private fieldsAdapter: FieldsAdapter,
-    private readonly fieldsService: FieldsService
-  ) {}
+  ) { }
 
   //fields
   //create fields
@@ -113,7 +115,7 @@ export class FieldsController {
       request,
       fieldValuesDto,
       response
-    );  
+    );
   }
 
   //search fields values
@@ -137,4 +139,28 @@ export class FieldsController {
       response
     );
   }
-}
+
+
+  //Get Field Option
+  @Get("/getOptions/:fieldName")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({ description: "Field Options list." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiQuery({ name: 'controllingfieldfk', required: false })
+  @ApiQuery({ name: 'contextType', required: false })
+
+  public async getFieldOptions(
+    @Headers() headers,
+    @Req() request: Request,
+    @Param('fieldName') fieldName: string,
+    @Query("controllingfieldfk") controllingfieldfk: string | null = null,
+    @Query("context") context: string | null = null,
+    @Query("contextType") contextType: string | null = null,
+    @Res() response: Response
+  ) {
+    return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldName, controllingfieldfk, context, contextType, response);
+  }
+} 

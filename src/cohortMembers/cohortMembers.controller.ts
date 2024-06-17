@@ -128,7 +128,7 @@ export class CohortMembersController {
 
   //update
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_UPDATE))
-  @Put("/update/:id")
+  @Put("/update/:cohortmembershipid")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Cohort Member has been updated successfully.",
@@ -136,8 +136,9 @@ export class CohortMembersController {
   @ApiNotFoundResponse({ description: "Data not found" })
   @ApiBadRequestResponse({ description: "Bad request" })
   @ApiBody({ type: CohortMembersUpdateDto })
+  @UsePipes(new ValidationPipe())
   public async updateCohortMembers(
-    @Param("id") cohortMembersId: string,
+    @Param("cohortmembershipid") cohortMembersId: string,
     @Req() request,
     @Body() cohortMemberUpdateDto: CohortMembersUpdateDto,
     @Res() response: Response

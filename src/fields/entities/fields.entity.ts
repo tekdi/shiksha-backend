@@ -1,14 +1,14 @@
-import { 
-    Entity, 
-    Column, 
-    PrimaryColumn, 
-    CreateDateColumn,
-    UpdateDateColumn,
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({ name: 'Fields' })
 export class Fields {
-    
+
   @PrimaryColumn({ type: "uuid" })
   fieldId: string;
 
@@ -95,4 +95,13 @@ export class Fields {
 
   @Column({ type: 'jsonb' })
   fieldParams: object;
+
+  @Column({ type: 'jsonb', nullable: true })
+  sourceDetails: any;
+
+  @Column({ type: 'jsonb', nullable: true })
+  fieldAttributes: any;
+
+  @Column({ type: 'boolean' })
+  dependsOn: boolean;
 }

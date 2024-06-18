@@ -11,9 +11,6 @@ export class FieldValues {
   @Column('varchar', { length: 255, nullable: false })
   value: string;
 
-  @Column('varchar', { length: 255, nullable: true })
-  encryptedValue: string;
-
   @Column('uuid', { nullable: false })
   itemId: string;
 

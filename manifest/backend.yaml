@@ -29,6 +29,9 @@ spec:
         name: backend-pratham
         ports:
         - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: backend-service-config
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
@@ -39,17 +42,14 @@ status: {}
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f backend.yaml
-    kompose.version: 1.21.0 (992df58d8)
-  labels:
-    io.kompose.service: backend
   name: backend
+  labels:
+    app: backend
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
-  - port: 31265
-    targetPort: 3000
-    nodePort: 31265
+  - name: http-backend
+    protocol: TCP
+    port: 3000
   selector:
-    io.kompose.service: backend
+    app: backend

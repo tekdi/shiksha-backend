@@ -34,7 +34,6 @@ export class HasuraUserService implements IServicelocator {
     
   }
   public async getUsersDetailsById(userData: UserData, response:any) {}
-  public async getUsersDetailsByCohortId(userData: Record<string, string>, response:any) {}
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     // try {

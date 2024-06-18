@@ -5,20 +5,37 @@ import {
   IsEmail,
   IsString,
   IsNumber,
+  IsObject,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { User } from "../entities/user-entity";
 
-export class UserSearchDto {
-  @ApiProperty({ type: () => User })
-  limit: string;
-
-  @ApiProperty({
-    type: Object,
-    description: "Filters",
+export class setFilters {
+  @ApiPropertyOptional({
+    type: String,
+    description: "State",
   })
-  @ApiPropertyOptional()
-  filters: object;
+  state: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "District",
+  })
+  district: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "Role",
+  })
+  role: string;
+
+}
+export class UserSearchDto {
+  @ApiProperty({
+    type: Number,
+    description: "Limit",
+  })
+  limit: number;
 
   @ApiProperty({
     type: Number,
@@ -26,7 +43,17 @@ export class UserSearchDto {
   })
   page: number;
 
+  @ApiProperty({
+    type: setFilters,
+    description: "Filters",
+  })
+  @IsObject()
+  filters: setFilters;
+
+
+
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);
   }
 }
+

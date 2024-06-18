@@ -22,7 +22,7 @@
     "esModuleInterop": true,
     "paths": {
       "@utils/*": [
-        "src/common/utils*"
+        "src/common/utils/*"
       ] // Adjust according to your folder structure
     }
   }

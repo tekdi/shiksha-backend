@@ -545,11 +545,19 @@ export class PostgresCohortService {
           where: whereClause,
           skip: offset,
         });
-        const cohortData = data.slice(offset, offset + (limit));
-        count = totalCount
-        for (let data of cohortData) {
-          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId);
-          results.cohortDetails.push(cohortDetails);
+        const userExistCohortGroup = data.slice(offset, offset + (limit));
+        count = totalCount;
+
+        for (let data of userExistCohortGroup) {
+          let cohortAllData = await this.cohortRepository.findOne({
+            where: {
+              cohortId: data?.cohortId
+            }
+          })
+
+          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId);
+          cohortAllData['customFields'] = customFieldsData
+          results.cohortDetails.push({ cohortData: cohortAllData });
         }
       } else {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
@@ -557,11 +565,12 @@ export class PostgresCohortService {
           skip: offset
         });
         const cohortData = data.slice(offset, offset + (limit));
-        count = totalcount
+        count = totalcount;
 
         for (let data of cohortData) {
-          let cohortDetails = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
-          results.cohortDetails.push(cohortDetails);
+          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
+          data['customFields'] = customFieldsData || [];
+          results.cohortDetails.push({ cohortData: data })
         }
       }
 

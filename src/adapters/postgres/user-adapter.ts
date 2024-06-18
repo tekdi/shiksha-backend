@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Query } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -66,9 +66,10 @@ export class PostgresUserService implements IServicelocator {
 
       let findData = await this.findAllUserDetails(userSearchDto);
 
-      // if (!findData) {
-      //   return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
-      // }
+      if (!findData) {
+        return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
+      }
+
       return await APIResponse.success(response, apiId, findData,
         HttpStatus.OK, 'User List fetched.')
     } catch (e) {
@@ -92,7 +93,7 @@ export class PostgresUserService implements IServicelocator {
           whereCondition += ` AND `
         }
         if (key == 'role') {
-          whereCondition += ` R."name" = '${value}'`
+          whereCondition += ` R."name" = $1`, [value];
         } else {
           whereCondition += ` U."${key}" = '${value}'`;
         }
@@ -105,8 +106,12 @@ export class PostgresUserService implements IServicelocator {
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition}`
+      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
     let results = await this.usersRepository.query(query);
+
+    if (!Query) {
+      return false;
+    }
     return results;
   }
 

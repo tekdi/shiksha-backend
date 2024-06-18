@@ -182,7 +182,7 @@ export class CohortMembersController {
   }
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_CREATE))
-  @Post("/bulkCohortMembers")
+  @Post("/bulkCreate")
   @UsePipes(new ValidationPipe())
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({

@@ -93,7 +93,7 @@ export class PostgresUserService implements IServicelocator {
           whereCondition += ` AND `
         }
         if (key == 'role') {
-          whereCondition += ` R."name" = $1`, [value];
+          whereCondition += ` R."name" = '${value}'`
         } else {
           whereCondition += ` U."${key}" = '${value}'`;
         }

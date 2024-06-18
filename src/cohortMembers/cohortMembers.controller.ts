@@ -37,6 +37,7 @@ import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { Response } from "express";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { BulkCohortMember } from "./dto/bulkMember-create.dto";
 
 @ApiTags("Cohort Member")
 @Controller("cohortmember")
@@ -44,7 +45,7 @@ import { APIID } from "src/common/utils/api-id.config";
 export class CohortMembersController {
   constructor(
     private readonly cohortMemberAdapter: CohortMembersAdapter
-  ) { }
+  ) {}
 
   //create cohort members
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_CREATE))
@@ -178,5 +179,30 @@ export class CohortMembersController {
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
       .deleteCohortMemberById(tenantid, cohortMembershipId, response);
+  }
+
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_CREATE))
+  @Post("/bulkCohortMembers")
+  @UsePipes(new ValidationPipe())
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({
+    description: "Cohort Member has been created successfully.",
+  })
+  @ApiBody({ type: BulkCohortMember })
+  @ApiHeader({
+    name: "tenantid",
+  })
+  public async craeteBulkCohortMembers(
+    @Headers() headers,
+    @Req() request,
+    @Body() bulkcohortMembersDto: BulkCohortMember,
+    @Res() response: Response
+  ) {
+    const loginUser = request.user.userId;
+    const tenantId = headers["tenantid"];
+    const result = await this.cohortMemberAdapter
+      .buildCohortMembersAdapter()
+      .createBulkCohortMembers(loginUser,bulkcohortMembersDto, response, tenantId);
+    return result;
   }
 }

@@ -406,11 +406,19 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return customFields;
     }
 
-    async findFieldValues(cohortId: string) {
-        let query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
+    async findFieldValues(contextId: string, context: string) {
+        let query = "";
+        if(context === "COHORT") {
+          query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
     LEFT JOIN public."FieldValues" F
     ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
-        let result = await this.fieldsRepository.query(query, [cohortId]);
+        } else if (context === "USERS") {
+          query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
+    LEFT JOIN public."FieldValues" F
+    ON U."userId" = F."itemId" where U."userId" =$1`;
+        }
+
+        let result = await this.fieldsRepository.query(query, [contextId]);
         return result;
     }
 
@@ -418,7 +426,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
-            this.findFieldValues(id),
+            this.findFieldValues(id,context),
             this.findCustomFields(context, [contextType])
         ]);
 
@@ -474,20 +482,35 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
     }
 
-    async updateCustomFields(itemId, data, fieldAttributes) {
+    async updateCustomFields(itemId, data, fieldAttributesAndParams) {
+        const fieldOptions = fieldAttributesAndParams?.fieldParams?.options.map(({value}) => value);
         if (Array.isArray(data.value) === true) {
           let dataArray = [];
           for (let value of data.value) {
-            dataArray.push(value.toLowerCase().replace(/ /g, '_'));
+            // check against options
+            if(!fieldOptions.includes(value)) {
+                return {
+                    correctValue : false,
+                    fieldName: fieldAttributesAndParams.fieldName,
+                    valueIssue: "Value not a part of given options"
+                 };
+            } 
+            else {
+                dataArray.push(value);
+            }
           }
-          if(fieldAttributes?.isMultiSelect && parseInt(fieldAttributes?.maxSelections) >= dataArray.length ) {
+          if(fieldAttributesAndParams?.fieldAttributes?.isMultiSelect && parseInt(fieldAttributesAndParams?.fieldAttributes?.maxSelections) >= dataArray.length ) {
             data.value = dataArray.join(',');
           } else {
-            return false;
+            return {
+               correctValue : false,
+               fieldName : fieldAttributesAndParams.fieldName,
+               valueIssue: "Multiselect max selections exceeded"
+            };
           }
         }
     
-        let result = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+        let result : any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
         let newResult;
         if (result.affected === 0) {
           newResult = await this.fieldsValuesRepository.save({
@@ -497,7 +520,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
           });
         }
         Object.assign(result, newResult);
-    
+        result["correctValue"] = true;
         return result;
       }
 }

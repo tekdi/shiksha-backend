@@ -241,7 +241,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = fieldDetails.fieldAttributes;
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = {fieldAttributes :fieldDetails.fieldAttributes, fieldParams :fieldDetails.fieldParams, fieldName: fieldDetails.name};
         }
 
         // let errorMessage = [];
@@ -250,12 +250,12 @@ export class PostgresUserService implements IServicelocator {
         for (let data of userDto.customFields) {
           if (isEditableFieldId.includes(data.fieldId)) {
             const result = await this.fieldsService.updateCustomFields(userDto.userId, data, fieldIdAndAttributes[data.fieldId]);
-            if (result) {
+            if (result.correctValue) {
               if (!updatedData['customFields'])
                 updatedData['customFields'] = [];
               updatedData['customFields'].push(result);
             } else {
-              editFailures.push(`${data.fieldId} : Multiselect max selections exceeded`)
+              editFailures.push(`${data.fieldId} : ${result?.valueIssue} - ${result.fieldName}`)
             }
           } else {
             unEditableIdes.push(data.fieldId)

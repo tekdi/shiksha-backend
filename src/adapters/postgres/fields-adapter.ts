@@ -8,7 +8,7 @@ import { ErrorResponse } from "src/error-response";
 import { Fields } from "../../fields/entities/fields.entity";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
@@ -127,7 +127,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
-    // api 
     async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) { 
         const apiId = APIID.FIELDVALUES_SEARCH;
         try {
@@ -275,10 +274,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
         if (checkFieldValueExist.length == 0) {
 
-            console.log(fieldValuesDto, "fval")
-            const { value, encryptedValue, ...result } = await this.fieldsValuesRepository.save(fieldValuesDto);
+            const result = await this.fieldsValuesRepository.save(fieldValuesDto);
 
-            console.log(result,"reeeee")
             return result;
         }
         return false;
@@ -383,13 +380,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
-    async findCustomFields(context: string, contextType?: string) {
+    async findCustomFields(context: string, contextType?: string[]) {
         const condition: any = {
             context: context,
         };
 
-        if (contextType) {
-            condition.contextType = contextType;
+        if (contextType.length) {
+            condition.contextType = In(contextType);
         }
 
         let customFields = await this.fieldsRepository.find({
@@ -411,7 +408,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
             this.findFieldValues(id),
-            this.findCustomFields(context, contextType)
+            this.findCustomFields(context, [contextType])
         ]);
 
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
@@ -424,6 +421,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 order: data?.ordering,
                 isRequired: data?.fieldAttributes?.isRequired,
                 isEditable: data?.fieldAttributes?.isEditable,
+                isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
+                maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
                 value: fieldValue || '',
                 options: data?.fieldParams?.['options'] || {},
                 type: data?.type || ''
@@ -453,4 +452,41 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
         return fieldsArr;
     }
+
+    async getEditableFieldsAttributes() {
+        const getFieldsAttributesQuery = `
+          SELECT * 
+          FROM "public"."Fields" 
+          WHERE "fieldAttributes"->>'isEditable' = $1 
+        `;
+        const getFieldsAttributesParams = ['true'];
+        return await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
+    }
+
+    async updateCustomFields(itemId, data, fieldAttributes) {
+        if (Array.isArray(data.value) === true) {
+          let dataArray = [];
+          for (let value of data.value) {
+            dataArray.push(value.toLowerCase().replace(/ /g, '_'));
+          }
+          if(fieldAttributes?.isMultiSelect && parseInt(fieldAttributes?.maxSelections) >= dataArray.length ) {
+            data.value = dataArray.join(',');
+          } else {
+            return false;
+          }
+        }
+
+        let result = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+        let newResult;
+        if (result.affected === 0) {
+          newResult = await this.fieldsValuesRepository.save({
+            itemId,
+            fieldId: data.fieldId,
+            value: data.value
+          });
+        }
+        Object.assign(result, newResult);
+
+        return result;
+      }
 }

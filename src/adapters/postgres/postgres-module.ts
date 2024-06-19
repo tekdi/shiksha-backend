@@ -15,6 +15,8 @@ import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-ma
 import { Tenants } from "src/userTenantMapping/entities/tenant.entity";
 import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
+import { PostgresRoleService } from "./rbac/role-adapter";
+import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-privilege.entity";
 
 
 @Module({
@@ -30,13 +32,15 @@ import { Role } from "src/rbac/role/entities/role.entity";
             UserTenantMapping,
             Tenants,
             UserRoleMapping,
-            Role
+            Role,
+            RolePrivilegeMapping
         ])
     ],
     providers: [
         PostgresUserService,
         PostgresAttendanceService,
-        PostgresFieldsService
+        PostgresFieldsService,
+        PostgresRoleService,
     ],
     exports: [
         PostgresUserService,

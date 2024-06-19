@@ -307,7 +307,7 @@ export class PostgresUserService implements IServicelocator {
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
 
-      //Check duplicate field entry
+      // Check duplicate field entry
       if (userCreateDto.fieldValues) {
         let fieldValues = userCreateDto.fieldValues;
         const validateField = await this.validateFieldValues(fieldValues);
@@ -353,8 +353,8 @@ export class PostgresUserService implements IServicelocator {
 
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,name}},{});
-    
+            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,fieldName: name}},{});
+  
             for (let fieldValues of userCreateDto.fieldValues) {
 
               const fieldData = {
@@ -362,7 +362,8 @@ export class PostgresUserService implements IServicelocator {
                 value: fieldValues['value']
               }
               let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
-              if (res) {
+            
+              if (res.correctValue) {
                 if (!result['customFields'])
                   result['customFields'] = [];
                 result["customFields"].push(res);

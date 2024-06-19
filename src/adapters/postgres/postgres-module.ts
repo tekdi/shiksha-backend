@@ -5,9 +5,8 @@ import { FieldsService } from "src/fields/fields.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "src/user/entities/user-entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
-import { Field } from "src/user/entities/field-entity";
 import { Fields } from "src/fields/entities/fields.entity";
-import { FieldValues } from "src/user/entities/field-value-entities";
+import { FieldValues } from "src/fields/entities/fields-values.entity";
 import { AttendanceEntity } from "src/attendance/entities/attendance.entity";
 import { PostgresAttendanceService } from "./attendance-adapter";
 import { PostgresFieldsService } from "./fields-adapter";
@@ -22,7 +21,7 @@ import { Role } from "src/rbac/role/entities/role.entity";
     imports: [HttpModule,
         TypeOrmModule.forFeature([
             User,
-            Field,
+            Fields,
             FieldValues,
             CohortMembers,
             AttendanceEntity,

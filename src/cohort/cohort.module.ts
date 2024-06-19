@@ -9,7 +9,7 @@ import { FieldsService } from "../fields/fields.service";
 import { Fields } from "../fields/entities/fields.entity";
 import { FieldValues } from "../fields/entities/fields-values.entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
-import { PostgresModule } from "src/adapters/postgres/potsgres-module";
+import { PostgresModule } from "src/adapters/postgres/postgres-module";
 import { PostgresCohortService } from "src/adapters/postgres/cohort-adapter";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import { PostgresFieldsService } from "src/adapters/postgres/fields-adapter";

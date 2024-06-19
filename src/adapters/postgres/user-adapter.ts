@@ -1,6 +1,6 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Query } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
-import { FieldValues } from '../../user/entities/field-value-entities';
+import { FieldValues } from 'src/fields/entities/fields-values.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCreateDto } from '../../user/dto/user-create.dto';
@@ -13,9 +13,8 @@ import {
 } from "../../common/utils/keycloak.adapter.util"
 import { ErrorResponse } from 'src/error-response';
 import { SuccessResponse } from 'src/success-response';
-import { Field } from '../../user/entities/field-entity';
+import { Fields } from 'src/fields/entities/fields.entity';
 import { CohortMembers } from 'src/cohortMembers/entities/cohort-member.entity';
-import { ErrorResponseTypeOrm } from 'src/error-response-typeorm';
 import { isUUID } from 'class-validator';
 import { UserSearchDto } from 'src/user/dto/user-search.dto';
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
@@ -25,11 +24,12 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
 import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
-import { Response } from 'express';
+import { Response, query } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
 import { PostgresFieldsService } from "./fields-adapter"
 import { PostgresRoleService } from './rbac/role-adapter';
+import { CustomFieldsValidation } from '@utils/custom-field-validation';
 // import {PostgresS}
 
 @Injectable()
@@ -42,8 +42,6 @@ export class PostgresUserService implements IServicelocator {
     private usersRepository: Repository<User>,
     @InjectRepository(FieldValues)
     private fieldsValueRepository: Repository<FieldValues>,
-    @InjectRepository(Field)
-    private fieldsRepository: Repository<Field>,
     @InjectRepository(CohortMembers)
     private cohortMemberRepository: Repository<CohortMembers>,
     @InjectRepository(UserTenantMapping)
@@ -66,10 +64,13 @@ export class PostgresUserService implements IServicelocator {
     userSearchDto: UserSearchDto) {
     const apiId = APIID.USER_LIST;
     try {
+
       let findData = await this.findAllUserDetails(userSearchDto);
-      if (!findData.length) {
+
+      if (!findData) {
         return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
       }
+
       return await APIResponse.success(response, apiId, findData,
         HttpStatus.OK, 'User List fetched.')
     } catch (e) {
@@ -77,29 +78,41 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
+
   async findAllUserDetails(userSearchDto) {
     let { limit, page, filters } = userSearchDto;
-
     let offset = 0;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
     }
 
-    if (limit.trim() === '') {
-      limit = '0';
-    }
-
-    const whereClause = {};
+    let whereCondition = `WHERE`;
+    let index = 0;
     if (filters && Object.keys(filters).length > 0) {
       Object.entries(filters).forEach(([key, value]) => {
-        whereClause[key] = value;
+        if (index > 0) {
+          whereCondition += ` AND `
+        }
+        if (key == 'role') {
+          whereCondition += ` R."name" = '${value}'`
+        } else {
+          whereCondition += ` U."${key}" = '${value}'`;
+        }
+        index++;
       });
     }
-    const results = await this.usersRepository.find({
-      where: whereClause,
-      skip: offset,
-      take: parseInt(limit),
-    });
+
+    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
+      FROM  public."Users" U
+      INNER JOIN public."UserRolesMapping" UR
+      ON UR."userId" = U."userId"
+      INNER JOIN public."Roles" R
+      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
+    let results = await this.usersRepository.query(query);
+
+    if (!Query) {
+      return false;
+    }
     return results;
   }
 
@@ -120,11 +133,8 @@ export class PostgresUserService implements IServicelocator {
       }
 
       const result = {
-        userData: {
-        }
+        userData: {}
       };
-      let filledValues: any;
-      let customFieldsArray = [];
 
       let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
@@ -261,7 +271,7 @@ export class PostgresUserService implements IServicelocator {
     const apiId = APIID.USER_UPDATE;
     try {
       let updatedData = {};
-      let errorMessage;
+      let editIssues = {};
 
       if (userDto.userData) {
         await this.updateBasicUserDetails(userDto.userId, userDto.userData);
@@ -269,38 +279,41 @@ export class PostgresUserService implements IServicelocator {
       }
 
       if (userDto?.customFields?.length > 0) {
-        const getFieldsAttributesQuery = `
-          SELECT * 
-          FROM "public"."Fields" 
-          WHERE "fieldAttributes"->>'isEditable' = $1 
-        `;
-        const getFieldsAttributesParams = ['true'];
-        const getFieldsAttributes = await this.fieldsRepository.query(getFieldsAttributesQuery, getFieldsAttributesParams);
+        const getFieldsAttributes = await this.fieldsService.getEditableFieldsAttributes();
 
         let isEditableFieldId = [];
+        const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = {fieldAttributes :fieldDetails.fieldAttributes, fieldParams :fieldDetails.fieldParams, fieldName: fieldDetails.name};
         }
 
-        // let errorMessage = [];
         let unEditableIdes = [];
+        let editFailures = [];
         for (let data of userDto.customFields) {
           if (isEditableFieldId.includes(data.fieldId)) {
-            const result = await this.updateCustomFields(userDto.userId, data);
-            if (result) {
+            const result = await this.fieldsService.updateCustomFields(userDto.userId, data, fieldIdAndAttributes[data.fieldId]);
+            if (result.correctValue) {
               if (!updatedData['customFields'])
                 updatedData['customFields'] = [];
               updatedData['customFields'].push(result);
+            } else {
+              editFailures.push(`${data.fieldId}: ${result?.valueIssue} - ${result.fieldName}`)
             }
           } else {
             unEditableIdes.push(data.fieldId)
           }
         }
         if (unEditableIdes.length > 0) {
-          errorMessage = `Uneditable fields: ${unEditableIdes.join(', ')}`
+                 // editIssues = `Uneditable fields: ${unEditableIdes.join(', ')}`
+                 editIssues["uneditableFields"] = unEditableIdes
+                }
+                if (editFailures.length > 0) {
+                  // editIssues += ` Edit Failures: ${editFailures.join(', ')}`
+                  editIssues["editFieldsFailure"] = editFailures
         }
       }
-      return await APIResponse.success(response, apiId, updatedData,
+      return await APIResponse.success(response, apiId, { ...updatedData, editIssues},
         HttpStatus.OK, "User has been updated successfully.")
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -317,30 +330,6 @@ export class PostgresUserService implements IServicelocator {
     return this.usersRepository.save(user);
   }
 
-
-  async updateCustomFields(itemId, data) {
-
-    if (Array.isArray(data.value) === true) {
-      let dataArray = [];
-      for (let value of data.value) {
-        dataArray.push(value);
-      }
-      data.value = dataArray.join(',');
-    }
-    let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
-    let newResult;
-
-    if (result.affected === 0) {
-      newResult = await this.fieldsValueRepository.save({
-        itemId,
-        fieldId: data.fieldId,
-        value: data.value
-      });
-    }
-    Object.assign(result, newResult);
-    return result;
-  }
-
   async createUser(request: any, userCreateDto: UserCreateDto, response: Response) {
     const apiId = APIID.USER_CREATE;
     // It is considered that if user is not present in keycloak it is not present in database as well
@@ -351,8 +340,8 @@ export class PostgresUserService implements IServicelocator {
 
       //Check duplicate field entry
       if (userCreateDto.fieldValues) {
-        let field_values = userCreateDto.fieldValues;
-        const validateField = await this.validateFieldValues(field_values);
+        let fieldValues = userCreateDto.fieldValues;
+        const validateField = await this.validateFieldValues(fieldValues);
 
         if (validateField == false) {
           return APIResponse.error(response, apiId, "Conflict", `Duplicate fieldId found in fieldValues.`, HttpStatus.CONFLICT);
@@ -360,9 +349,9 @@ export class PostgresUserService implements IServicelocator {
       }
 
       // check and validate all fields
-      let validateBodyFields = await this.validateBodyFields(userCreateDto)
+      let validatedRoles = await this.validateRequestBody(userCreateDto, response, apiId)
 
-      if (validateBodyFields == true) {
+      if (validatedRoles.length) {
         userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
         const userSchema = new UserCreateDto(userCreateDto);
 
@@ -386,38 +375,70 @@ export class PostgresUserService implements IServicelocator {
 
         let result = await this.createUserInDatabase(request, userCreateDto);
 
-        let fieldData = {};
+        const createFailures = [];
         if (userCreateDto.fieldValues) {
 
           if (result && userCreateDto.fieldValues?.length > 0) {
             let userId = result?.userId;
+            const roles = validatedRoles.map(({code}) => code.toUpperCase())
+
+            const customFields = await this.fieldsService.findCustomFields("USERS", roles)
+
+            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,name}},{});
+    
             for (let fieldValues of userCreateDto.fieldValues) {
 
-              fieldData = {
+              const fieldData = {
                 fieldId: fieldValues['fieldId'],
                 value: fieldValues['value']
               }
-              let result = await this.updateCustomFields(userId, fieldData);
-              if (!result) {
-                return APIResponse.error(response, apiId, "Internal Server Error", `Error is ${result}`, HttpStatus.INTERNAL_SERVER_ERROR);
+              let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
+              if (res) {
+                if (!result['customFields'])
+                  result['customFields'] = [];
+                result["customFields"].push(res);
+              } else {
+                createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
               }
             }
           }
         }
 
-        APIResponse.success(response, apiId, { userData: result },
+        APIResponse.success(response, apiId, { userData: {...result, createFailures } },
           HttpStatus.CREATED, "User has been created successfully.")
       }
     } catch (e) {
-      if (e instanceof ErrorResponseTypeOrm) {
-        return e;
-      } else {
-        return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+      return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async validateBodyFields(userCreateDto) {
+  async validateRequestBody(userCreateDto, response, apiId) {
+    const roleData = [];
+    for (const [key, value] of Object.entries(userCreateDto)) {
+
+      if (key === 'email') {
+        const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
+        if (!checkValidEmail) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Invalid email address`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'mobile') {
+        const checkValidMobile = CustomFieldsValidation.validate('mobile', userCreateDto.mobile);
+        if (!checkValidMobile) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Mobile number must be 10 digits long`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (key === 'dob') {
+        const checkValidDob = CustomFieldsValidation.validate('date', userCreateDto.dob);
+        if (!checkValidDob) {
+          return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+    }
+
     for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
 
       const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
@@ -429,27 +450,20 @@ export class PostgresUserService implements IServicelocator {
       ]);
 
       if (tenantExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Tenant Id '${tenantId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
 
       if (cohortExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
       }
 
       if (roleExists.length === 0) {
-        throw new ErrorResponseTypeOrm({
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorMessage: `Role Id '${roleId}' does not exist.`,
-        });
+        return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist.`, HttpStatus.BAD_REQUEST);
       }
+
+      roleData.push(...roleExists)
     }
-    return true;
+    return roleData;
   }
 
   async checkUser(body) {

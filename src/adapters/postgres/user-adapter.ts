@@ -78,6 +78,8 @@ export class PostgresUserService implements IServicelocator {
   async findAllUserDetails(userSearchDto) {
     let { limit, page, filters, exclude } = userSearchDto;
     let offset = 0;
+    let excludeCohortIdes;
+    let excludeUserIdes;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
     }
@@ -100,28 +102,40 @@ export class PostgresUserService implements IServicelocator {
 
     if (exclude && Object.keys(exclude).length > 0) {
       Object.entries(exclude).forEach(([key, value]) => {
-        if (index > 0) {
-          whereCondition += ` AND `
+        if (key == 'cohortIds') {
+          excludeCohortIdes = (value);
         }
-        if (key == 'role') {
-          whereCondition += ` R."name" = '${value}'`
-        } else {
-          whereCondition += ` U."${key}" = '${value}'`;
+        if (key == 'userIds') {
+          excludeUserIdes = (value);
         }
-        index++;
       });
     }
 
+    const userIds = excludeUserIdes?.length > 0 ? excludeUserIdes.map(userId => `'${userId}'`).join(',') : null;
+
+    const cohortIds = excludeCohortIdes?.length > 0 ? excludeCohortIdes.map(cohortId => `'${cohortId}'`).join(',') : null;
+
+    if (userIds || cohortIds) {
+      const userCondition = userIds ? `U."userId" NOT IN (${userIds})` : '';
+      const cohortCondition = cohortIds ? `CM."cohortId" NOT IN (${cohortIds})` : '';
+      const combinedCondition = [userCondition, cohortCondition].filter(String).join(' AND ');
+
+      whereCondition += (index > 0 ? ' AND ' : '') + combinedCondition;
+    } else if (index === 0) {
+      whereCondition = '';
+    }
 
     let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
       FROM  public."Users" U
+      INNER JOIN public."CohortMembers" CM 
+      ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
       ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
     let results = await this.usersRepository.query(query);
 
-    if (!Query) {
+    if (!query) {
       return false;
     }
     return results;

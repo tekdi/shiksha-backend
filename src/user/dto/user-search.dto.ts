@@ -45,11 +45,11 @@ export class excludeFields {
   @IsArray()
   @IsNotEmpty({ each: true })
   @IsUUID(undefined, { each: true })
-  userIDs?: string[];
+  userIds?: string[];
 
   @ApiProperty({
     type: [String],
-    description: "Parent Id",
+    description: "Exclude Cohort IDs",
     default: [],
   })
   @Expose()
@@ -57,7 +57,7 @@ export class excludeFields {
   @IsArray()
   @IsNotEmpty({ each: true })
   @IsUUID(undefined, { each: true })
-  cohortIDs?: string[];
+  cohortIds?: string[];
 }
 export class UserSearchDto {
   @ApiProperty({
@@ -93,6 +93,15 @@ export class UserSearchDto {
   @IsOptional()
   @IsObject()
   exclude: excludeFields;
+
+  @ApiProperty({
+    type: Boolean,
+    description: 'getCustomFields',
+    default: false,
+  })
+  @Expose()
+  @IsOptional()
+  getCustomFields: boolean = false;
 
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);

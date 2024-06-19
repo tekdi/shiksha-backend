@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Query } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
 import { FieldValues } from '../../user/entities/field-value-entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,7 +25,7 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Role } from "src/rbac/role/entities/role.entity";
 import { UserData } from 'src/user/user.controller';
 import APIResponse from 'src/common/responses/response';
-import { Response } from 'express';
+import { Response, query } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
 import { PostgresFieldsService } from "./fields-adapter"
@@ -63,10 +63,13 @@ export class PostgresUserService implements IServicelocator {
     userSearchDto: UserSearchDto) {
     const apiId = APIID.USER_LIST;
     try {
+
       let findData = await this.findAllUserDetails(userSearchDto);
-      if (!findData.length) {
+
+      if (!findData) {
         return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
       }
+
       return await APIResponse.success(response, apiId, findData,
         HttpStatus.OK, 'User List fetched.')
     } catch (e) {
@@ -74,29 +77,41 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
+
   async findAllUserDetails(userSearchDto) {
     let { limit, page, filters } = userSearchDto;
-
     let offset = 0;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
     }
 
-    if (limit.trim() === '') {
-      limit = '0';
-    }
-
-    const whereClause = {};
+    let whereCondition = `WHERE`;
+    let index = 0;
     if (filters && Object.keys(filters).length > 0) {
       Object.entries(filters).forEach(([key, value]) => {
-        whereClause[key] = value;
+        if (index > 0) {
+          whereCondition += ` AND `
+        }
+        if (key == 'role') {
+          whereCondition += ` R."name" = '${value}'`
+        } else {
+          whereCondition += ` U."${key}" = '${value}'`;
+        }
+        index++;
       });
     }
-    const results = await this.usersRepository.find({
-      where: whereClause,
-      skip: offset,
-      take: parseInt(limit),
-    });
+
+    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
+      FROM  public."Users" U
+      INNER JOIN public."UserRolesMapping" UR
+      ON UR."userId" = U."userId"
+      INNER JOIN public."Roles" R
+      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
+    let results = await this.usersRepository.query(query);
+
+    if (!Query) {
+      return false;
+    }
     return results;
   }
 

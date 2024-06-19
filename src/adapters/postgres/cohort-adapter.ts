@@ -463,7 +463,7 @@ export class PostgresCohortService {
         )
       }
 
-      const allowedKeys = ["userId", "cohortId", "name"];
+      const allowedKeys = ["userId", "cohortId", "name", "parentId"];
       const whereClause = {};
 
       if (filters && Object.keys(filters).length > 0) {

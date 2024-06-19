@@ -110,7 +110,9 @@ export class AttendanceHasuraService implements IServicelocator {
       };
 
       const cohortresponse = await this.axios(config);
-      const selfAttendanceEnd = cohortresponse.data.data.Cohort[0].params.self_attendace_end;
+
+      const selfAttendanceEnd = cohortresponse.data.data.Cohort[0].params.self_attendance_end;
+
       const allowFlag = cohortresponse.data.data.Cohort[0].params.allow_late_marking;
 
       // Parse the self_attendance_start time
@@ -133,15 +135,15 @@ export class AttendanceHasuraService implements IServicelocator {
 
       const currentTimeFormatted = formatTime(currentHours, currentMinutes);
       const endTimeFormatted = formatTime(endHours, endMinutes);
-      if (currentTimeFormatted > endTimeFormatted && attendanceDto.scope==="self" ) {
-      //   if(allowFlag=="true"){
+      if (currentTimeFormatted > endTimeFormatted && attendanceDto.scope === "self") {
+        //   if(allowFlag=="true"){
 
-      //   return new ErrorResponse({
-      //     errorCode: "400",
-      //     errorMessage: "You cannot mark attendance for the time",
-      //   });
-      // }
-      attendanceDto.lateMark=true
+        //   return new ErrorResponse({
+        //     errorCode: "400",
+        //     errorMessage: "You cannot mark attendance for the time",
+        //   });
+        // }
+        attendanceDto.lateMark = true
       }
       let query = "";
       Object.keys(attendanceDto).forEach((e) => {
@@ -514,6 +516,7 @@ export class AttendanceHasuraService implements IServicelocator {
       return e;
     }
   }
+
 
   // bulk attendance api
   public async multipleAttendance(

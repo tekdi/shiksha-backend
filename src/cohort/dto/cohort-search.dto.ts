@@ -7,7 +7,7 @@ export class setFilters {
   //userIdBy
   @ApiProperty({
     type: String,
-    description: "The cohort is createdBy",
+    description: "User Id",
     default: "",
   })
   @Expose()
@@ -19,7 +19,7 @@ export class setFilters {
   //cohortIdBy
   @ApiProperty({
     type: String,
-    description: "The cohort is createdBy",
+    description: "Cohort Id",
     default: "",
   })
   @Expose()
@@ -39,6 +39,18 @@ export class setFilters {
   @IsString()
   @IsNotEmpty()
   name?: string;
+
+  //name
+  @ApiProperty({
+    type: String,
+    description: "Parent Id",
+    default: "",
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  parentId?: string;
 }
 
 export class CohortSearchDto {

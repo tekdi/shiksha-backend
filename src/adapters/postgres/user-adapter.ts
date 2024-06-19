@@ -76,7 +76,7 @@ export class PostgresUserService implements IServicelocator {
 
 
   async findAllUserDetails(userSearchDto) {
-    let { limit, page, filters } = userSearchDto;
+    let { limit, page, filters, exclude } = userSearchDto;
     let offset = 0;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
@@ -97,6 +97,21 @@ export class PostgresUserService implements IServicelocator {
         index++;
       });
     }
+
+    if (exclude && Object.keys(exclude).length > 0) {
+      Object.entries(exclude).forEach(([key, value]) => {
+        if (index > 0) {
+          whereCondition += ` AND `
+        }
+        if (key == 'role') {
+          whereCondition += ` R."name" = '${value}'`
+        } else {
+          whereCondition += ` U."${key}" = '${value}'`;
+        }
+        index++;
+      });
+    }
+
 
     let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
       FROM  public."Users" U
@@ -254,7 +269,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = {fieldAttributes :fieldDetails.fieldAttributes, fieldParams :fieldDetails.fieldParams, fieldName: fieldDetails.name};
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = { fieldAttributes: fieldDetails.fieldAttributes, fieldParams: fieldDetails.fieldParams, fieldName: fieldDetails.name };
         }
 
         let unEditableIdes = [];
@@ -274,15 +289,15 @@ export class PostgresUserService implements IServicelocator {
           }
         }
         if (unEditableIdes.length > 0) {
-                 // editIssues = `Uneditable fields: ${unEditableIdes.join(', ')}`
-                 editIssues["uneditableFields"] = unEditableIdes
-                }
-                if (editFailures.length > 0) {
-                  // editIssues += ` Edit Failures: ${editFailures.join(', ')}`
-                  editIssues["editFieldsFailure"] = editFailures
+          // editIssues = `Uneditable fields: ${unEditableIdes.join(', ')}`
+          editIssues["uneditableFields"] = unEditableIdes
+        }
+        if (editFailures.length > 0) {
+          // editIssues += ` Edit Failures: ${editFailures.join(', ')}`
+          editIssues["editFieldsFailure"] = editFailures
         }
       }
-      return await APIResponse.success(response, apiId, { ...updatedData, editIssues},
+      return await APIResponse.success(response, apiId, { ...updatedData, editIssues },
         HttpStatus.OK, "User has been updated successfully.")
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -349,12 +364,12 @@ export class PostgresUserService implements IServicelocator {
 
           if (result && userCreateDto.fieldValues?.length > 0) {
             let userId = result?.userId;
-            const roles = validatedRoles.map(({code}) => code.toUpperCase())
+            const roles = validatedRoles.map(({ code }) => code.toUpperCase())
 
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,name}},{});
-    
+            const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
+
             for (let fieldValues of userCreateDto.fieldValues) {
 
               const fieldData = {
@@ -373,7 +388,7 @@ export class PostgresUserService implements IServicelocator {
           }
         }
 
-        APIResponse.success(response, apiId, { userData: {...result, createFailures } },
+        APIResponse.success(response, apiId, { userData: { ...result, createFailures } },
           HttpStatus.CREATED, "User has been created successfully.")
       }
     } catch (e) {

@@ -473,13 +473,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
-        console.log(fieldAttributesAndParams, "fiuouooijhjh")
         const fieldOptions = fieldAttributesAndParams?.fieldParams?.options.map(({ value }) => value);
         if (Array.isArray(data.value) === true) {
             let dataArray = [];
             for (let value of data.value) {
                 // check against options
-                console.log(fieldOptions, "Foo")
                 if (!fieldOptions.includes(value)) {
                     return {
                         correctValue: false,

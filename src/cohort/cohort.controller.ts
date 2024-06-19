@@ -117,7 +117,7 @@ export class CohortController {
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_LIST))
   @Post("/search")
   @ApiBasicAuth("access-token")
-  @ApiBody({ type: CohortSearchDto })
+  // @ApiBody({ type: CohortSearchDto })
   @ApiOkResponse({ description: "Cohort list" })
   @ApiBadRequestResponse({ description: "Bad request." })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })

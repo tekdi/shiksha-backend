@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, ValidationArguments, ValidationOptions, registerDecorator } from "class-validator";
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, ValidationArguments, ValidationOptions, registerDecorator } from "class-validator";
 import { CohortDto } from "./cohort.dto";
 import { Expose } from "class-transformer";
 
-export class setFilters {
+export class filtersProperty {
   //userIdBy
   @ApiProperty({
     type: String,
@@ -40,17 +40,18 @@ export class setFilters {
   @IsNotEmpty()
   name?: string;
 
-  //name
+  //parentId
   @ApiProperty({
-    type: String,
+    type: [String],
     description: "Parent Id",
-    default: "",
+    default: [],
   })
   @Expose()
   @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  parentId?: string;
+  @IsArray()
+  @IsNotEmpty({ each: true })
+  @IsUUID(undefined, { each: true })
+  parentId?: string[];
 }
 
 export class CohortSearchDto {
@@ -69,11 +70,11 @@ export class CohortSearchDto {
   page: number;
 
   @ApiProperty({
-    type: setFilters,
+    type: filtersProperty,
     description: "Filters",
   })
   @IsObject()
-  filters: setFilters;
+  filters: filtersProperty;
 
   constructor(partial: Partial<CohortSearchDto>) {
     Object.assign(this, partial);

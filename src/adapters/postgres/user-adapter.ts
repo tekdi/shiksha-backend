@@ -235,7 +235,7 @@ export class PostgresUserService implements IServicelocator {
       where: {
         roleId: getRole.roleId,
       },
-      select: ["title",'code']
+      select: ["title", 'code']
     })
     return role;
   }
@@ -257,45 +257,45 @@ export class PostgresUserService implements IServicelocator {
     userDetails['tenantData'] = tenentDetails;
     return userDetails;
   }
-  
+
   async userTenantRoleData(userId: string) {
     const query = `SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId
                    FROM public."UserTenantMapping" UTM
                    LEFT JOIN public."Tenants" T 
                    ON T."tenantId" = UTM."tenantId" 
                    WHERE UTM."userId" = $1;`;
-    
+
     const result = await this.usersRepository.query(query, [userId]);
 
     const combinedResult = [];
     let roleArray = []
     for (let data of result) {
-        const roleData = await this.postgresRoleService.findUserRoleData(userId, data.tenantId);
-        if (roleData.length > 0) {
-            roleArray.push(roleData[0].roleid)
-            const roleId = roleData[0].roleid;
-            const roleName = roleData[0].title; 
+      const roleData = await this.postgresRoleService.findUserRoleData(userId, data.tenantId);
+      if (roleData.length > 0) {
+        roleArray.push(roleData[0].roleid)
+        const roleId = roleData[0].roleid;
+        const roleName = roleData[0].title;
 
-            const privilegeData = await this.postgresRoleService.findPrivilegeByRoleId(roleArray);
-            const privileges = privilegeData.map(priv => priv.name); 
+        const privilegeData = await this.postgresRoleService.findPrivilegeByRoleId(roleArray);
+        const privileges = privilegeData.map(priv => priv.name);
 
-            combinedResult.push({
-                tenantName: data.tenantname,
-                tenantId: data.tenantId,
-                userTenantMappingId: data.usertenantmappingid,
-                roleId: roleId,
-                roleName: roleName,
-                privileges: privileges
-            });
-        }
+        combinedResult.push({
+          tenantName: data.tenantname,
+          tenantId: data.tenantId,
+          userTenantMappingId: data.usertenantmappingid,
+          roleId: roleId,
+          roleName: roleName,
+          privileges: privileges
+        });
+      }
     }
 
     return combinedResult;
-}
+  }
 
 
-  
-  
+
+
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
     try {
@@ -334,11 +334,9 @@ export class PostgresUserService implements IServicelocator {
           }
         }
         if (unEditableIdes.length > 0) {
-          // editIssues = `Uneditable fields: ${unEditableIdes.join(', ')}`
           editIssues["uneditableFields"] = unEditableIdes
         }
         if (editFailures.length > 0) {
-          // editIssues += ` Edit Failures: ${editFailures.join(', ')}`
           editIssues["editFieldsFailure"] = editFailures
         }
       }

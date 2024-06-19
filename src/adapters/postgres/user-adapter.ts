@@ -239,7 +239,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = fieldDetails.fieldAttributes;
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = {fieldAttributes :fieldDetails.fieldAttributes, fieldParams :fieldDetails.fieldParams, fieldName: fieldDetails.name};
         }
 
         let unEditableIdes = [];
@@ -247,12 +247,12 @@ export class PostgresUserService implements IServicelocator {
         for (let data of userDto.customFields) {
           if (isEditableFieldId.includes(data.fieldId)) {
             const result = await this.fieldsService.updateCustomFields(userDto.userId, data, fieldIdAndAttributes[data.fieldId]);
-            if (result) {
+            if (result.correctValue) {
               if (!updatedData['customFields'])
                 updatedData['customFields'] = [];
               updatedData['customFields'].push(result);
             } else {
-              editFailures.push(`${data.fieldId} : Multiselect max selections exceeded`)
+              editFailures.push(`${data.fieldId}: ${result?.valueIssue} - ${result.fieldName}`)
             }
           } else {
             unEditableIdes.push(data.fieldId)
@@ -282,30 +282,6 @@ export class PostgresUserService implements IServicelocator {
     Object.assign(user, userData);
 
     return this.usersRepository.save(user);
-  }
-
-
-  async updateCustomFields(itemId, data) {
-
-    if (Array.isArray(data.value) === true) {
-      let dataArray = [];
-      for (let value of data.value) {
-        dataArray.push(value);
-      }
-      data.value = dataArray.join(',');
-    }
-    let result = await this.fieldsValueRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
-    let newResult;
-
-    if (result.affected === 0) {
-      newResult = await this.fieldsValueRepository.save({
-        itemId,
-        fieldId: data.fieldId,
-        value: data.value
-      });
-    }
-    Object.assign(result, newResult);
-    return result;
   }
 
   async createUser(request: any, userCreateDto: UserCreateDto, response: Response) {
@@ -362,7 +338,8 @@ export class PostgresUserService implements IServicelocator {
 
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : fieldAttributes},{});
+            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,name}},{});
+    
             for (let fieldValues of userCreateDto.fieldValues) {
 
               const fieldData = {
@@ -375,7 +352,7 @@ export class PostgresUserService implements IServicelocator {
                   result['customFields'] = [];
                 result["customFields"].push(res);
               } else {
-                createFailures.push(`${fieldData.fieldId} : Multiselect max selections exceeded`)
+                createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
               }
             }
           }

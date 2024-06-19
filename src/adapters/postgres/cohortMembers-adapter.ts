@@ -22,6 +22,7 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
 import APIResponse from "src/common/responses/response";
 import { Response } from "express";
 import { APIID } from 'src/common/utils/api-id.config';
+
 @Injectable()
 export class PostgresCohortMembersService {
   constructor(
@@ -109,6 +110,8 @@ export class PostgresCohortMembersService {
 
     return results;
   }
+
+
   async findFilledValues(userId: string) {
     let query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U
     LEFT JOIN public."FieldValues" F
@@ -116,6 +119,8 @@ export class PostgresCohortMembersService {
     let result = await this.usersRepository.query(query, [userId]);
     return result;
   }
+
+
   async findcohortData(cohortId: any) {
     let whereClause: any = { cohortId: cohortId };
     let userDetails = await this.cohortMembersRepository.find({
@@ -127,6 +132,8 @@ export class PostgresCohortMembersService {
       return false;
     }
   }
+
+
   async findCustomFields(role) {
     let customFields = await this.fieldsRepository.find({
       where: {
@@ -276,7 +283,7 @@ export class PostgresCohortMembersService {
 
   public async createCohortMembers(
     loginUser: any,
-    cohortMembers: CohortMembersDto,
+    cohortMembers:CohortMembersDto,
     res: Response,
     tenantId: string
   ) {
@@ -284,7 +291,6 @@ export class PostgresCohortMembersService {
     try {
       cohortMembers.createdBy = loginUser;
       cohortMembers.updatedBy = loginUser;
-
       const existCohort = await this.cohortRepository.find({
         where: {
           cohortId: cohortMembers.cohortId
@@ -439,4 +445,98 @@ export class PostgresCohortMembersService {
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  public async checkUserExist(userId){
+    const existUser = await this.usersRepository.findOne({
+      where: {
+        userId:userId,
+      }
+    })
+    if (!existUser) {
+      return false;
+    }
+    return existUser;
+  }
+
+  public async checkCohortExist(cohortId){
+
+    const existCohort = await this.cohortRepository.findOne({
+      where: {
+        cohortId:cohortId
+      }
+    })
+    if (!existCohort) {
+      return false;
+    }
+    return existCohort;
+  }
+
+  public async cohortUserMapping(userId,cohortId){
+    const mappingExist = await this.cohortMembersRepository.findOne({
+      where: {
+        userId: userId,
+        cohortId:cohortId
+      }
+    })
+    if (!mappingExist) {
+      return false;
+    }
+    return mappingExist;
+  }
+
+  public async createBulkCohortMembers(
+    loginUser: any,
+    cohortMembersDto: { userId: string[], cohortId: string[] },
+    response: Response,
+    tenantId: string
+  ) {
+    const results = [];
+    const errors = [];
+    const cohortMembersBase = {
+      createdBy: loginUser,
+      updatedBy: loginUser,
+      tenantId: tenantId
+    };
+  
+    for (let userId of cohortMembersDto.userId) {
+      const userExists = await this.checkUserExist(userId);
+      if (!userExists) {
+        errors.push(`User with userId ${userId} does not exist.`);
+        continue; 
+      }
+      for (let cohortId of cohortMembersDto.cohortId) {
+        const cohortMembers = {
+          ...cohortMembersBase,
+          userId: userId,
+          cohortId: cohortId
+        };
+        try {
+          const cohortExists = await this.checkCohortExist(cohortId);
+          if (!cohortExists) {
+            errors.push(`Cohort with cohortId ${cohortId} does not exist.`);
+            continue;
+          }
+  
+          const mappingExists = await this.cohortUserMapping(userId, cohortId);
+          if (mappingExists) {
+            errors.push(`Mapping already exists for userId ${userId} and cohortId ${cohortId}.`);
+            continue;
+          }
+  
+          const result = await this.cohortMembersRepository.save(cohortMembers);
+          results.push(result);
+        } catch (error) {
+          errors.push(`Error saving cohort member with userId ${userId} and cohortId ${cohortId}: ${error.message}`);
+        }
+      }
+    }
+  
+    if (errors.length > 0) {
+      return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, { results, errors }, HttpStatus.CREATED, "Cohort Members Created with some errors");
+    }
+  
+    return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, results, HttpStatus.CREATED, "Cohort Members Created Successfully");
+  }
+  
+
 }

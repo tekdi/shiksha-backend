@@ -80,8 +80,10 @@ export class PostgresUserService implements IServicelocator {
 
 
   async findAllUserDetails(userSearchDto) {
-    let { limit, page, filters } = userSearchDto;
+    let { limit, page, filters, exclude } = userSearchDto;
     let offset = 0;
+    let excludeCohortIdes;
+    let excludeUserIdes;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
     }
@@ -102,15 +104,42 @@ export class PostgresUserService implements IServicelocator {
       });
     }
 
+    if (exclude && Object.keys(exclude).length > 0) {
+      Object.entries(exclude).forEach(([key, value]) => {
+        if (key == 'cohortIds') {
+          excludeCohortIdes = (value);
+        }
+        if (key == 'userIds') {
+          excludeUserIdes = (value);
+        }
+      });
+    }
+
+    const userIds = excludeUserIdes?.length > 0 ? excludeUserIdes.map(userId => `'${userId}'`).join(',') : null;
+
+    const cohortIds = excludeCohortIdes?.length > 0 ? excludeCohortIdes.map(cohortId => `'${cohortId}'`).join(',') : null;
+
+    if (userIds || cohortIds) {
+      const userCondition = userIds ? `U."userId" NOT IN (${userIds})` : '';
+      const cohortCondition = cohortIds ? `CM."cohortId" NOT IN (${cohortIds})` : '';
+      const combinedCondition = [userCondition, cohortCondition].filter(String).join(' AND ');
+
+      whereCondition += (index > 0 ? ' AND ' : '') + combinedCondition;
+    } else if (index === 0) {
+      whereCondition = '';
+    }
+
     let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
       FROM  public."Users" U
+      INNER JOIN public."CohortMembers" CM 
+      ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
+      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='active'`
     let results = await this.usersRepository.query(query);
 
-    if (!Query) {
+    if (!query) {
       return false;
     }
     return results;
@@ -206,12 +235,13 @@ export class PostgresUserService implements IServicelocator {
       where: {
         roleId: getRole.roleId,
       },
-      select: ["title",'code']
+      select: ["title", 'code']
     })
     return role;
   }
 
-  async findUserDetails(userId, username?: any) {
+  async findUserDetails(userId, username?: any, tenantId?: string
+  ) {
     let whereClause: any = { userId: userId };
     if (username && userId === null) {
       delete whereClause.userId;
@@ -224,49 +254,64 @@ export class PostgresUserService implements IServicelocator {
     if (!userDetails) {
       return false;
     }
-    const tenentDetails = await this.userTenantRoleData(userDetails.userId)
-    userDetails['tenantData'] = tenentDetails;
+    const tenentDetails = await this.userTenantRoleData(userDetails.userId);
+    if (!tenentDetails) {
+      return userDetails;
+    }
+    const tenantData = tenantId ? tenentDetails.filter(item => item.tenantId === tenantId) : tenentDetails;
+    userDetails['tenantData'] = tenantData;
+
     return userDetails;
   }
-  
-  async userTenantRoleData(userId: string) {
-    const query = `SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId
-                   FROM public."UserTenantMapping" UTM
-                   LEFT JOIN public."Tenants" T 
-                   ON T."tenantId" = UTM."tenantId" 
-                   WHERE UTM."userId" = $1;`;
-    
-    const result = await this.usersRepository.query(query, [userId]);
 
+  async userTenantRoleData(userId: string) {
+    const query = `
+  SELECT 
+    DISTINCT ON (T."tenantId") 
+    T."tenantId", 
+    T.name AS tenantName, 
+    UTM."Id" AS userTenantMappingId
+  FROM 
+    public."UserTenantMapping" UTM
+  LEFT JOIN 
+    public."Tenants" T 
+  ON 
+    T."tenantId" = UTM."tenantId" 
+  WHERE 
+    UTM."userId" = $1
+  ORDER BY 
+    T."tenantId", UTM."Id";`;
+
+    const result = await this.usersRepository.query(query, [userId]);
     const combinedResult = [];
     let roleArray = []
     for (let data of result) {
-        const roleData = await this.postgresRoleService.findUserRoleData(userId, data.tenantId);
-        if (roleData.length > 0) {
-            roleArray.push(roleData[0].roleid)
-            const roleId = roleData[0].roleid;
-            const roleName = roleData[0].title; 
+      const roleData = await this.postgresRoleService.findUserRoleData(userId, data.tenantId);
+      if (roleData.length > 0) {
+        roleArray.push(roleData[0].roleid)
+        const roleId = roleData[0].roleid;
+        const roleName = roleData[0].title;
 
-            const privilegeData = await this.postgresRoleService.findPrivilegeByRoleId(roleArray);
-            const privileges = privilegeData.map(priv => priv.name); 
+        const privilegeData = await this.postgresRoleService.findPrivilegeByRoleId(roleArray);
+        const privileges = privilegeData.map(priv => priv.name);
 
-            combinedResult.push({
-                tenantName: data.tenantname,
-                tenantId: data.tenantId,
-                userTenantMappingId: data.usertenantmappingid,
-                roleId: roleId,
-                roleName: roleName,
-                privileges: privileges
-            });
-        }
+        combinedResult.push({
+          tenantName: data.tenantname,
+          tenantId: data.tenantId,
+          userTenantMappingId: data.usertenantmappingid,
+          roleId: roleId,
+          roleName: roleName,
+          privileges: privileges
+        });
+      }
     }
 
     return combinedResult;
-}
+  }
 
 
-  
-  
+
+
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
     try {
@@ -285,7 +330,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = {fieldAttributes :fieldDetails.fieldAttributes, fieldParams :fieldDetails.fieldParams, fieldName: fieldDetails.name};
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = { fieldAttributes: fieldDetails.fieldAttributes, fieldParams: fieldDetails.fieldParams, fieldName: fieldDetails.name };
         }
 
         let unEditableIdes = [];
@@ -305,15 +350,13 @@ export class PostgresUserService implements IServicelocator {
           }
         }
         if (unEditableIdes.length > 0) {
-                 // editIssues = `Uneditable fields: ${unEditableIdes.join(', ')}`
-                 editIssues["uneditableFields"] = unEditableIdes
-                }
-                if (editFailures.length > 0) {
-                  // editIssues += ` Edit Failures: ${editFailures.join(', ')}`
-                  editIssues["editFieldsFailure"] = editFailures
+          editIssues["uneditableFields"] = unEditableIdes
+        }
+        if (editFailures.length > 0) {
+          editIssues["editFieldsFailure"] = editFailures
         }
       }
-      return await APIResponse.success(response, apiId, { ...updatedData, editIssues},
+      return await APIResponse.success(response, apiId, { ...updatedData, editIssues },
         HttpStatus.OK, "User has been updated successfully.")
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -380,12 +423,12 @@ export class PostgresUserService implements IServicelocator {
 
           if (result && userCreateDto.fieldValues?.length > 0) {
             let userId = result?.userId;
-            const roles = validatedRoles.map(({code}) => code.toUpperCase())
+            const roles = validatedRoles.map(({ code }) => code.toUpperCase())
 
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,name}},{});
-    
+            const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
+
             for (let fieldValues of userCreateDto.fieldValues) {
 
               const fieldData = {
@@ -404,7 +447,7 @@ export class PostgresUserService implements IServicelocator {
           }
         }
 
-        APIResponse.success(response, apiId, { userData: {...result, createFailures } },
+        APIResponse.success(response, apiId, { userData: { ...result, createFailures } },
           HttpStatus.CREATED, "User has been created successfully.")
       }
     } catch (e) {

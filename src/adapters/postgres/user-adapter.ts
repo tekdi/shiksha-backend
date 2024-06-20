@@ -280,8 +280,7 @@ export class PostgresUserService implements IServicelocator {
   WHERE 
     UTM."userId" = $1
   ORDER BY 
-    T."tenantId", UTM."Id";
-`;
+    T."tenantId", UTM."Id";`;
 
     const result = await this.usersRepository.query(query, [userId]);
     const combinedResult = [];

@@ -1,13 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, ValidationArguments, ValidationOptions, registerDecorator } from "class-validator";
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, ValidationArguments, ValidationOptions, registerDecorator } from "class-validator";
 import { CohortDto } from "./cohort.dto";
 import { Expose } from "class-transformer";
 
-export class setFilters {
+export class filtersProperty {
   //userIdBy
   @ApiProperty({
     type: String,
-    description: "The cohort is createdBy",
+    description: "User Id",
     default: "",
   })
   @Expose()
@@ -19,7 +19,7 @@ export class setFilters {
   //cohortIdBy
   @ApiProperty({
     type: String,
-    description: "The cohort is createdBy",
+    description: "Cohort Id",
     default: "",
   })
   @Expose()
@@ -39,6 +39,19 @@ export class setFilters {
   @IsString()
   @IsNotEmpty()
   name?: string;
+
+  //parentId
+  @ApiProperty({
+    type: [String],
+    description: "Parent Id",
+    default: [],
+  })
+  @Expose()
+  @IsOptional()
+  @IsArray()
+  @IsNotEmpty({ each: true })
+  @IsUUID(undefined, { each: true })
+  parentId?: string[];
 }
 
 export class CohortSearchDto {
@@ -57,11 +70,11 @@ export class CohortSearchDto {
   page: number;
 
   @ApiProperty({
-    type: setFilters,
+    type: filtersProperty,
     description: "Filters",
   })
   @IsObject()
-  filters: setFilters;
+  filters: filtersProperty;
 
   constructor(partial: Partial<CohortSearchDto>) {
     Object.assign(this, partial);

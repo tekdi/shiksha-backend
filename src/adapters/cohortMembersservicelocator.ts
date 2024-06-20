@@ -19,4 +19,5 @@ export interface IServicelocatorcohortMembers {
     response: any
   );
   deleteCohortMemberById(tenantid, cohortMembershipId, response);
+  createBulkCohortMembers(loginUser, cohortMembersDto, response, tenantId);
 }

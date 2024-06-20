@@ -26,15 +26,14 @@ export class HasuraUserService implements IServicelocator {
   constructor(
     private httpService: HttpService,
     private fieldsService: FieldsService
-  ) {}
+  ) { }
   checkUser(body: any, response: any) {
     throw new Error("Method not implemented.");
   }
   public async findUserDetails(userID: any, username: String) {
-    
+
   }
-  public async getUsersDetailsById(userData: UserData, response:any) {}
-  public async getUsersDetailsByCohortId(userData: Record<string, string>, response:any) {}
+  public async getUsersDetailsById(userData: UserData, response: any) { }
 
   public async checkAndAddUser(request: any, userDto: UserCreateDto) {
     // try {
@@ -113,7 +112,7 @@ export class HasuraUserService implements IServicelocator {
   }
 
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
-    try{
+    try {
       let query = "";
       Object.keys(userCreateDto).forEach((e) => {
         if (
@@ -161,7 +160,7 @@ export class HasuraUserService implements IServicelocator {
         });
       } else {
       }
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return e;
     }
@@ -235,93 +234,7 @@ export class HasuraUserService implements IServicelocator {
     response: any,
     userSearchDto: UserSearchDto
   ) {
-    try {
-      // const decoded: any = jwt_decode(request.headers.authorization);
-      // const userRoles =
-      //   decoded["https://hasura.io/jwt/claims"]["x-hasura-allowed-roles"];
 
-      const fieldsFilter = userSearchDto.filters["fields"];
-      delete userSearchDto.filters["fields"];
-      let newUserSearchDto = null;
-
-      if (fieldsFilter) {
-        //apply filter on fields value
-
-        // searchfieldValuesFilter returns the contexts here userId that match the fieldId and value pair
-        const responseFieldsValue =
-          await this.fieldsService.searchFieldValuesFilter(request,fieldsFilter);
-
-        if (responseFieldsValue?.data?.errors) {
-          return response.status(400).send({
-            errorCode: responseFieldsValue?.data?.errors[0]?.extensions?.code,
-            errorMessage: responseFieldsValue?.data?.errors[0]?.message,
-          });
-        } else {
-          // get filter result
-          let resultFieldValues = responseFieldsValue?.data?.data?.FieldValues;
-          // fetch user id list
-          let userIdList = [];
-          for (let i = 0; i < resultFieldValues.length; i++) {
-            userIdList.push(resultFieldValues[i].itemId);
-          }
-          // remove duplicate entries
-          userIdList = userIdList.filter(
-            (item, index) => userIdList.indexOf(item) === index
-          );
-          let userFilter = new Object(userSearchDto.filters);
-          userFilter["userId"] = {
-            _in: userIdList,
-          };
-          newUserSearchDto = new UserSearchDto({
-            limit: userSearchDto.limit,
-            page: userSearchDto.page,
-            filters: userFilter,
-          });
-        }
-      } else {
-        newUserSearchDto = new UserSearchDto({
-          limit: userSearchDto.limit,
-          page: userSearchDto.page,
-          filters: userSearchDto.filters,
-        });
-      }
-      if (newUserSearchDto) {
-        const responseUser = await this.searchUserQuery(
-          tenantId,
-          newUserSearchDto,
-          request
-        );
-        if (responseUser?.data?.errors) {
-          return response.status(400).send({
-            errorCode: responseUser?.data?.errors[0]?.extensions?.code,
-            errorMessage: responseUser?.data?.errors[0]?.message,
-          });
-        } else {
-          let result = responseUser?.data?.data?.Users;
-
-          let userResponse = await this.mappedResponse(result);
-
-          const count = result.length;
-          //get user fields value
-          let result_data = await this.searchUserFields(request,tenantId, userResponse);
-
-          return response.status(200).send({
-            statusCode: 200,
-            message: "Ok.",
-            totalCount: count,
-            data: result_data,
-          });
-        }
-      } else {
-        return response.status(200).send({
-          errorCode: "filter invalid",
-          errorMessage: "filter invalid",
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
   }
 
   public async mappedResponse(result: any) {
@@ -605,7 +518,7 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async searchUserFields(request:any, tenantId: string, users: any) {
+  public async searchUserFields(request: any, tenantId: string, users: any) {
     // function uses field service to get extra field and respective fieldValues for each user
     // ****Need extra field for access via role
     let userWithFields = [];
@@ -641,7 +554,7 @@ export class HasuraUserService implements IServicelocator {
     try {
       let offset = 0;
       if (userSearchDto.page > 1) {
-        offset = parseInt(userSearchDto.limit) * (userSearchDto.page - 1);
+        offset = userSearchDto.limit * userSearchDto.page - 1;
       }
 
       const filters = userSearchDto.filters;
@@ -685,7 +598,7 @@ export class HasuraUserService implements IServicelocator {
             }
           }`,
         variables: {
-          limit: parseInt(userSearchDto.limit),
+          limit: userSearchDto.limit,
           offset: offset,
           filters: userSearchDto.filters,
         },
@@ -711,6 +624,6 @@ export class HasuraUserService implements IServicelocator {
     }
   }
 
-  public async deleteUserById(userId){}
+  public async deleteUserById(userId) { }
 
 }

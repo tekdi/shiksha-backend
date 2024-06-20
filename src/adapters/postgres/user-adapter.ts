@@ -240,7 +240,8 @@ export class PostgresUserService implements IServicelocator {
     return role;
   }
 
-  async findUserDetails(userId, username?: any) {
+  async findUserDetails(userId, username?: any,tenantId?: string
+    ){
     let whereClause: any = { userId: userId };
     if (username && userId === null) {
       delete whereClause.userId;
@@ -253,20 +254,36 @@ export class PostgresUserService implements IServicelocator {
     if (!userDetails) {
       return false;
     }
-    const tenentDetails = await this.userTenantRoleData(userDetails.userId)
-    userDetails['tenantData'] = tenentDetails;
+    const tenentDetails = await this.userTenantRoleData(userDetails.userId);
+    if(!tenentDetails) {
+      return userDetails;
+    }
+    const tenantData = tenantId ? tenentDetails.filter(item => item.tenantId === tenantId) : tenentDetails;
+    userDetails['tenantData'] = tenantData;
+
     return userDetails;
   }
 
   async userTenantRoleData(userId: string) {
-    const query = `SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId
-                   FROM public."UserTenantMapping" UTM
-                   LEFT JOIN public."Tenants" T 
-                   ON T."tenantId" = UTM."tenantId" 
-                   WHERE UTM."userId" = $1;`;
-
+    const query = `
+  SELECT 
+    DISTINCT ON (T."tenantId") 
+    T."tenantId", 
+    T.name AS tenantName, 
+    UTM."Id" AS userTenantMappingId
+  FROM 
+    public."UserTenantMapping" UTM
+  LEFT JOIN 
+    public."Tenants" T 
+  ON 
+    T."tenantId" = UTM."tenantId" 
+  WHERE 
+    UTM."userId" = $1
+  ORDER BY 
+    T."tenantId", UTM."Id";
+`;
+    
     const result = await this.usersRepository.query(query, [userId]);
-
     const combinedResult = [];
     let roleArray = []
     for (let data of result) {

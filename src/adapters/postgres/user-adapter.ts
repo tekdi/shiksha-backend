@@ -27,8 +27,11 @@ import APIResponse from 'src/common/responses/response';
 import { Response, query } from 'express';
 import { APIID } from 'src/common/utils/api-id.config';
 import { IServicelocator } from '../userservicelocator';
-import { PostgresFieldsService } from "./fields-adapter";
-import { CustomFieldsValidation } from "@utils/custom-field-validation";
+import { PostgresFieldsService } from "./fields-adapter"
+import { PostgresRoleService } from './rbac/role-adapter';
+import { CustomFieldsValidation } from '@utils/custom-field-validation';
+// import {PostgresS}
+
 @Injectable()
 export class PostgresUserService implements IServicelocator {
   axios = require("axios");
@@ -52,6 +55,7 @@ export class PostgresUserService implements IServicelocator {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
     private fieldsService: PostgresFieldsService,
+    private readonly postgresRoleService: PostgresRoleService
   ) { }
 
   async searchUser(tenantId: string,
@@ -202,9 +206,9 @@ export class PostgresUserService implements IServicelocator {
       where: {
         roleId: getRole.roleId,
       },
-      select: ["title"]
+      select: ["title",'code']
     })
-    return role
+    return role;
   }
 
   async findUserDetails(userId, username?: any) {
@@ -220,22 +224,49 @@ export class PostgresUserService implements IServicelocator {
     if (!userDetails) {
       return false;
     }
-    const tenentDetails = await this.allUsersTenent(userDetails.userId)
+    const tenentDetails = await this.userTenantRoleData(userDetails.userId)
     userDetails['tenantData'] = tenentDetails;
     return userDetails;
   }
-  async allUsersTenent(userId: string) {
-    const query = `
-    SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId 
-    FROM public."UserTenantMapping" UTM 
-    LEFT JOIN public."Tenants" T 
-    ON T."tenantId" = UTM."tenantId" 
-    WHERE UTM."userId" = $1`;
+  
+  async userTenantRoleData(userId: string) {
+    const query = `SELECT T.name AS tenantName, T."tenantId", UTM."Id" AS userTenantMappingId
+                   FROM public."UserTenantMapping" UTM
+                   LEFT JOIN public."Tenants" T 
+                   ON T."tenantId" = UTM."tenantId" 
+                   WHERE UTM."userId" = $1;`;
+    
     const result = await this.usersRepository.query(query, [userId]);
-    return result;
-  }
+
+    const combinedResult = [];
+    let roleArray = []
+    for (let data of result) {
+        const roleData = await this.postgresRoleService.findUserRoleData(userId, data.tenantId);
+        if (roleData.length > 0) {
+            roleArray.push(roleData[0].roleid)
+            const roleId = roleData[0].roleid;
+            const roleName = roleData[0].title; 
+
+            const privilegeData = await this.postgresRoleService.findPrivilegeByRoleId(roleArray);
+            const privileges = privilegeData.map(priv => priv.name); 
+
+            combinedResult.push({
+                tenantName: data.tenantname,
+                tenantId: data.tenantId,
+                userTenantMappingId: data.usertenantmappingid,
+                roleId: roleId,
+                roleName: roleName,
+                privileges: privileges
+            });
+        }
+    }
+
+    return combinedResult;
+}
 
 
+  
+  
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
     try {

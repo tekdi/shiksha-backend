@@ -9,7 +9,7 @@ import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { CohortUpdateDto } from "src/cohort/dto/cohort-update.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesUpdateDto } from "src/fields/dto/field-values-update.dto";
-import { IsNull, Not, Repository, getConnection, getRepository } from "typeorm";
+import { IsNull, Not, Repository, getConnection, getRepository, In } from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Fields } from "src/fields/entities/fields.entity";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -487,24 +487,8 @@ export class PostgresCohortService {
         });
       }
 
-      if (whereClause['userId'] && !isUUID(whereClause['userId'])) {
-        return APIResponse.error(
-          response,
-          apiId,
-          `Invalid User ID format. It must be a valid UUID`,
-          `Invalid userId`,
-          (HttpStatus.BAD_REQUEST)
-        )
-      }
-
-      if (whereClause['cohortId'] && !isUUID(whereClause['cohortId'])) {
-        return APIResponse.error(
-          response,
-          apiId,
-          `Invalid Cohort ID format. It must be a valid UUID`,
-          `Invalid cohortID`,
-          (HttpStatus.BAD_REQUEST)
-        )
+      if (whereClause['parentId']) {
+        whereClause['parentId'] = In(whereClause['parentId']);
       }
 
       let results = {
@@ -557,20 +541,21 @@ export class PostgresCohortService {
 
           let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId);
           cohortAllData['customFields'] = customFieldsData
-          results.cohortDetails.push({ cohortData: cohortAllData });
+          results.cohortDetails.push(cohortAllData);
         }
       } else {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
           skip: offset
         });
+
         const cohortData = data.slice(offset, offset + (limit));
         count = totalcount;
 
         for (let data of cohortData) {
           let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
           data['customFields'] = customFieldsData || [];
-          results.cohortDetails.push({ cohortData: data })
+          results.cohortDetails.push(data)
         }
       }
 

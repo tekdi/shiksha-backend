@@ -383,9 +383,14 @@ export class PostgresUserService implements IServicelocator {
             const roles = validatedRoles.map(({code}) => code.toUpperCase())
 
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
-
-            const customFieldAttributes = customFields.reduce((fieldDetail ,{fieldId,fieldAttributes,fieldParams,name}) => fieldDetail[`${fieldId}`] ? fieldDetail : {...fieldDetail, [`${fieldId}`] : {fieldAttributes,fieldParams,fieldName: name}},{});
   
+            const customFieldAttributes = {};
+            customFields.forEach(({fieldId, fieldAttributes, fieldParams, name}) => {
+              if (!customFieldAttributes[fieldId]) {
+                customFieldAttributes[fieldId] = { fieldAttributes, fieldParams, fieldName: name };
+              }
+            });
+
             for (let fieldValues of userCreateDto.fieldValues) {
 
               const fieldData = {

@@ -105,28 +105,28 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
 
         try {
-                let result = await this.findAndSaveFieldValues(fieldValuesDto);
-                if(!result){
-                    APIResponse.error(
-                        res,
-                        apiId,
-                        `Fields not found or already exist`,
-                        `Fields not found or already exist`,
-                        (HttpStatus.NOT_FOUND)
-                      )
+            let result = await this.findAndSaveFieldValues(fieldValuesDto);
+            if (!result) {
+                APIResponse.error(
+                    res,
+                    apiId,
+                    `Fields not found or already exist`,
+                    `Fields not found or already exist`,
+                    (HttpStatus.NOT_FOUND)
+                )
 
-                }
-               return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
+            }
+            return APIResponse.success(res, apiId, result, (HttpStatus.CREATED), "Field Values created successfully");
 
 
         } catch (error) {
             const errorMessage = error.message || 'Something went wrong';
-           return APIResponse.error(res, apiId, "Internal Server Error",errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));   
+            return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
 
         }
     }
 
-    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) { 
+    async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response) {
         const apiId = APIID.FIELDVALUES_SEARCH;
         try {
             const getConditionalData = await this.search(fieldValuesSearchDto)
@@ -384,7 +384,9 @@ export class PostgresFieldsService implements IServicelocatorfields {
             context: context,
         };
 
-        if (contextType.length) {
+
+        const validContextTypes = contextType.filter(item => item);
+        if (validContextTypes.length > 0) {
             condition.contextType = In(contextType);
         }
 
@@ -396,12 +398,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     async findFieldValues(contextId: string, context: string) {
         let query = "";
-        if(context === "COHORT") {
-          query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
+        if (context === "COHORT") {
+            query = `SELECT C."cohortId",F."fieldId",F."value" FROM public."Cohort" C 
     LEFT JOIN public."FieldValues" F
     ON C."cohortId" = F."itemId" where C."cohortId" =$1`;
         } else if (context === "USERS") {
-          query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
+            query = `SELECT U."userId",F."fieldId",F."value" FROM public."Users" U 
     LEFT JOIN public."FieldValues" F
     ON U."userId" = F."itemId" where U."userId" =$1`;
         }
@@ -414,7 +416,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
-            this.findFieldValues(id,context),
+            this.findFieldValues(id, context),
             this.findCustomFields(context, [contextType])
         ]);
 
@@ -489,15 +491,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 valueIssue: "Value should not be of type array"
             };
         }
-    
-        let result : any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
+
+        let result: any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
         let newResult;
         if (result.affected === 0) {
-          newResult = await this.fieldsValuesRepository.save({
-            itemId,
-            fieldId: data.fieldId,
-            value: data.value
-          });
+            newResult = await this.fieldsValuesRepository.save({
+                itemId,
+                fieldId: data.fieldId,
+                value: data.value
+            });
         }
         Object.assign(result, newResult);
         result["correctValue"] = true;

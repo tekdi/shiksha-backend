@@ -136,7 +136,7 @@ export class PostgresUserService implements IServicelocator {
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='true'`
+      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='active'`
     let results = await this.usersRepository.query(query);
 
     if (!query) {
@@ -240,8 +240,8 @@ export class PostgresUserService implements IServicelocator {
     return role;
   }
 
-  async findUserDetails(userId, username?: any,tenantId?: string
-    ){
+  async findUserDetails(userId, username?: any, tenantId?: string
+  ) {
     let whereClause: any = { userId: userId };
     if (username && userId === null) {
       delete whereClause.userId;
@@ -255,7 +255,7 @@ export class PostgresUserService implements IServicelocator {
       return false;
     }
     const tenentDetails = await this.userTenantRoleData(userDetails.userId);
-    if(!tenentDetails) {
+    if (!tenentDetails) {
       return userDetails;
     }
     const tenantData = tenantId ? tenentDetails.filter(item => item.tenantId === tenantId) : tenentDetails;
@@ -280,9 +280,8 @@ export class PostgresUserService implements IServicelocator {
   WHERE 
     UTM."userId" = $1
   ORDER BY 
-    T."tenantId", UTM."Id";
-`;
-    
+    T."tenantId", UTM."Id";`;
+
     const result = await this.usersRepository.query(query, [userId]);
     const combinedResult = [];
     let roleArray = []

@@ -232,8 +232,8 @@ export class PostgresCohortMembersService {
       if (whereClause["role"]) {
         where.push(["role", whereClause["role"]]);
       }
-      if (whereClause["memberStatus"] && Array.isArray(whereClause["memberStatus"])) {
-        where.push(["memberStatus", whereClause["memberStatus"]]);
+      if (whereClause["status"] && Array.isArray(whereClause["status"])) {
+        where.push(["status", whereClause["status"]]);
       }
       let options = [];
       if (limit) {
@@ -348,9 +348,9 @@ export class PostgresCohortMembersService {
           whereCase += `R."name"='${value[1]}'`;
         }
         else {
-          if (value[0] === "memberStatus") {
+          if (value[0] === "status") {
             const statusValues = value[1].map(status => `'${status}'`).join(', ');
-            whereCase += `CM."memberStatus" IN (${statusValues})`;
+            whereCase += `CM."status" IN (${statusValues})`;
           } else {
             whereCase += `CM."${value[0]}"='${value[1]}'`;
           }
@@ -368,7 +368,7 @@ export class PostgresCohortMembersService {
 
     if (isRoleCondition == 0) {
       query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, 
-      CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
+      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -378,7 +378,7 @@ export class PostgresCohortMembersService {
     }
     else {
       query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile,
-      CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
+      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR

@@ -38,7 +38,7 @@ export class CohortMembersUpdateDto {
     description: "The status of the cohort members",
   })
   @IsEnum(MemberStatus)
-  memberStatus: string;
+  status: string;
 
   @ApiProperty({
     type: String,
@@ -60,8 +60,7 @@ export class CohortMembersUpdateDto {
     type: String,
     description: "The status change reason",
   })
-  @ValidateIf(o => o.memberStatus === MemberStatus.DROPOUT)
-  @IsString({ message: 'statusReason can not empty if member status is dropout' })
+  @IsOptional()
   statusReason?: string;
 
   constructor(obj: any) {

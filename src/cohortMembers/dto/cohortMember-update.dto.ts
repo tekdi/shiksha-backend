@@ -60,7 +60,8 @@ export class CohortMembersUpdateDto {
     type: String,
     description: "The status change reason",
   })
-  @IsOptional()
+  @ValidateIf(o => o.status === MemberStatus.DROPOUT)
+  @IsString({ message: 'Reason is mandatory while dropping out a member' })
   statusReason?: string;
 
   constructor(obj: any) {

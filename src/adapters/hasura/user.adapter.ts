@@ -30,7 +30,7 @@ export class HasuraUserService implements IServicelocator {
   checkUser(body: any, response: any) {
     throw new Error("Method not implemented.");
   }
-  public async findUserDetails(userID: any, username: String) {
+  public async findUserDetails(userID: any, username: String,tenantId:string) {
 
   }
   public async getUsersDetailsById(userData: UserData, response: any) { }

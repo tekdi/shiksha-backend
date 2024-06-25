@@ -1,6 +1,6 @@
 import { Exclude, Expose } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsOptional } from "class-validator";
+import { IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
 import { MemberStatus } from "../entities/cohort-member.entity";
 export class CohortMembersUpdateDto {
   @Expose()
@@ -38,7 +38,7 @@ export class CohortMembersUpdateDto {
     description: "The status of the cohort members",
   })
   @IsEnum(MemberStatus)
-  memberStatus: string;
+  status: string;
 
   @ApiProperty({
     type: String,
@@ -60,7 +60,8 @@ export class CohortMembersUpdateDto {
     type: String,
     description: "The status change reason",
   })
-  @IsOptional()
+  @ValidateIf(o => o.status === MemberStatus.DROPOUT)
+  @IsString({ message: 'Reason is mandatory while dropping out a member' })
   statusReason?: string;
 
   constructor(obj: any) {

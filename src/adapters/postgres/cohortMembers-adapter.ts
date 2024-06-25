@@ -232,6 +232,9 @@ export class PostgresCohortMembersService {
       if (whereClause["role"]) {
         where.push(["role", whereClause["role"]]);
       }
+      if (whereClause["status"] && Array.isArray(whereClause["status"])) {
+        where.push(["status", whereClause["status"]]);
+      }
       let options = [];
       if (limit) {
         options.push(['limit', limit]);
@@ -283,7 +286,7 @@ export class PostgresCohortMembersService {
 
   public async createCohortMembers(
     loginUser: any,
-    cohortMembers:CohortMembersDto,
+    cohortMembers: CohortMembersDto,
     res: Response,
     tenantId: string
   ) {
@@ -338,20 +341,25 @@ export class PostgresCohortMembersService {
     let optionsCase = ``;
     let isRoleCondition = 0;
     if (where.length > 0) {
-      whereCase = `where `;
+      whereCase = `WHERE `;
       where.forEach((value, index) => {
-        if (value[0] == "role") {
+        if (value[0] === "role") {
           isRoleCondition = 1;
-          whereCase += `R."name"='${value[1]}' `;
-        } else {
-          whereCase += `CM."${value[0]}"='${value[1]}' `;
+          whereCase += `R."name"='${value[1]}'`;
         }
-        if (index != (where.length - 1)) {
-          whereCase += ` AND `
+        else {
+          if (value[0] === "status") {
+            const statusValues = value[1].map(status => `'${status}'`).join(', ');
+            whereCase += `CM."status" IN (${statusValues})`;
+          } else {
+            whereCase += `CM."${value[0]}"='${value[1]}'`;
+          }
         }
-      })
+        if (index !== where.length - 1) {
+          whereCase += ` AND `;
+        }
+      });
     }
-
     if (options.length > 0) {
       options.forEach((value, index) => {
         optionsCase = `${value[0]} ${value[1]} `;
@@ -359,7 +367,8 @@ export class PostgresCohortMembersService {
     }
 
     if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, 
+      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -368,7 +377,8 @@ export class PostgresCohortMembersService {
       ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
     }
     else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, CM."memberStatus", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
+      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile,
+      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -446,10 +456,10 @@ export class PostgresCohortMembersService {
     }
   }
 
-  public async checkUserExist(userId){
+  public async checkUserExist(userId) {
     const existUser = await this.usersRepository.findOne({
       where: {
-        userId:userId,
+        userId: userId,
       }
     })
     if (!existUser) {
@@ -458,11 +468,11 @@ export class PostgresCohortMembersService {
     return existUser;
   }
 
-  public async checkCohortExist(cohortId){
+  public async checkCohortExist(cohortId) {
 
     const existCohort = await this.cohortRepository.findOne({
       where: {
-        cohortId:cohortId
+        cohortId: cohortId
       }
     })
     if (!existCohort) {
@@ -471,11 +481,11 @@ export class PostgresCohortMembersService {
     return existCohort;
   }
 
-  public async cohortUserMapping(userId,cohortId){
+  public async cohortUserMapping(userId, cohortId) {
     const mappingExist = await this.cohortMembersRepository.findOne({
       where: {
         userId: userId,
-        cohortId:cohortId
+        cohortId: cohortId
       }
     })
     if (!mappingExist) {
@@ -497,12 +507,12 @@ export class PostgresCohortMembersService {
       updatedBy: loginUser,
       tenantId: tenantId
     };
-  
+
     for (let userId of cohortMembersDto.userId) {
       const userExists = await this.checkUserExist(userId);
       if (!userExists) {
         errors.push(`User with userId ${userId} does not exist.`);
-        continue; 
+        continue;
       }
       for (let cohortId of cohortMembersDto.cohortId) {
         const cohortMembers = {
@@ -516,13 +526,13 @@ export class PostgresCohortMembersService {
             errors.push(`Cohort with cohortId ${cohortId} does not exist.`);
             continue;
           }
-  
+
           const mappingExists = await this.cohortUserMapping(userId, cohortId);
           if (mappingExists) {
             errors.push(`Mapping already exists for userId ${userId} and cohortId ${cohortId}.`);
             continue;
           }
-  
+
           const result = await this.cohortMembersRepository.save(cohortMembers);
           results.push(result);
         } catch (error) {
@@ -530,13 +540,13 @@ export class PostgresCohortMembersService {
         }
       }
     }
-  
+
     if (errors.length > 0) {
       return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, { results, errors }, HttpStatus.CREATED, "Cohort Members Created with some errors");
     }
-  
+
     return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, results, HttpStatus.CREATED, "Cohort Members Created Successfully");
   }
-  
+
 
 }

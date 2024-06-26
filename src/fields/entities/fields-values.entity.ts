@@ -32,5 +32,5 @@ export class FieldValues {
   @ManyToOne(() => Fields, (field) => field.fieldValues)
   @JoinColumn({ name: 'fieldId' })
   field: Fields;
-  
+
 }

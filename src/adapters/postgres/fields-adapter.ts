@@ -412,6 +412,27 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
+    async getUserIdUsingStateDistBlock(stateDistBlockData: any) {
+        let userIds = [];
+        for (const [key, value] of Object.entries(stateDistBlockData)) {
+            let getFieldId = await this.fieldsRepository.findOne({
+                where: { name: key },
+                select: ['fieldId']
+            });
+
+            let getItemId = await this.fieldsValuesRepository.find({
+                where: {
+                    fieldId: getFieldId.fieldId,
+                    value: value as string
+                },
+                select: ['itemId']
+            })
+            userIds.push(...getItemId.map(item => item.itemId));
+        }
+        return [...new Set(userIds)];
+    }
+
+
     async getFieldValuesData(id: string, context: string, contextType?: string) {
         let customField;
         let fieldsArr = [];

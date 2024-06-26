@@ -28,9 +28,27 @@ export class setFilters {
 
   @ApiPropertyOptional({
     type: String,
+    description: "Block",
+  })
+  block: string;
+
+  @ApiPropertyOptional({
+    type: String,
     description: "Role",
   })
   role: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "User Name",
+  })
+  username: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "User Id",
+  })
+  userId: string;
 
 }
 export class excludeFields {

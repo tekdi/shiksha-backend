@@ -437,7 +437,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result
     }
 
-
     async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any) {
         let customField;
         let fieldsArr = [];

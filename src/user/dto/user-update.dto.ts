@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsArray, ValidateNested, IsNotEmpty, IsEnum, ValidateIf } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
+import { UserStatus } from '../entities/user-entity';
 
 class UserDataDTO {
 
@@ -61,7 +62,8 @@ class UserDataDTO {
 
     @IsString()
     @IsOptional()
-    status: string;
+    @IsEnum(UserStatus)
+    status: UserStatus;
 }
 class CustomFieldDTO {
 

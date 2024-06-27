@@ -431,7 +431,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 isEditable: data?.fieldAttributes?.isEditable,
                 isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
                 maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
-                value: fieldValue || '',
+                value: (data?.fieldAttributes?.isMultiSelect ? this.getFieldValueForMultiselect(data.fieldAttributes['isMultiSelect'], fieldValue) : fieldValue) || '',
                 options: data?.fieldParams?.['options'] || {},
                 type: data?.type || ''
             };
@@ -513,5 +513,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
         } catch (e) {
             return { error : e }
         }
-    } 
+    }
+
+    getFieldValueForMultiselect(isMultiSelect : boolean,fieldValue: any) {
+        if(isMultiSelect) {
+            return fieldValue.split(",");
+        }
+        return fieldValue;
+    }
 }

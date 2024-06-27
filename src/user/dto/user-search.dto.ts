@@ -9,9 +9,9 @@ import {
   IsOptional,
   IsArray,
   IsUUID,
+  IsEnum,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { User } from "../entities/user-entity";
 
 export class setFilters {
   @ApiPropertyOptional({
@@ -106,6 +106,30 @@ export class customFieldsFilters {
   @IsOptional()
   customFieldsName: string[];
 }
+enum SortDirection {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+export class sortDto {
+  @ApiProperty({
+    type: String,
+    description: "Sort Field",
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  sortField: string;
+
+  @ApiProperty({
+    enum: SortDirection,
+    description: "Sort Order",
+  })
+  @Expose()
+  @IsOptional()
+  @IsEnum(SortDirection)
+  sortOrder: SortDirection;
+}
+
 export class UserSearchDto {
   @ApiProperty({
     type: Number,
@@ -149,6 +173,14 @@ export class UserSearchDto {
   @IsOptional()
   @IsObject()
   exclude: excludeFields;
+
+  @ApiProperty({
+    type: sortDto,
+    description: "Sort",
+  })
+  @Expose()
+  @IsObject()
+  sort: sortDto;
 
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);

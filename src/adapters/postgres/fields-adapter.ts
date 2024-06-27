@@ -407,23 +407,34 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async getUserIdUsingStateDistBlock(stateDistBlockData: any) {
-        let userIds = [];
-        for (const [key, value] of Object.entries(stateDistBlockData)) {
-            let getFieldId = await this.fieldsRepository.findOne({
-                where: { name: key },
-                select: ['fieldId']
-            });
+        let searchKey = [];
+        let whereCondition = ` WHERE `;
+        let index = 0;
 
-            let getItemId = await this.fieldsValuesRepository.find({
-                where: {
-                    fieldId: getFieldId.fieldId,
-                    value: value as string
-                },
-                select: ['itemId']
-            })
-            userIds.push(...getItemId.map(item => item.itemId));
+        for (const [key, value] of Object.entries(stateDistBlockData)) {
+            searchKey.push(`'${key}'`);
+            if (index > 0) {
+                whereCondition += ` AND `
+            }
+            whereCondition += `fields->>'${key}' = '${value}'`
+            index++;
         }
-        return [...new Set(userIds)];
+
+        let query = `WITH user_fields AS (
+        SELECT
+            fv."itemId",
+            jsonb_object_agg(f."name", fv."value") AS fields
+        FROM "FieldValues" fv
+        JOIN "Fields" f ON fv."fieldId" = f."fieldId"
+        WHERE f."name" IN (${searchKey}) AND f.context = 'USERS'
+        GROUP BY fv."itemId"
+        )
+        SELECT "itemId"
+        FROM user_fields ${whereCondition}`
+
+        const queryData = await this.fieldsValuesRepository.query(query);
+        const result = queryData.map(item => item.itemId);
+        return result
     }
 
 

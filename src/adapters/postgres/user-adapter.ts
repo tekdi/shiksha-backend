@@ -82,7 +82,7 @@ export class PostgresUserService implements IServicelocator {
 
   async findAllUserDetails(userSearchDto) {
 
-    let { limit, page, filters, exclude } = userSearchDto;
+    let { limit, page, filters, exclude, sort } = userSearchDto;
     let offset = 0;
     let excludeCohortIdes;
     let excludeUserIdes;
@@ -97,22 +97,38 @@ export class PostgresUserService implements IServicelocator {
     let index = 0;
     const stateDistBlockData = {};
 
+    const userKeys = this.usersRepository.metadata.columns.map(
+      (column) => column.propertyName,
+    );
+
     if (filters && Object.keys(filters).length > 0) {
       for (const [key, value] of Object.entries(filters)) {
         if (index > 0) {
           whereCondition += ` AND `
         }
-        if (key == 'role' || key == 'state' || key == 'district' || key == 'block') {
+        if (userKeys.includes(key)) {
+          whereCondition += ` U."${key}" = '${value}'`;
+          index++;
+        } else {
           if (key == 'role') {
             whereCondition += ` R."name" = '${value}'`
             index++;
           } else {
             stateDistBlockData[key] = value;
           }
-        } else {
-          whereCondition += ` U."${key}" = '${value}'`;
-          index++;
         }
+
+        // if (key == 'role' || key == 'state' || key == 'district' || key == 'block') {
+        //   if (key == 'role') {
+        //     whereCondition += ` R."name" = '${value}'`
+        //     index++;
+        //   } else {
+        //     stateDistBlockData[key] = value;
+        //   }
+        // } else {
+        //   whereCondition += ` U."${key}" = '${value}'`;
+        //   index++;
+        // }
 
       };
     }
@@ -127,6 +143,11 @@ export class PostgresUserService implements IServicelocator {
           excludeUserIdes = (value);
         }
       });
+    }
+
+    let orderingCondition;
+    if (sort && Object.keys(sort).length > 0) {
+      orderingCondition = `ORDER BY U."${sort.sortField}" ${sort.sortOrder}`;
     }
 
     let getUserIdUsingStateDistBlock
@@ -154,14 +175,14 @@ export class PostgresUserService implements IServicelocator {
       whereCondition = '';
     }
 
-    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
+    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile 
       FROM  public."Users" U
       INNER JOIN public."CohortMembers" CM 
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name"`
+      ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition}`
 
     let userDetails = await this.usersRepository.query(query);
 
@@ -241,7 +262,7 @@ export class PostgresUserService implements IServicelocator {
 
 
   async findUserName(cohortId: string, role: string) {
-    let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
+    let query = `SELECT U."userId", U.username, U.name, U.role, U.mobile FROM public."CohortMembers" CM   
     LEFT JOIN public."Users" U 
     ON CM."userId" = U."userId"
     where CM."cohortId" =$1 `
@@ -287,7 +308,7 @@ export class PostgresUserService implements IServicelocator {
     }
     let userDetails = await this.usersRepository.findOne({
       where: whereClause,
-      select: ["userId", "username", "name", "district", "state", "mobile"]
+      select: ["userId", "username", "name", "mobile"]
     })
     if (!userDetails) {
       return false;
@@ -631,8 +652,6 @@ export class PostgresUserService implements IServicelocator {
       user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
-      user.state = userCreateDto?.state,
-      user.district = userCreateDto?.district,
       user.address = userCreateDto?.address,
       user.pincode = userCreateDto?.pincode
 

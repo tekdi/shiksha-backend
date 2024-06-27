@@ -15,6 +15,7 @@ import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
 import { readFileSync } from "fs";
 import path, { join } from 'path';
+import { FieldFactory } from "src/fields/fieldValidators/fieldFactory";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -348,8 +349,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             HttpStatus.OK, 'Field Values fetched successfully.')
     }
 
-
-
     async findDynamicOptions(tableName, whereClause?: {}) {
         let query: string;
         let result;
@@ -379,11 +378,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
+
     async findCustomFields(context: string, contextType?: string[]) {
         const condition: any = {
             context: context,
         };
-
 
         const validContextTypes = contextType.filter(item => item);
         if (validContextTypes.length > 0) {
@@ -473,31 +472,22 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
-        const fieldOptions = fieldAttributesAndParams?.fieldParams?.options.map(({ value }) => value);
-        if (Array.isArray(data.value) === true) {
-            let dataArray = [];
-            for (let value of data.value) {
-                // check against options
-                if (!fieldOptions.includes(value)) {
-                    return {
-                        correctValue: false,
-                        fieldName: fieldAttributesAndParams.fieldName,
-                        valueIssue: "Value not a part of given options"
-                    };
-                }
-                else {
-                    dataArray.push(value);
-                }
+        
+        const fieldValue = data.value;
+        
+        const fieldValidity : any = this.validateFieldValue(fieldAttributesAndParams,itemId,fieldValue);
+
+
+        if(!fieldValidity?.error) {
+            if(Array.isArray(fieldValue)) {
+                data.value = fieldValue.join(',')
             }
-            if (fieldAttributesAndParams?.fieldAttributes?.isMultiSelect && parseInt(fieldAttributesAndParams?.fieldAttributes?.maxSelections) >= dataArray.length) {
-                data.value = dataArray.join(',');
-            } else {
-                return {
-                    correctValue: false,
-                    fieldName: fieldAttributesAndParams.fieldName,
-                    valueIssue: "Multiselect max selections exceeded"
-                };
-            }
+        } else {
+            return {
+                correctValue : false,
+                fieldName : fieldAttributesAndParams.name,
+                valueIssue: fieldValidity.error?.message
+            };
         }
 
         let result: any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
@@ -513,4 +503,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
         result["correctValue"] = true;
         return result;
     }
+
+    validateFieldValue(field: any, itemId: number, value: any) {
+        try {
+            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes,field.fieldParams);
+            const isValid = fieldInstance.validate(value);
+
+            return isValid;
+        } catch (e) {
+            return { error : e }
+        }
+    } 
 }

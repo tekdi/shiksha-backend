@@ -20,6 +20,8 @@ import {
   Get,
   Query,
   Param,
+  UsePipes,
+  ValidationPipe,
 } from "@nestjs/common";
 import { FieldsSearchDto } from "./dto/fields-search.dto";
 import { Request } from "@nestjs/common";
@@ -46,6 +48,7 @@ export class FieldsController {
   //create fields
   @Post("/create")
   @ApiBasicAuth("access-token")
+  @UsePipes(new ValidationPipe())
   @ApiCreatedResponse({ description: "Fields has been created successfully." })
   @ApiBody({ type: FieldsDto })
   @ApiForbiddenResponse({ description: "Forbidden" })

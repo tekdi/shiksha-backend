@@ -30,7 +30,6 @@ import { IServicelocator } from '../userservicelocator';
 import { PostgresFieldsService } from "./fields-adapter"
 import { PostgresRoleService } from './rbac/role-adapter';
 import { CustomFieldsValidation } from '@utils/custom-field-validation';
-// import {PostgresS}
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -196,7 +195,6 @@ export class PostgresUserService implements IServicelocator {
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
     } catch (e) {
-      ;
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -309,9 +307,6 @@ export class PostgresUserService implements IServicelocator {
     return combinedResult;
   }
 
-
-
-
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
     try {
@@ -330,7 +325,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = { fieldAttributes: fieldDetails.fieldAttributes, fieldParams: fieldDetails.fieldParams, fieldName: fieldDetails.name };
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = fieldDetails;
         }
 
         let unEditableIdes = [];
@@ -428,9 +423,9 @@ export class PostgresUserService implements IServicelocator {
             const customFields = await this.fieldsService.findCustomFields("USERS", roles)
   
             const customFieldAttributes = {};
-            customFields.forEach(({fieldId, fieldAttributes, fieldParams, name}) => {
-              if (!customFieldAttributes[fieldId]) {
-                customFieldAttributes[fieldId] = { fieldAttributes, fieldParams, fieldName: name };
+            customFields.forEach((fieldDetail) => {
+              if (!customFieldAttributes[fieldDetail.fieldId]) {
+                customFieldAttributes[fieldDetail.fieldId] = fieldDetail;
               }
             });
 
@@ -581,7 +576,8 @@ export class PostgresUserService implements IServicelocator {
       for (let mapData of userCreateDto.tenantCohortRoleMapping) {
         let cohortData = {
           userId: result?.userId,
-          cohortId: mapData?.cohortId
+          cohortId: mapData?.cohortId,
+          status: "active"
         }
 
         await this.addCohortMember(cohortData);

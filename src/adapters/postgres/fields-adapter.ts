@@ -15,6 +15,7 @@ import { IServicelocatorfields } from "../fieldsservicelocator";
 import { Response } from "express";
 import { readFileSync } from "fs";
 import path, { join } from 'path';
+import { FieldFactory } from "src/fields/fieldValidators/fieldFactory";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -348,8 +349,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             HttpStatus.OK, 'Field Values fetched successfully.')
     }
 
-
-
     async findDynamicOptions(tableName, whereClause?: {}) {
         let query: string;
         let result;
@@ -379,11 +378,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
+
     async findCustomFields(context: string, contextType?: string[]) {
         const condition: any = {
             context: context,
         };
-
 
         const validContextTypes = contextType.filter(item => item);
         if (validContextTypes.length > 0) {
@@ -473,22 +472,21 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
-        // check if field is of type multiselect by validating key exists
-        const multiSelectField = fieldAttributesAndParams?.fieldAttributes.hasOwnProperty("isMultiSelect");
+        
         const fieldValue = data.value;
-        if(multiSelectField) {
-            const multiSelectValidity = this.checkMultipleFieldsValidity(fieldAttributesAndParams,fieldValue);
-            if(Array.isArray(multiSelectValidity)) {
-                data.value = multiSelectValidity.join(',')
-            } else {
-                return multiSelectValidity;
+        
+        const fieldValidity : any = this.validateFieldValue(fieldAttributesAndParams,itemId,fieldValue);
+
+
+        if(!fieldValidity?.error) {
+            if(Array.isArray(fieldValue)) {
+                data.value = fieldValue.join(',')
             }
-        } else if (Array.isArray(data.value) && !multiSelectField) {
-            // passing array for non multiselect field
+        } else {
             return {
                 correctValue : false,
-                fieldName: fieldAttributesAndParams.fieldName,
-                valueIssue: "Value should not be of type array"
+                fieldName : fieldAttributesAndParams.name,
+                valueIssue: fieldValidity.error?.message
             };
         }
 
@@ -506,45 +504,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    checkMultipleFieldsValidity (fieldAttributesAndParams, fieldValue) {
-        const fieldOptions = fieldAttributesAndParams?.fieldParams?.options.map(({value}) => value);
-        const valueArray = Array.isArray(fieldValue);
-            if (valueArray && fieldAttributesAndParams?.fieldAttributes?.isMultiSelect) {
-            // check if multiple selection passed array has values that are part of the options 
-            let dataArray = [];
-                for (let value of fieldValue) {
-                    // check against options
-                    if(!fieldOptions.includes(value)) {
-                        return {
-                            correctValue : false,
-                            fieldName: fieldAttributesAndParams.fieldName,
-                            valueIssue: "Value not a part of given options"
-                        };
-                    } 
-                    else {
-                        dataArray.push(value);
-                    }
-                }
-                if (parseInt(fieldAttributesAndParams?.fieldAttributes?.maxSelections) >= dataArray.length) {
-                    fieldValue = dataArray;
-                    return fieldValue;
-                } else {
-                    return {
-                    correctValue : false,
-                    fieldName : fieldAttributesAndParams.fieldName,
-                    valueIssue: "Multiselect max selections exceeded"
-                    };
-                }
-            } else if (valueArray && !fieldAttributesAndParams?.fieldAttributes?.isMultiSelect && parseInt(fieldAttributesAndParams?.fieldAttributes?.maxSelections) === 1 ) {
-                // value restricted to only one
-                return fieldValue;
-            } else if (!valueArray && !fieldAttributesAndParams?.fieldAttributes?.isMultiSelect) {
-                // value passed is not array even though field is multiselect
-                return {
-                    correctValue : false,
-                    fieldName: fieldAttributesAndParams.fieldName,
-                    valueIssue: "Pass array for multiselect field type"
-                };
-            }
-    }
+    validateFieldValue(field: any, itemId: number, value: any) {
+        try {
+            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes,field.fieldParams);
+            const isValid = fieldInstance.validate(value);
+
+            return isValid;
+        } catch (e) {
+            return { error : e }
+        }
+    } 
 }

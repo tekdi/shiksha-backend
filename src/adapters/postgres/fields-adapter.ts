@@ -379,20 +379,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
-    async findCustomFields(context: string, contextType?: string[]) {
+    async findCustomFields(context: string, contextType?: string[], getFields?: any) {
         const condition: any = {
-            context: context,
+            context,
+            ...(contextType?.length ? { contextType: In(contextType.filter(Boolean)) } : {}),
+            ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-
-        const validContextTypes = contextType.filter(item => item);
-        if (validContextTypes.length > 0) {
-            condition.contextType = In(contextType);
-        }
-
-        let customFields = await this.fieldsRepository.find({
-            where: condition
-        })
+        let customFields = await this.fieldsRepository.find({ where: condition })
         return customFields;
     }
 
@@ -433,12 +427,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
 
-    async getFieldValuesData(id: string, context: string, contextType?: string) {
+    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
             this.findFieldValues(id, context),
-            this.findCustomFields(context, [contextType])
+            this.findCustomFields(context, [contextType], getFields)
         ]);
 
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
@@ -453,9 +447,9 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 isEditable: data?.fieldAttributes?.isEditable,
                 isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
                 maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
+                type: data?.type || '',
                 value: fieldValue || '',
                 options: data?.fieldParams?.['options'] || {},
-                type: data?.type || ''
             };
 
             if (data?.sourceDetails) {

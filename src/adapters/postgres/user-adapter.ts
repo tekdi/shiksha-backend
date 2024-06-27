@@ -98,7 +98,6 @@ export class PostgresUserService implements IServicelocator {
     const stateDistBlockData = {};
 
     if (filters && Object.keys(filters).length > 0) {
-      // Object.entries(filters).forEach(([key, value]) => {
       for (const [key, value] of Object.entries(filters)) {
         if (index > 0) {
           whereCondition += ` AND `
@@ -129,6 +128,7 @@ export class PostgresUserService implements IServicelocator {
         }
       });
     }
+
     let getUserIdUsingStateDistBlock
     if (stateDistBlockData) {
       getUserIdUsingStateDistBlock = await this.fieldsService.getUserIdUsingStateDistBlock(stateDistBlockData);
@@ -165,13 +165,14 @@ export class PostgresUserService implements IServicelocator {
 
     let userDetails = await this.usersRepository.query(query);
 
-
-    if (userSearchDto.getCustomFields == true) {
+    if (userSearchDto.customFieldsFilters.getCustomFields == true) {
       for (let userData of userDetails) {
         let context = 'USERS';
         let contextType = userData.role.toUpperCase();
-        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
-        // console.log(customFields);
+        let customFieldData = userSearchDto?.customFieldsFilters?.customFieldsName.length > 0 ? userSearchDto.customFieldsFilters.customFieldsName : '';
+
+        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData);
+
         userData['customFields'] = customFields
 
         result.getUserDetails.push(userData);
@@ -179,9 +180,6 @@ export class PostgresUserService implements IServicelocator {
     } else {
       result.getUserDetails.push(userDetails);
     }
-
-
-
     return result;
   }
 

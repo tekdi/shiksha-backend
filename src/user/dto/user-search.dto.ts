@@ -77,6 +77,35 @@ export class excludeFields {
   @IsUUID(undefined, { each: true })
   cohortIds?: string[];
 }
+
+export class customFieldsFilters {
+  @ApiProperty({
+    type: Boolean,
+    description: 'getCustomFields',
+    default: false,
+  })
+  @Expose()
+  @IsOptional()
+  getCustomFields: boolean = false;
+
+  @ApiProperty({
+    type: Boolean,
+    description: 'Is Required Field Options',
+    default: false,
+  })
+  @Expose()
+  @IsOptional()
+  isRequiredFieldOptions: boolean = false;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Custom Fields Name',
+    default: [],
+  })
+  @Expose()
+  @IsOptional()
+  customFieldsName: string[];
+}
 export class UserSearchDto {
   @ApiProperty({
     type: Number,
@@ -104,6 +133,15 @@ export class UserSearchDto {
   filters: setFilters;
 
   @ApiProperty({
+    type: customFieldsFilters,
+    description: "Custom Fields Filters",
+  })
+  @Expose()
+  @IsOptional()
+  @IsObject()
+  customFieldsFilters: customFieldsFilters
+
+  @ApiProperty({
     type: excludeFields,
     description: "Filters",
   })
@@ -111,15 +149,6 @@ export class UserSearchDto {
   @IsOptional()
   @IsObject()
   exclude: excludeFields;
-
-  @ApiProperty({
-    type: Boolean,
-    description: 'getCustomFields',
-    default: false,
-  })
-  @Expose()
-  @IsOptional()
-  getCustomFields: boolean = false;
 
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);

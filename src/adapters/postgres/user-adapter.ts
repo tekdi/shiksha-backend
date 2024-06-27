@@ -117,19 +117,6 @@ export class PostgresUserService implements IServicelocator {
             stateDistBlockData[key] = value;
           }
         }
-
-        // if (key == 'role' || key == 'state' || key == 'district' || key == 'block') {
-        //   if (key == 'role') {
-        //     whereCondition += ` R."name" = '${value}'`
-        //     index++;
-        //   } else {
-        //     stateDistBlockData[key] = value;
-        //   }
-        // } else {
-        //   whereCondition += ` U."${key}" = '${value}'`;
-        //   index++;
-        // }
-
       };
     }
 

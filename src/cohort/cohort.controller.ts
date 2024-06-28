@@ -195,7 +195,7 @@ export class CohortController {
   }
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_READ))
-  @Get("/mycohort/:userId")
+  @Get("/mycohorts/:userId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "User Not Found" })
@@ -207,12 +207,12 @@ export class CohortController {
   public async getCohortsHierarachyData(
     @Request() request:Request,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Query("getChildData") getChildData: string,
+    @Query("children") children: string,
     @Query("customField") customField: string | null = null,
     @Res() response: Response
   ) {
     const tenantId = request.headers["tenantid"];
-    const getChildDataValueBoolean = getChildData === 'true';
+    const getChildDataValueBoolean = children === 'true';
     let fieldValueBooelan = customField === 'true'
     let requiredData = {
       userId: userId,

@@ -22,6 +22,9 @@ export class HasuraCohortService implements IServicelocatorcohort {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) {}
+  getCohortHierarchyData(requiredData: any, response: any) {
+    throw new Error("Method not implemented.");
+  }
   public async  getCohortList(tenantid: any, id: any, request: any, response: any) {
   }
 

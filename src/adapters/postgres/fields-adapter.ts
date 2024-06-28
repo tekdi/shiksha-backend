@@ -438,8 +438,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any, requiredFieldOptions?: any) {
-        console.log(requiredFieldOptions);
-
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
@@ -470,7 +468,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             if (data?.sourceDetails) {
                 //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
                 if (data?.dependsOn === false) {
-                    console.log("hi");
                     if (data?.sourceDetails?.source === 'table') {
                         let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
                         customField.options = dynamicOptions;
@@ -490,7 +487,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 }
             }
             fieldsArr.push(customField);
-            console.log(fieldsArr);
         }
 
         return fieldsArr;

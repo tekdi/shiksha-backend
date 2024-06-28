@@ -10,6 +10,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiConflictResponse,
+  ApiQuery,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -201,6 +202,8 @@ export class CohortController {
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
   @ApiBadRequestResponse({ description: "Bad Request" })
   @ApiHeader({ name: "tenantid", })
+  @ApiQuery({ name: "getChildData", required: false, type: Boolean })
+  @ApiQuery({ name: "customField", required: false, type: Boolean })
   public async getCohortsHierarachyData(
     @Request() request:Request,
     @Param('userId', ParseUUIDPipe) userId: string,

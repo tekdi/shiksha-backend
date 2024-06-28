@@ -128,7 +128,7 @@ export class PostgresCohortService {
 
 
   public async findCohortName(userId: any) {
-    let query = `SELECT c."name",c."cohortId",c."parentId"
+    let query = `SELECT c."name",c."cohortId",c."parentId",c."type"
     FROM public."CohortMembers" AS cm
     LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
     WHERE cm."userId"=$1 AND c.status=true`;
@@ -158,6 +158,7 @@ export class PostgresCohortService {
     let result = await this.cohortMembersRepository.query(query, [userId, fieldOption || false]);
     return result;
   }
+
   public async validateFieldValues(field_value_array: string[]) {
     let encounteredKeys = []
     for (const fieldValue of field_value_array) {
@@ -776,3 +777,6 @@ export class PostgresCohortService {
     }
   }
 }
+
+
+

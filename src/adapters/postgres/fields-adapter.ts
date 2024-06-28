@@ -62,9 +62,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             const offset = getConditionalData.offset;
             const limit = getConditionalData.limit;
             const whereClause = getConditionalData.whereClause;
-
             const getFieldValue = await this.searchFieldData(offset, limit, whereClause)
-
 
             const result = {
                 totalCount: getFieldValue.totalCount,
@@ -93,7 +91,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
         if (limit !== undefined) {
             queryOptions.take = parseInt(limit);
         }
-
 
         const [results, totalCount] = await this.fieldsRepository.findAndCount(queryOptions);
 
@@ -290,7 +287,11 @@ export class PostgresFieldsService implements IServicelocatorfields {
             offset = parseInt(limit) * (page - 1);
         }
 
-        if (limit.trim() === '') {
+        if (typeof limit === 'string') {
+            if (limit.trim() === '') {
+                limit = '0';
+            }
+        } else if (typeof limit === 'number' && limit === 0) {
             limit = '0';
         }
 
@@ -300,6 +301,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 whereClause[key] = value;
             });
         }
+
         return { offset, limit, whereClause };
     }
 
@@ -472,20 +474,20 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
-        
+
         const fieldValue = data.value;
-        
-        const fieldValidity : any = this.validateFieldValue(fieldAttributesAndParams,itemId,fieldValue);
+
+        const fieldValidity: any = this.validateFieldValue(fieldAttributesAndParams, itemId, fieldValue);
 
 
-        if(!fieldValidity?.error) {
-            if(Array.isArray(fieldValue)) {
+        if (!fieldValidity?.error) {
+            if (Array.isArray(fieldValue)) {
                 data.value = fieldValue.join(',')
             }
         } else {
             return {
-                correctValue : false,
-                fieldName : fieldAttributesAndParams.name,
+                correctValue: false,
+                fieldName: fieldAttributesAndParams.name,
                 valueIssue: fieldValidity.error?.message
             };
         }
@@ -506,12 +508,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     validateFieldValue(field: any, itemId: number, value: any) {
         try {
-            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes,field.fieldParams);
+            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes, field.fieldParams);
             const isValid = fieldInstance.validate(value);
 
             return isValid;
         } catch (e) {
-            return { error : e }
+            return { error: e }
         }
-    } 
+    }
 }

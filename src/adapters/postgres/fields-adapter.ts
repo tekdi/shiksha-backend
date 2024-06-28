@@ -437,7 +437,9 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result
     }
 
-    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any) {
+    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any, requiredFieldOptions?: any) {
+        console.log(requiredFieldOptions);
+
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
@@ -459,12 +461,16 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
                 type: data?.type || '',
                 value: fieldValue || '',
-                options: data?.fieldParams?.['options'] || {},
             };
+
+            if (requiredFieldOptions == true) {
+                customField['options'] = data?.fieldParams?.['options'] || {}
+            }
 
             if (data?.sourceDetails) {
                 //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
                 if (data?.dependsOn === false) {
+                    console.log("hi");
                     if (data?.sourceDetails?.source === 'table') {
                         let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
                         customField.options = dynamicOptions;
@@ -479,9 +485,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
                     customField.options = null;
                 }
             } else {
-                customField.options = data?.fieldParams?.['options'] || null;
+                if (requiredFieldOptions == true) {
+                    customField.options = data?.fieldParams?.['options'] || null;
+                }
             }
             fieldsArr.push(customField);
+            console.log(fieldsArr);
         }
 
         return fieldsArr;

@@ -97,9 +97,11 @@ export class PostgresUserService implements IServicelocator {
     let index = 0;
     const stateDistBlockData = {};
 
-    const userKeys = this.usersRepository.metadata.columns.map(
+    const userAllKeys = this.usersRepository.metadata.columns.map(
       (column) => column.propertyName,
     );
+    const userKeys = userAllKeys.filter(key => key !== 'district' && key !== 'state');
+
 
     if (filters && Object.keys(filters).length > 0) {
       for (const [key, value] of Object.entries(filters)) {
@@ -178,8 +180,9 @@ export class PostgresUserService implements IServicelocator {
         let context = 'USERS';
         let contextType = userData.role.toUpperCase();
         let customFieldData = userSearchDto?.customFieldsFilters?.customFieldsName.length > 0 ? userSearchDto.customFieldsFilters.customFieldsName : '';
+        let isRequiredFieldOptions = userSearchDto.customFieldsFilters.isRequiredFieldOptions
 
-        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData);
+        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData, isRequiredFieldOptions);
 
         userData['customFields'] = customFields
 
@@ -639,6 +642,8 @@ export class PostgresUserService implements IServicelocator {
       user.createdBy = userCreateDto?.createdBy
     user.updatedBy = userCreateDto?.updatedBy
     user.userId = userCreateDto?.userId,
+      user.state = userCreateDto?.state,
+      user.district = userCreateDto?.district,
       user.address = userCreateDto?.address,
       user.pincode = userCreateDto?.pincode
 

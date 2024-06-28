@@ -14,7 +14,7 @@ export enum FieldType {
   TEXT = 'text', // string
   NUMERIC = 'numeric', // string
   RADIO = 'radio', // string
-  DROPDOWN = 'dropdown', // comma seperated string array
+  DROPDOWN = 'drop_down', // comma seperated string array
   CHECKBOX = 'checkbox', // comma seperated string array
 }
 

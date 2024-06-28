@@ -197,7 +197,7 @@ export class UserController {
    @SerializeOptions({
      strategy: "excludeAll",
    })
-   public async deleteUserById(
+   public async deleteUserById( 
      @Headers() headers,
      @Param("userId") userId: string,
      @Req() request: Request,

@@ -688,6 +688,15 @@ export class PostgresCohortService {
     if (!requiredData.getChildData) {
       try {
         let findCohortId = await this.findCohortName(requiredData.userId);
+        if (!findCohortId.length) {
+          return APIResponse.error(
+            res,
+            apiId,
+            "BAD_REQUEST",
+            `No Cohort Found for this User ID`,
+            HttpStatus.BAD_REQUEST
+          );
+        }
         let result = {
           cohortData: [],
         };
@@ -723,14 +732,6 @@ export class PostgresCohortService {
       }
     }
     if (requiredData.getChildData) {
-      let resultData = {
-        cohortName: "",
-        cohortId: "",
-        parentID: "",
-        type: "",
-        customField:[],
-        childData: [],
-      };
       try {
         let findCohortId = await this.findCohortName(requiredData.userId);
         if (!findCohortId.length) {
@@ -745,22 +746,24 @@ export class PostgresCohortService {
         let resultDataList = [];
 
         for (let cohort of findCohortId) {
-          resultData.cohortName = cohort.name;
-          resultData.cohortId = cohort.cohortId;
-          resultData.parentID = cohort.parentId;
-          resultData.type = cohort.type;
+          let resultData = {
+            cohortName: cohort.name,
+            cohortId: cohort.cohortId,
+            parentID: cohort.parentId,
+            type: cohort.type
+          };
           if(requiredData.customField){
-            resultData.childData = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
-            resultData.customField= await this.getCohortCustomFieldDetails(cohort.cohortId)
+            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
+            resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
           }else{
-            resultData.childData = await this.getCohortHierarchy(cohort.cohortId,);
+            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
           }
           resultDataList.push(resultData);
         }
         return APIResponse.success(
           res,
           apiId,
-          resultData,
+          resultDataList,
           HttpStatus.OK,
           "Cohort hierarchy fetched successfully"
         );

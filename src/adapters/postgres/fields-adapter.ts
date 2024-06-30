@@ -386,8 +386,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
             ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-        let customFields = await this.fieldsRepository.find({ where: condition })
-        return customFields;
+
+
+        if (getFields.length > 0) {
+            let customFields = await this.fieldsRepository.find({ where: condition })
+            return customFields;
+        } else {
+            return false;
+        }
     }
 
     async findFieldValues(contextId: string, context: string) {
@@ -446,48 +452,51 @@ export class PostgresFieldsService implements IServicelocatorfields {
         ]);
 
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-        for (let data of customFields) {
-            const fieldValue = filledValuesMap.get(data?.fieldId);
-            customField = {
-                fieldId: data?.fieldId,
-                name: data?.name,
-                label: data?.label,
-                order: data?.ordering,
-                isRequired: data?.fieldAttributes?.isRequired,
-                isEditable: data?.fieldAttributes?.isEditable,
-                isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
-                maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
-                type: data?.type || '',
-                value: fieldValue || '',
-            };
+        if (customFields) {
+            for (let data of customFields) {
+                const fieldValue = filledValuesMap.get(data?.fieldId);
+                customField = {
+                    fieldId: data?.fieldId,
+                    name: data?.name,
+                    label: data?.label,
+                    order: data?.ordering,
+                    isRequired: data?.fieldAttributes?.isRequired,
+                    isEditable: data?.fieldAttributes?.isEditable,
+                    isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
+                    maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
+                    type: data?.type || '',
+                    value: fieldValue || '',
+                };
 
-            if (requiredFieldOptions == true) {
-                customField['options'] = data?.fieldParams?.['options'] || {}
-            }
+                if (requiredFieldOptions == true) {
+                    customField['options'] = data?.fieldParams?.['options'] || {}
+                }
 
-            if (data?.sourceDetails) {
-                //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
-                if (data?.dependsOn === false) {
-                    if (data?.sourceDetails?.source === 'table') {
-                        let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
-                        customField.options = dynamicOptions;
-                    } else if (data?.sourceDetails?.source === 'jsonFile') {
-                        const filePath = path.join(
-                            process.cwd(),
-                            `${data?.sourceDetails?.filePath}`,
-                        );
-                        customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                if (data?.sourceDetails) {
+                    //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
+                    if (data?.dependsOn === false) {
+                        if (data?.sourceDetails?.source === 'table') {
+                            let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
+                            customField.options = dynamicOptions;
+                        } else if (data?.sourceDetails?.source === 'jsonFile') {
+                            const filePath = path.join(
+                                process.cwd(),
+                                `${data?.sourceDetails?.filePath}`,
+                            );
+                            customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                        }
+                    } else {
+                        customField.options = null;
                     }
                 } else {
-                    customField.options = null;
+                    if (requiredFieldOptions == true) {
+                        customField.options = data?.fieldParams?.['options'] || null;
+                    }
                 }
-            } else {
-                if (requiredFieldOptions == true) {
-                    customField.options = data?.fieldParams?.['options'] || null;
-                }
+                fieldsArr.push(customField);
             }
-            fieldsArr.push(customField);
         }
+
 
         return fieldsArr;
     }

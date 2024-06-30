@@ -10,6 +10,9 @@ import {
   IsArray,
   IsUUID,
   IsEnum,
+  ValidateIf,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -110,25 +113,25 @@ enum SortDirection {
   ASC = 'asc',
   DESC = 'desc',
 }
-export class sortDto {
-  @ApiProperty({
-    type: String,
-    description: "Sort Field",
-  })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  sortField: string;
+// export class sortDto {
+//   @ApiProperty({
+//     type: String,
+//     description: "Sort Field",
+//   })
+//   @Expose()
+//   @IsOptional()
+//   @IsString()
+//   sortField: string;
 
-  @ApiProperty({
-    enum: SortDirection,
-    description: "Sort Order",
-  })
-  @Expose()
-  @IsOptional()
-  @IsEnum(SortDirection)
-  sortOrder: SortDirection;
-}
+//   @ApiProperty({
+//     enum: SortDirection,
+//     description: "Sort Order",
+//   })
+//   @Expose()
+//   @IsOptional()
+//   @IsEnum(SortDirection)
+//   sortOrder: SortDirection;
+// }
 
 export class UserSearchDto {
   @ApiProperty({
@@ -174,13 +177,21 @@ export class UserSearchDto {
   @IsObject()
   exclude: excludeFields;
 
-  @ApiProperty({
-    type: sortDto,
+  @ApiPropertyOptional({
     description: "Sort",
+    example: ["createdAt", "asc"]
   })
-  @Expose()
-  @IsObject()
-  sort: sortDto;
+  @IsArray()
+  @IsOptional()
+  @ArrayMinSize(2, { message: 'Sort array must contain exactly two elements' })
+  @ArrayMaxSize(2, { message: 'Sort array must contain exactly two elements' })
+  sort: [string, string];
+  
+  @ValidateIf((o) => o.sort !== undefined)
+  @IsEnum(SortDirection, { each: true, message: 'Sort[1] must be either asc or desc' })
+  get sortDirection(): string | undefined {
+    return this.sort ? this.sort[1] : undefined;
+  }
 
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);

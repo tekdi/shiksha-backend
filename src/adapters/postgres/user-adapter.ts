@@ -95,7 +95,7 @@ export class PostgresUserService implements IServicelocator {
 
     let whereCondition = `WHERE`;
     let index = 0;
-    const stateDistBlockData = {};
+    const searchCustomFields = {};
 
     const userAllKeys = this.usersRepository.metadata.columns.map(
       (column) => column.propertyName,
@@ -116,11 +116,12 @@ export class PostgresUserService implements IServicelocator {
             whereCondition += ` R."name" = '${value}'`
             index++;
           } else {
-            stateDistBlockData[key] = value;
+            searchCustomFields[key] = value;
           }
         }
       };
     }
+
 
 
     if (exclude && Object.keys(exclude).length > 0) {
@@ -136,12 +137,12 @@ export class PostgresUserService implements IServicelocator {
 
     let orderingCondition;
     if (sort && Object.keys(sort).length > 0) {
-      orderingCondition = `ORDER BY U."${sort.sortField}" ${sort.sortOrder}`;
+      orderingCondition = `ORDER BY U."${sort[0]}" ${sort[1]}`;
     }
 
     let getUserIdUsingStateDistBlock
-    if (stateDistBlockData) {
-      getUserIdUsingStateDistBlock = await this.fieldsService.getUserIdUsingStateDistBlock(stateDistBlockData);
+    if (Object.keys(searchCustomFields).length > 0) {
+      getUserIdUsingStateDistBlock = await this.fieldsService.getUserIdUsingStateDistBlock(searchCustomFields);
     }
 
     if (getUserIdUsingStateDistBlock && getUserIdUsingStateDistBlock.length > 0) {
@@ -175,22 +176,35 @@ export class PostgresUserService implements IServicelocator {
 
     let userDetails = await this.usersRepository.query(query);
 
-    if (userSearchDto.customFieldsFilters.getCustomFields == true) {
+    if (userSearchDto.fields) {
       for (let userData of userDetails) {
         let context = 'USERS';
         let contextType = userData.role.toUpperCase();
-        let customFieldData = userSearchDto?.customFieldsFilters?.customFieldsName.length > 0 ? userSearchDto.customFieldsFilters.customFieldsName : '';
-        let isRequiredFieldOptions = userSearchDto.customFieldsFilters.isRequiredFieldOptions
-
-        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData, isRequiredFieldOptions);
-
+        let isRequiredFieldOptions = false;
+        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, userSearchDto.fields, isRequiredFieldOptions);
         userData['customFields'] = customFields
-
         result.getUserDetails.push(userData);
       }
     } else {
       result.getUserDetails.push(userDetails);
     }
+
+    // if (userSearchDto.customFieldsFilters.getCustomFields == true) {
+    //   for (let userData of userDetails) {
+    //     let context = 'USERS';
+    //     let contextType = userData.role.toUpperCase();
+    //     let customFieldData = userSearchDto?.customFieldsFilters?.customFieldsName.length > 0 ? userSearchDto.customFieldsFilters.customFieldsName : '';
+    //     let isRequiredFieldOptions = userSearchDto.customFieldsFilters.isRequiredFieldOptions
+
+    //     let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData, isRequiredFieldOptions);
+
+    //     userData['customFields'] = customFields
+
+    //     result.getUserDetails.push(userData);
+    //   }
+    // } else {
+    //   result.getUserDetails.push(userDetails);
+    // }
     return result;
   }
 
@@ -479,23 +493,26 @@ export class PostgresUserService implements IServicelocator {
 
           const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-          const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
+          if (customFields) {
+            const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
 
-          for (let fieldValues of userCreateDto.fieldValues) {
+            for (let fieldValues of userCreateDto.fieldValues) {
 
-            const fieldData = {
-              fieldId: fieldValues['fieldId'],
-              value: fieldValues['value']
-            }
-            let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
-            if (res) {
-              if (!result['customFields'])
-                result['customFields'] = [];
-              result["customFields"].push(res);
-            } else {
-              createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
+              const fieldData = {
+                fieldId: fieldValues['fieldId'],
+                value: fieldValues['value']
+              }
+              let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
+              if (res) {
+                if (!result['customFields'])
+                  result['customFields'] = [];
+                result["customFields"].push(res);
+              } else {
+                createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
+              }
             }
           }
+
         }
       }
 

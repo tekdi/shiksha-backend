@@ -188,23 +188,6 @@ export class PostgresUserService implements IServicelocator {
     } else {
       result.getUserDetails.push(userDetails);
     }
-
-    // if (userSearchDto.customFieldsFilters.getCustomFields == true) {
-    //   for (let userData of userDetails) {
-    //     let context = 'USERS';
-    //     let contextType = userData.role.toUpperCase();
-    //     let customFieldData = userSearchDto?.customFieldsFilters?.customFieldsName.length > 0 ? userSearchDto.customFieldsFilters.customFieldsName : '';
-    //     let isRequiredFieldOptions = userSearchDto.customFieldsFilters.isRequiredFieldOptions
-
-    //     let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, customFieldData, isRequiredFieldOptions);
-
-    //     userData['customFields'] = customFields
-
-    //     result.getUserDetails.push(userData);
-    //   }
-    // } else {
-    //   result.getUserDetails.push(userDetails);
-    // }
     return result;
   }
 

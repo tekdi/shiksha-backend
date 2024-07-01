@@ -387,13 +387,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
         };
 
 
-
-        if (getFields.length > 0) {
-            let customFields = await this.fieldsRepository.find({ where: condition })
-            return customFields;
+        let customFields;
+        if (getFields.length > 0 && context == 'USERS') {
+            customFields = await this.fieldsRepository.find({ where: condition })
         } else {
-            return false;
+            customFields = await this.fieldsRepository.find({ where: condition })
         }
+        return customFields;
     }
 
     async findFieldValues(contextId: string, context: string) {

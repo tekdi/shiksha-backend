@@ -385,13 +385,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-
-        let customFields;
-        if (getFields?.length > 0 && context == 'USERS') {
-            customFields = await this.fieldsRepository.find({ where: condition })
-        } else {
-            customFields = await this.fieldsRepository.find({ where: condition })
-        }
+        let customFields = await this.fieldsRepository.find({ where: condition })
         return customFields;
     }
 

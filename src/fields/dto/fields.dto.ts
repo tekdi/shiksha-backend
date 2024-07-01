@@ -5,9 +5,10 @@ import {
   IsEmail,
   IsString,
   IsNumber,
+  IsEnum,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-
+import { FieldType } from "../entities/fields.entity";
 export class FieldsDto {
   //generated fields
   @Expose()
@@ -69,10 +70,11 @@ export class FieldsDto {
 
   //type
   @ApiProperty({
-    type: String,
-    description: "The type of the fields",
-    default: "",
+    enum: FieldType,
+    default: FieldType.TEXT,
+    nullable: false
   })
+  @IsEnum(FieldType)
   @Expose()
   type: string;
 
@@ -192,16 +194,16 @@ export class FieldsDto {
   @Expose()
   render: any;
 
-  //contexType
+  //contextType
   @ApiProperty({
     type: String,
-    description: "The contexType of the fields",
+    description: "The contextType of the fields",
     default: "",
   })
   @Expose()
-  contexType: string;
+  contextType: string;
 
-  //contexType
+  // fieldParams
   @ApiProperty({
     type: Object,
     description: "The fieldParams of the fields",
@@ -209,6 +211,14 @@ export class FieldsDto {
   })
   @Expose()
   fieldParams: object;
+
+  @ApiProperty({
+    type: Object,
+    description: "The fieldAttributes of the fields",
+    default: "",
+  })
+  @Expose()
+  fieldAttributes: object;
 
   constructor(obj: any) {
     Object.assign(this, obj);

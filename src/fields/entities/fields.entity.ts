@@ -10,6 +10,14 @@ import {
 } from 'typeorm';
 import { FieldValues } from './fields-values.entity';
 
+export enum FieldType {
+  TEXT = 'text', // string
+  NUMERIC = 'numeric', // string
+  RADIO = 'radio', // string
+  DROPDOWN = 'drop_down', // comma seperated string array
+  CHECKBOX = 'checkbox', // comma seperated string array
+}
+
 @Entity({ name: 'Fields' })
 export class Fields {
 
@@ -34,8 +42,13 @@ export class Fields {
   @Column('varchar', { nullable: true })
   defaultValue?: string;
 
-  @Column('varchar', { nullable: false })
-  type: string;
+  @Column({
+    type: 'enum',
+    enum: FieldType,
+    default: FieldType.TEXT,
+    nullable: false
+  })
+  type: FieldType;
 
   @Column('varchar', { nullable: true })
   note?: string;  

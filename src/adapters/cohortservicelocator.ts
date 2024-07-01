@@ -10,4 +10,5 @@ export interface IServicelocatorcohort {
   searchCohort(tenantid, request: any, cohortSearchDto: CohortSearchDto,response);
   updateCohort(cohortId: string, request: any, cohortUpdateDto: CohortUpdateDto,response);
   updateCohortStatus(cohortId: string, request: any,response);
+  getCohortHierarchyData(requiredData,response)
 }

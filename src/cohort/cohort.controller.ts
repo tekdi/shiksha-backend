@@ -10,6 +10,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiConflictResponse,
+  ApiQuery,
 } from "@nestjs/swagger";
 import {
   Controller,
@@ -30,6 +31,8 @@ import {
   UsePipes,
   BadRequestException,
   UseFilters,
+  ParseUUIDPipe,
+  Query,
 } from "@nestjs/common";
 import { CohortSearchDto } from "./dto/cohort-search.dto";
 import { Request } from "@nestjs/common";
@@ -189,5 +192,33 @@ export class CohortController {
     @Res() response: Response
   ) {
     return await this.cohortAdapter.buildCohortAdapter().updateCohortStatus(cohortId, request, response);
+  }
+
+  @UseFilters(new AllExceptionsFilter(APIID.COHORT_READ))
+  @Get("/mycohorts/:userId")
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
+  @ApiNotFoundResponse({ description: "User Not Found" })
+  @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
+  @ApiBadRequestResponse({ description: "Bad Request" })
+  @ApiHeader({ name: "tenantid", })
+  @ApiQuery({ name: "children", required: false, type: Boolean })
+  @ApiQuery({ name: "customField", required: false, type: Boolean })
+  public async getCohortsHierarachyData(
+    @Request() request:Request,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query("children") children: string,
+    @Query("customField") customField: string | null = null,
+    @Res() response: Response
+  ) {
+    const tenantId = request.headers["tenantid"];
+    const getChildDataValueBoolean = children === 'true';
+    let fieldValueBooelan = customField === 'true'
+    let requiredData = {
+      userId: userId,
+      getChildData:getChildDataValueBoolean,
+      customField: fieldValueBooelan
+    }
+    return await this.cohortAdapter.buildCohortAdapter().getCohortHierarchyData(requiredData,response)
   }
 }

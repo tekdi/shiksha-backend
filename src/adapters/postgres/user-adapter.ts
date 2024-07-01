@@ -30,8 +30,6 @@ import { IServicelocator } from '../userservicelocator';
 import { PostgresFieldsService } from "./fields-adapter"
 import { PostgresRoleService } from './rbac/role-adapter';
 import { CustomFieldsValidation } from '@utils/custom-field-validation';
-// import { PostgresCohortMembersService } from "src/adapters/postgres/cohortMembers-adapter";
-// import {PostgresS}
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -242,7 +240,6 @@ export class PostgresUserService implements IServicelocator {
       return await APIResponse.success(response, apiId, { ...result },
         HttpStatus.OK, 'User details Fetched Successfully.')
     } catch (e) {
-      ;
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -355,9 +352,6 @@ export class PostgresUserService implements IServicelocator {
     return combinedResult;
   }
 
-
-
-
   async updateUser(userDto, response: Response) {
     const apiId = APIID.USER_UPDATE;
     try {
@@ -376,7 +370,7 @@ export class PostgresUserService implements IServicelocator {
         const fieldIdAndAttributes = {};
         for (let fieldDetails of getFieldsAttributes) {
           isEditableFieldId.push(fieldDetails.fieldId);
-          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = { fieldAttributes: fieldDetails.fieldAttributes, fieldParams: fieldDetails.fieldParams, fieldName: fieldDetails.name };
+          fieldIdAndAttributes[`${fieldDetails.fieldId}`] = fieldDetails;
         }
 
         let unEditableIdes = [];
@@ -428,7 +422,7 @@ export class PostgresUserService implements IServicelocator {
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
 
-      //Check duplicate field entry
+      // Check duplicate field entry
       if (userCreateDto.fieldValues) {
         let fieldValues = userCreateDto.fieldValues;
         const validateField = await this.validateFieldValues(fieldValues);
@@ -486,7 +480,8 @@ export class PostgresUserService implements IServicelocator {
                 value: fieldValues['value']
               }
               let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
-              if (res) {
+            
+              if (res.correctValue) {
                 if (!result['customFields'])
                   result['customFields'] = [];
                 result["customFields"].push(res);

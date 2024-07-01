@@ -22,6 +22,7 @@ import { Cohort } from "src/cohort/entities/cohort.entity";
 import APIResponse from "src/common/responses/response";
 import { Response } from "express";
 import { APIID } from 'src/common/utils/api-id.config';
+import { MemberStatus } from "src/cohortMembers/entities/cohort-member.entity";
 
 @Injectable()
 export class PostgresCohortMembersService {
@@ -485,7 +486,7 @@ export class PostgresCohortMembersService {
     const mappingExist = await this.cohortMembersRepository.findOne({
       where: {
         userId: userId,
-        cohortId: cohortId
+        cohortId: cohortId,
       }
     })
     if (!mappingExist) {
@@ -496,7 +497,7 @@ export class PostgresCohortMembersService {
 
   public async createBulkCohortMembers(
     loginUser: any,
-    cohortMembersDto: { userId: string[], cohortId: string[] },
+    cohortMembersDto: { userId: string[], cohortId: string[], removeCohortId?: string[] },
     response: Response,
     tenantId: string
   ) {
@@ -507,13 +508,36 @@ export class PostgresCohortMembersService {
       updatedBy: loginUser,
       tenantId: tenantId
     };
-
+  
     for (let userId of cohortMembersDto.userId) {
       const userExists = await this.checkUserExist(userId);
       if (!userExists) {
         errors.push(`User with userId ${userId} does not exist.`);
         continue;
       }
+      
+      // Handling of Removing Cohort from user
+      if (cohortMembersDto.removeCohortId && cohortMembersDto.removeCohortId.length > 0) {
+        for (let removeCohortId of cohortMembersDto.removeCohortId) {
+          try {
+            const cohortExists = await this.checkCohortExist(removeCohortId);
+            if (!cohortExists) {
+              errors.push(`Cohort with cohortId ${removeCohortId} does not exist.`);
+              continue;
+            }
+            const updateCohort = await this.cohortMembersRepository.update({ userId, cohortId: removeCohortId }, { status: MemberStatus.ARCHIVED });
+            if(updateCohort.affected === 0){
+              results.push({message:`Cohort Id ${removeCohortId} is not mapped to user Id${userId}} `});
+            }else{
+              results.push({message:`Cohort Id ${removeCohortId} status updated for This user Id${userId}} `});
+            }
+          } catch (error) {
+            errors.push(`Error updating cohort member with userId ${userId} and cohortId ${removeCohortId}: ${error.message}`);
+          }
+        }
+      }
+
+      // Handling of Addition of User in Cohort
       for (let cohortId of cohortMembersDto.cohortId) {
         const cohortMembers = {
           ...cohortMembersBase,
@@ -526,13 +550,17 @@ export class PostgresCohortMembersService {
             errors.push(`Cohort with cohortId ${cohortId} does not exist.`);
             continue;
           }
-
           const mappingExists = await this.cohortUserMapping(userId, cohortId);
           if (mappingExists) {
-            errors.push(`Mapping already exists for userId ${userId} and cohortId ${cohortId}.`);
-            continue;
+            if (mappingExists.status === MemberStatus.ACTIVE) {
+              errors.push(`Mapping already exists for userId ${userId} and cohortId ${cohortId}.`);
+              continue;
+            } else if (mappingExists.status === MemberStatus.ARCHIVED) {
+              const updateCohort = await this.cohortMembersRepository.update({ userId, cohortId }, { status: MemberStatus.ACTIVE });
+              results.push(updateCohort);
+              continue;
+            }
           }
-
           const result = await this.cohortMembersRepository.save(cohortMembers);
           results.push(result);
         } catch (error) {
@@ -540,13 +568,12 @@ export class PostgresCohortMembersService {
         }
       }
     }
-
+  
     if (errors.length > 0) {
       return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, { results, errors }, HttpStatus.CREATED, "Cohort Members Created with some errors");
     }
-
+  
     return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, results, HttpStatus.CREATED, "Cohort Members Created Successfully");
   }
-
-
+  
 }

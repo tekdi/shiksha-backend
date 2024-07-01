@@ -378,20 +378,20 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
-
-    async findCustomFields(context: string, contextType?: string[]) {
+    async findCustomFields(context: string, contextType?: string[], getFields?: any) {
         const condition: any = {
-            context: context,
+            context,
+            ...(contextType?.length ? { contextType: In(contextType.filter(Boolean)) } : {}),
+            ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-        const validContextTypes = contextType.filter(item => item);
-        if (validContextTypes.length > 0) {
-            condition.contextType = In(contextType);
-        }
 
-        let customFields = await this.fieldsRepository.find({
-            where: condition
-        })
+        let customFields;
+        if (getFields.length > 0 && context == 'USERS') {
+            customFields = await this.fieldsRepository.find({ where: condition })
+        } else {
+            customFields = await this.fieldsRepository.find({ where: condition })
+        }
         return customFields;
     }
 
@@ -411,52 +411,91 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    async getFieldValuesData(id: string, context: string, contextType?: string) {
+    async getUserIdUsingStateDistBlock(stateDistBlockData: any) {
+        let searchKey = [];
+        let whereCondition = ` WHERE `;
+        let index = 0;
+
+        for (const [key, value] of Object.entries(stateDistBlockData)) {
+            searchKey.push(`'${key}'`);
+            if (index > 0) {
+                whereCondition += ` AND `
+            }
+            whereCondition += `fields->>'${key}' = '${value}'`
+            index++;
+        }
+
+        let query = `WITH user_fields AS (
+        SELECT
+            fv."itemId",
+            jsonb_object_agg(f."name", fv."value") AS fields
+        FROM "FieldValues" fv
+        JOIN "Fields" f ON fv."fieldId" = f."fieldId"
+        WHERE f."name" IN (${searchKey}) AND f.context = 'USERS'
+        GROUP BY fv."itemId"
+        )
+        SELECT "itemId"
+        FROM user_fields ${whereCondition}`
+
+        const queryData = await this.fieldsValuesRepository.query(query);
+        const result = queryData.map(item => item.itemId);
+        return result
+    }
+
+    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any, requiredFieldOptions?: any) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
             this.findFieldValues(id, context),
-            this.findCustomFields(context, [contextType])
+            this.findCustomFields(context, [contextType], getFields)
         ]);
 
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
-        for (let data of customFields) {
-            const fieldValue = filledValuesMap.get(data?.fieldId);
-            customField = {
-                fieldId: data?.fieldId,
-                name: data?.name,
-                label: data?.label,
-                order: data?.ordering,
-                isRequired: data?.fieldAttributes?.isRequired,
-                isEditable: data?.fieldAttributes?.isEditable,
-                isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
-                maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
-                value: (data?.fieldAttributes?.isMultiSelect ? this.getFieldValueForMultiselect(data.fieldAttributes['isMultiSelect'], fieldValue) : fieldValue) || '',
-                options: data?.fieldParams?.['options'] || {},
-                type: data?.type || ''
-            };
+        if (customFields) {
+            for (let data of customFields) {
+                const fieldValue = filledValuesMap.get(data?.fieldId);
+                customField = {
+                    fieldId: data?.fieldId,
+                    name: data?.name,
+                    label: data?.label,
+                    order: data?.ordering,
+                    isRequired: data?.fieldAttributes?.isRequired,
+                    isEditable: data?.fieldAttributes?.isEditable,
+                    isMultiSelect: data.fieldAttributes ? data.fieldAttributes['isMultiSelect'] : '',
+                    maxSelections: data.fieldAttributes ? data.fieldAttributes['maxSelections'] : '',
+                    type: data?.type || '',
+                    value: fieldValue || '',
+                };
 
-            if (data?.sourceDetails) {
-                //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
-                if (data?.dependsOn === false) {
-                    if (data?.sourceDetails?.source === 'table') {
-                        let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
-                        customField.options = dynamicOptions;
-                    } else if (data?.sourceDetails?.source === 'jsonFile') {
-                        const filePath = path.join(
-                            process.cwd(),
-                            `${data?.sourceDetails?.filePath}`,
-                        );
-                        customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                if (requiredFieldOptions == true) {
+                    customField['options'] = data?.fieldParams?.['options'] || {}
+                }
+
+                if (data?.sourceDetails) {
+                    //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
+                    if (data?.dependsOn === false) {
+                        if (data?.sourceDetails?.source === 'table') {
+                            let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
+                            customField.options = dynamicOptions;
+                        } else if (data?.sourceDetails?.source === 'jsonFile') {
+                            const filePath = path.join(
+                                process.cwd(),
+                                `${data?.sourceDetails?.filePath}`,
+                            );
+                            customField = JSON.parse(readFileSync(filePath, 'utf-8'));
+                        }
+                    } else {
+                        customField.options = null;
                     }
                 } else {
-                    customField.options = null;
+                    if (requiredFieldOptions == true) {
+                        customField.options = data?.fieldParams?.['options'] || null;
+                    }
                 }
-            } else {
-                customField.options = data?.fieldParams?.['options'] || null;
+                fieldsArr.push(customField);
             }
-            fieldsArr.push(customField);
         }
+
 
         return fieldsArr;
     }

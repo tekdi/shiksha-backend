@@ -54,7 +54,8 @@ export class PostgresUserService implements IServicelocator {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
     private fieldsService: PostgresFieldsService,
-    private readonly postgresRoleService: PostgresRoleService
+    private readonly postgresRoleService: PostgresRoleService,
+    // private cohortMemberService: PostgresCohortMembersService,
   ) { }
 
   async searchUser(tenantId: string,
@@ -63,11 +64,10 @@ export class PostgresUserService implements IServicelocator {
     userSearchDto: UserSearchDto) {
     const apiId = APIID.USER_LIST;
     try {
-
       let findData = await this.findAllUserDetails(userSearchDto);
 
       if (!findData) {
-        return APIResponse.error(response, apiId, "Bad request", `Either Filter is wrong or No Data Found For the User`, HttpStatus.BAD_REQUEST);
+        return APIResponse.error(response, apiId, "Bad request", `No Data Found`, HttpStatus.BAD_REQUEST);
       }
 
       return await APIResponse.success(response, apiId, findData,
@@ -79,29 +79,48 @@ export class PostgresUserService implements IServicelocator {
 
 
   async findAllUserDetails(userSearchDto) {
-    let { limit, page, filters, exclude } = userSearchDto;
+
+    let { limit, page, filters, exclude, sort } = userSearchDto;
     let offset = 0;
     let excludeCohortIdes;
     let excludeUserIdes;
     if (page > 1) {
       offset = parseInt(limit) * (page - 1);
     }
+    let result = {
+      getUserDetails: [],
+    };
 
     let whereCondition = `WHERE`;
     let index = 0;
+    const searchCustomFields = {};
+
+    const userAllKeys = this.usersRepository.metadata.columns.map(
+      (column) => column.propertyName,
+    );
+    const userKeys = userAllKeys.filter(key => key !== 'district' && key !== 'state');
+
+
     if (filters && Object.keys(filters).length > 0) {
-      Object.entries(filters).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(filters)) {
         if (index > 0) {
           whereCondition += ` AND `
         }
-        if (key == 'role') {
-          whereCondition += ` R."name" = '${value}'`
-        } else {
+        if (userKeys.includes(key)) {
           whereCondition += ` U."${key}" = '${value}'`;
+          index++;
+        } else {
+          if (key == 'role') {
+            whereCondition += ` R."name" = '${value}'`
+            index++;
+          } else {
+            searchCustomFields[key] = value;
+          }
         }
-        index++;
-      });
+      };
     }
+
+
 
     if (exclude && Object.keys(exclude).length > 0) {
       Object.entries(exclude).forEach(([key, value]) => {
@@ -112,6 +131,22 @@ export class PostgresUserService implements IServicelocator {
           excludeUserIdes = (value);
         }
       });
+    }
+
+    let orderingCondition;
+    if (sort && Object.keys(sort).length > 0) {
+      orderingCondition = `ORDER BY U."${sort[0]}" ${sort[1]}`;
+    }
+
+    let getUserIdUsingStateDistBlock
+    if (Object.keys(searchCustomFields).length > 0) {
+      getUserIdUsingStateDistBlock = await this.fieldsService.getUserIdUsingStateDistBlock(searchCustomFields);
+    }
+
+    if (getUserIdUsingStateDistBlock && getUserIdUsingStateDistBlock.length > 0) {
+      const stateDistBlockUserIds = getUserIdUsingStateDistBlock.map(userId => `'${userId}'`).join(',');
+      whereCondition += `${index > 0 ? ' AND ' : ''} U."userId" IN (${stateDistBlockUserIds})`;
+      index++;
     }
 
     const userIds = excludeUserIdes?.length > 0 ? excludeUserIdes.map(userId => `'${userId}'`).join(',') : null;
@@ -128,20 +163,30 @@ export class PostgresUserService implements IServicelocator {
       whereCondition = '';
     }
 
-    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile 
+    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile 
       FROM  public."Users" U
       INNER JOIN public."CohortMembers" CM 
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition} AND U."status"='active'`
-    let results = await this.usersRepository.query(query);
+      ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition}`
 
-    if (!query) {
-      return false;
+    let userDetails = await this.usersRepository.query(query);
+
+    if (userSearchDto.fields) {
+      for (let userData of userDetails) {
+        let context = 'USERS';
+        let contextType = userData.role.toUpperCase();
+        let isRequiredFieldOptions = false;
+        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, userSearchDto.fields, isRequiredFieldOptions);
+        userData['customFields'] = customFields
+        result.getUserDetails.push(userData);
+      }
+    } else {
+      result.getUserDetails.push(userDetails);
     }
-    return results;
+    return result;
   }
 
   async getUsersDetailsById(userData: UserData, response: any) {
@@ -201,7 +246,7 @@ export class PostgresUserService implements IServicelocator {
 
 
   async findUserName(cohortId: string, role: string) {
-    let query = `SELECT U."userId", U.username, U.name, U.role, U.district, U.state,U.mobile FROM public."CohortMembers" CM   
+    let query = `SELECT U."userId", U.username, U.name, U.role, U.mobile FROM public."CohortMembers" CM   
     LEFT JOIN public."Users" U 
     ON CM."userId" = U."userId"
     where CM."cohortId" =$1 `
@@ -247,7 +292,7 @@ export class PostgresUserService implements IServicelocator {
     }
     let userDetails = await this.usersRepository.findOne({
       where: whereClause,
-      select: ["userId", "username", "name", "district", "state", "mobile"]
+      select: ["userId", "username", "name", "mobile"]
     })
     if (!userDetails) {
       return false;
@@ -369,6 +414,7 @@ export class PostgresUserService implements IServicelocator {
   }
 
   async createUser(request: any, userCreateDto: UserCreateDto, response: Response) {
+
     const apiId = APIID.USER_CREATE;
     // It is considered that if user is not present in keycloak it is not present in database as well
     try {
@@ -386,48 +432,46 @@ export class PostgresUserService implements IServicelocator {
         }
       }
 
+
       // check and validate all fields
       let validatedRoles = await this.validateRequestBody(userCreateDto, response, apiId)
 
-      if (validatedRoles.length) {
-        userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
-        const userSchema = new UserCreateDto(userCreateDto);
+      // if (validatedRoles.length) {
+      userCreateDto.username = userCreateDto.username.toLocaleLowerCase();
+      const userSchema = new UserCreateDto(userCreateDto);
 
-        let errKeycloak = "";
-        let resKeycloak = "";
+      let errKeycloak = "";
+      let resKeycloak = "dd3bed4a-570c-449c-9916-453a8a643111";
 
-        const keycloakResponse = await getKeycloakAdminToken();
-        const token = keycloakResponse.data.access_token;
-        let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
-        // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
-        if (checkUserinKeyCloakandDb) {
-          return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
+      if (checkUserinKeyCloakandDb) {
+        return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
+      }
+      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+        (error) => {
+          errKeycloak = error.response?.data.errorMessage;
+          return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-          (error) => {
-            errKeycloak = error.response?.data.errorMessage;
-            return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
-          }
-        );
-        userCreateDto.userId = resKeycloak;
+      );
 
-        let result = await this.createUserInDatabase(request, userCreateDto);
+      userCreateDto.userId = resKeycloak;
 
-        const createFailures = [];
-        if (userCreateDto.fieldValues) {
+      let result = await this.createUserInDatabase(request, userCreateDto, response);
 
-          if (result && userCreateDto.fieldValues?.length > 0) {
-            let userId = result?.userId;
-            const roles = validatedRoles.map(({ code }) => code.toUpperCase())
+      const createFailures = [];
+      if (userCreateDto.fieldValues) {
 
-            const customFields = await this.fieldsService.findCustomFields("USERS", roles)
-  
-            const customFieldAttributes = {};
-            customFields.forEach((fieldDetail) => {
-              if (!customFieldAttributes[fieldDetail.fieldId]) {
-                customFieldAttributes[fieldDetail.fieldId] = fieldDetail;
-              }
-            });
+        if (result && userCreateDto.fieldValues?.length > 0) {
+          let userId = result?.userId;
+          const roles = validatedRoles.map(({ code }) => code.toUpperCase())
+
+          const customFields = await this.fieldsService.findCustomFields("USERS", roles)
+
+          if (customFields) {
+            const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
 
             for (let fieldValues of userCreateDto.fieldValues) {
 
@@ -446,11 +490,13 @@ export class PostgresUserService implements IServicelocator {
               }
             }
           }
-        }
 
-        APIResponse.success(response, apiId, { userData: { ...result, createFailures } },
-          HttpStatus.CREATED, "User has been created successfully.")
+        }
       }
+
+      APIResponse.success(response, apiId, { userData: { ...result, createFailures } },
+        HttpStatus.CREATED, "User has been created successfully.")
+      // }
     } catch (e) {
       return APIResponse.error(response, apiId, "Internal Server Error", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -458,8 +504,8 @@ export class PostgresUserService implements IServicelocator {
 
   async validateRequestBody(userCreateDto, response, apiId) {
     const roleData = [];
-    for (const [key, value] of Object.entries(userCreateDto)) {
 
+    for (const [key, value] of Object.entries(userCreateDto)) {
       if (key === 'email') {
         const checkValidEmail = CustomFieldsValidation.validate('email', userCreateDto.email);
         if (!checkValidEmail) {
@@ -480,36 +526,65 @@ export class PostgresUserService implements IServicelocator {
           return APIResponse.error(response, apiId, "BAD_REQUEST", `Date of birth must be in the format yyyy-mm-dd`, HttpStatus.BAD_REQUEST);
         }
       }
-
     }
 
-    for (const tenantCohortRoleMapping of userCreateDto.tenantCohortRoleMapping) {
+    let duplicateTenet = [];
+    if (userCreateDto.tenantCohortRoleMapping) {
+      for (const tenantCohortRoleMapping of userCreateDto?.tenantCohortRoleMapping) {
 
-      const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
+        const { tenantId, cohortId, roleId } = tenantCohortRoleMapping;
 
-      const [tenantExists, cohortExists, roleExists] = await Promise.all([
-        this.tenantsRepository.find({ where: { tenantId } }),
-        this.cohortRepository.find({ where: { tenantId, cohortId } }),
-        this.roleRepository.find({ where: { roleId } })
-      ]);
+        if (duplicateTenet.includes(tenantId)) {
+          return APIResponse.error(response, apiId, "Bad Request", "Duplicate tenantId detected. Please ensure each tenantId is unique and correct your data.", HttpStatus.BAD_REQUEST);
+        }
 
-      if (tenantExists.length === 0) {
-        return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
+        if ((tenantId && !roleId) || (!tenantId && roleId) || (tenantId && cohortId && !roleId)) {
+          return APIResponse.error(response, apiId, "Bad Request", "Invalid parameters provided. Please ensure that tenantId, roleId, and cohortId (if applicable) are correctly provided.", HttpStatus.BAD_REQUEST);
+        }
+
+        const [tenantExists, cohortExists, roleExists] = await Promise.all([
+          tenantId ? this.tenantsRepository.find({ where: { tenantId } }) : Promise.resolve(null),
+          tenantId && cohortId ? this.checkCohort(tenantId, cohortId) : Promise.resolve(null),
+          roleId ? this.roleRepository.find({ where: { roleId } }) : Promise.resolve(null)
+        ]);
+
+        if (tenantExists.length === 0) {
+          return APIResponse.error(response, apiId, "Bad Request", `Tenant Id '${tenantId}' does not exist.`, HttpStatus.BAD_REQUEST);
+        }
+
+        if (cohortExists) {
+          return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortExists}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
+        }
+
+        if (roleExists.length === 0) {
+          return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist`, HttpStatus.BAD_REQUEST);
+        }
+        duplicateTenet.push(tenantId);
+        roleData.push(...roleExists)
       }
-
-      if (cohortExists.length === 0) {
-        return APIResponse.error(response, apiId, "Bad Request", `Cohort Id '${cohortId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
+      if (roleData.length > 0) {
+        return roleData;
       }
-
-      if (roleExists.length === 0) {
-        return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist.`, HttpStatus.BAD_REQUEST);
-      }
-
-      roleData.push(...roleExists)
     }
-    return roleData;
+
+    return true;
   }
 
+  async checkCohort(tenantId: any, cohortData: any) {
+    let notExistCohort = [];
+    for (let cohortId of cohortData) {
+      let findCohortData = await this.cohortRepository.findOne({ where: { tenantId, cohortId } })
+
+      if (!findCohortData) {
+        notExistCohort.push(cohortId)
+      }
+    }
+
+
+    if (notExistCohort.length > 0) {
+      return notExistCohort
+    }
+  }
   async checkUser(body) {
     let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(body);
     if (checkUserinKeyCloakandDb) {
@@ -552,7 +627,8 @@ export class PostgresUserService implements IServicelocator {
   }
 
 
-  async createUserInDatabase(request: any, userCreateDto: UserCreateDto) {
+  async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response) {
+
     const user = new User()
     user.username = userCreateDto?.username
     user.name = userCreateDto?.name
@@ -572,15 +648,20 @@ export class PostgresUserService implements IServicelocator {
 
     let result = await this.usersRepository.save(user);
 
-    if (result) {
+
+    if (result && userCreateDto.tenantCohortRoleMapping) {
+
       for (let mapData of userCreateDto.tenantCohortRoleMapping) {
-        let cohortData = {
-          userId: result?.userId,
-          cohortId: mapData?.cohortId,
-          status: "active"
+
+        for (let cohortIds of mapData.cohortId) {
+
+          let cohortData = {
+            userId: result?.userId,
+            cohortId: cohortIds
+          }
+          await this.addCohortMember(cohortData);
         }
 
-        await this.addCohortMember(cohortData);
 
         let tenantRoleMappingData = {
           userId: result?.userId,
@@ -632,12 +713,8 @@ export class PostgresUserService implements IServicelocator {
   }
 
   async addCohortMember(cohortData) {
-    try {
-      let result = await this.cohortMemberRepository.insert(cohortData);
-      return result;;
-    } catch (error) {
-      throw new Error(error)
-    }
+    let result = await this.cohortMemberRepository.save(cohortData);
+    return result;
   }
 
   public async resetUserPassword(

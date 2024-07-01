@@ -9,9 +9,12 @@ import {
   IsOptional,
   IsArray,
   IsUUID,
+  IsEnum,
+  ValidateIf,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { User } from "../entities/user-entity";
 
 export class setFilters {
   @ApiPropertyOptional({
@@ -28,9 +31,27 @@ export class setFilters {
 
   @ApiPropertyOptional({
     type: String,
+    description: "Block",
+  })
+  block: string;
+
+  @ApiPropertyOptional({
+    type: String,
     description: "Role",
   })
   role: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "User Name",
+  })
+  username: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "User Id",
+  })
+  userId: string;
 
 }
 export class excludeFields {
@@ -59,6 +80,59 @@ export class excludeFields {
   @IsUUID(undefined, { each: true })
   cohortIds?: string[];
 }
+
+export class customFieldsFilters {
+  @ApiProperty({
+    type: Boolean,
+    description: 'getCustomFields',
+    default: false,
+  })
+  @Expose()
+  @IsOptional()
+  getCustomFields: boolean = false;
+
+  @ApiProperty({
+    type: Boolean,
+    description: 'Is Required Field Options',
+    default: false,
+  })
+  @Expose()
+  @IsOptional()
+  isRequiredFieldOptions: boolean = false;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Custom Fields Name',
+    default: [],
+  })
+  @Expose()
+  @IsOptional()
+  customFieldsName: string[];
+}
+enum SortDirection {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+// export class sortDto {
+//   @ApiProperty({
+//     type: String,
+//     description: "Sort Field",
+//   })
+//   @Expose()
+//   @IsOptional()
+//   @IsString()
+//   sortField: string;
+
+//   @ApiProperty({
+//     enum: SortDirection,
+//     description: "Sort Order",
+//   })
+//   @Expose()
+//   @IsOptional()
+//   @IsEnum(SortDirection)
+//   sortOrder: SortDirection;
+// }
+
 export class UserSearchDto {
   @ApiProperty({
     type: Number,
@@ -86,6 +160,15 @@ export class UserSearchDto {
   filters: setFilters;
 
   @ApiProperty({
+    type: customFieldsFilters,
+    description: "Custom Fields Filters",
+  })
+  @Expose()
+  @IsOptional()
+  @IsObject()
+  customFieldsFilters: customFieldsFilters
+
+  @ApiProperty({
     type: excludeFields,
     description: "Filters",
   })
@@ -94,14 +177,21 @@ export class UserSearchDto {
   @IsObject()
   exclude: excludeFields;
 
-  @ApiProperty({
-    type: Boolean,
-    description: 'getCustomFields',
-    default: false,
+  @ApiPropertyOptional({
+    description: "Sort",
+    example: ["createdAt", "asc"]
   })
-  @Expose()
+  @IsArray()
   @IsOptional()
-  getCustomFields: boolean = false;
+  @ArrayMinSize(2, { message: 'Sort array must contain exactly two elements' })
+  @ArrayMaxSize(2, { message: 'Sort array must contain exactly two elements' })
+  sort: [string, string];
+  
+  @ValidateIf((o) => o.sort !== undefined)
+  @IsEnum(SortDirection, { each: true, message: 'Sort[1] must be either asc or desc' })
+  get sortDirection(): string | undefined {
+    return this.sort ? this.sort[1] : undefined;
+  }
 
   constructor(partial: Partial<UserSearchDto>) {
     Object.assign(this, partial);

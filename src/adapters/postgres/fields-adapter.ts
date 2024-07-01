@@ -385,13 +385,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-
-        let customFields;
-        if (getFields.length > 0 && context == 'USERS') {
-            customFields = await this.fieldsRepository.find({ where: condition })
-        } else {
-            customFields = await this.fieldsRepository.find({ where: condition })
-        }
+        let customFields = await this.fieldsRepository.find({ where: condition })
         return customFields;
     }
 
@@ -511,20 +505,20 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
-        
+
         const fieldValue = data.value;
-        
-        const fieldValidity : any = this.validateFieldValue(fieldAttributesAndParams,itemId,fieldValue);
+
+        const fieldValidity: any = this.validateFieldValue(fieldAttributesAndParams, itemId, fieldValue);
 
 
-        if(!fieldValidity?.error) {
-            if(Array.isArray(fieldValue)) {
+        if (!fieldValidity?.error) {
+            if (Array.isArray(fieldValue)) {
                 data.value = fieldValue.join(',')
             }
         } else {
             return {
-                correctValue : false,
-                fieldName : fieldAttributesAndParams.name,
+                correctValue: false,
+                fieldName: fieldAttributesAndParams.name,
                 valueIssue: fieldValidity.error?.message
             };
         }
@@ -545,17 +539,17 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     validateFieldValue(field: any, itemId: number, value: any) {
         try {
-            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes,field.fieldParams);
+            const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes, field.fieldParams);
             const isValid = fieldInstance.validate(value);
 
             return isValid;
         } catch (e) {
-            return { error : e }
+            return { error: e }
         }
     }
 
-    getFieldValueForMultiselect(isMultiSelect : boolean,fieldValue: any) {
-        if(isMultiSelect) {
+    getFieldValueForMultiselect(isMultiSelect: boolean, fieldValue: any) {
+        if (isMultiSelect) {
             return fieldValue.split(",");
         }
         return fieldValue;

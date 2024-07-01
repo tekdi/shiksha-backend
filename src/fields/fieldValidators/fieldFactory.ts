@@ -3,7 +3,7 @@ import { FieldAttributes, FieldParams, Field } from "./fieldClass";
 export class FieldFactory {
     static createField(type: string, fieldAttributes: FieldAttributes, fieldParams: FieldParams): Field {
         switch (type) {
-            case 'dropdown':
+            case 'drop_down':
                 return new DropdownField(fieldAttributes,fieldParams);
             case 'checkbox':
                 return new CheckboxField(fieldAttributes,fieldParams);

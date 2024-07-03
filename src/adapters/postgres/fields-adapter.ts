@@ -551,25 +551,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
 
-        const fieldValue = data.value;
-
-        // const fieldValidity: any = this.validateFieldValue(fieldAttributesAndParams, fieldValue);
-
-        // console.log(fieldValidity);
-
-
-        // if (!fieldValidity?.error) {
-        //     if (Array.isArray(fieldValue)) {
-        //         data.value = fieldValue.join(',')
-        //     }
-        // } else {
-        //     return {
-        //         correctValue: false,
-        //         fieldName: fieldAttributesAndParams.name,
-        //         valueIssue: fieldValidity.error?.message
-        //     };
-        // }
-
         let result: any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
         let newResult;
         if (result.affected === 0) {

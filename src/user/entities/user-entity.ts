@@ -71,6 +71,9 @@ export class User {
   })
   status: UserStatus;
 
+  @Column({ nullable: true })
+  reason: string;
+
   userRoleMappings: User;
 
   // @OneToMany(() => CohortMembers, cohortMember => cohortMember.cohort)

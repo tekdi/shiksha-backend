@@ -75,42 +75,107 @@ export class PostgresCohortService {
     }
   }
 
-  public async getCohortsDetails(cohortId: string, res) {
+  public async getCohortsDetails(requiredData, res) {
+    console.log(requiredData);
     const apiId = APIID.COHORT_READ;
+    if(!requiredData.getChildData){
+      try {
+        let cohort = await this.cohortRepository.find({
+          where: {
+            cohortId: requiredData.cohortId
+          }
+        });
+        if (!cohort.length) {
+          return APIResponse.error(
+            res,
+            apiId,
+            "BAD_REQUEST",
+            `No Cohort Found for this cohort ID`,
+            HttpStatus.BAD_REQUEST
+          );
+        }
+        let result = {
+          cohortData: [],
+        };
 
-    try {
+        for (let data of cohort) {
+          let cohortData = {
+            cohortId: data.cohortId,
+            name: data.name,
+            parentId: data.parentId,
+            type:data.type,
+            customField: {},
+          };
+          const getDetails = await this.getCohortCustomFieldDetails(data.cohortId);
+          cohortData.customField = getDetails;
+          result.cohortData.push(cohortData);
+        }
 
-      const result = {
-        cohortData: {}
-      };
-      if (!isUUID(cohortId)) {
+        return APIResponse.success(
+          res,
+          apiId,
+          result,
+          HttpStatus.OK,
+          "Cohort list fetched successfully"
+        );
+      } catch (error) {
+        const errorMessage = error.message || "Internal server error";
         return APIResponse.error(
           res,
           apiId,
-          `Please Enter valid (UUID)`,
-          'Invalid cohortId',
-          (HttpStatus.BAD_REQUEST)
-        )
+          "Internal Server Error",
+          errorMessage,
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
       }
-      const checkData = await this.checkIfCohortExist(cohortId);
-      const cohortDetails = await this.findCohortDetails(cohortId);
-      const contextType = cohortDetails.type;
-      result.cohortData = cohortDetails;
-
-      if (!checkData) {
-        return APIResponse.error(res, apiId, `Cohort either does not exist or is not active`, 'Invalid cohortId', (HttpStatus.NOT_FOUND))
+    }
+    if(requiredData.getChildData){
+    try {
+      let cohortData = await this.cohortRepository.find(requiredData.cohortId);
+      if (!cohortData) {
+        return APIResponse.error(
+          res,
+          apiId,
+          "BAD_REQUEST",
+          `No Cohort Found for Cohrot ID`,
+          HttpStatus.BAD_REQUEST
+        );
       }
-
-      let customFieldsArray = await this.getCohortDataWithCustomfield(cohortId, contextType);
-      result.cohortData['customFields'] = customFieldsArray;
-
-      return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort details fetched successfully.");
-
+      let resultDataList = [];
+      for (let cohort of cohortData) {
+        let resultData = {
+          cohortName: cohort.name,
+          cohortId: cohort.cohortId,
+          parentID: cohort.parentId,
+          type: cohort.type
+        };
+        if(requiredData.customField){
+          resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
+          resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
+        }else{
+          resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
+        }
+        resultDataList.push(resultData);
+      }
+      return APIResponse.success(
+        res,
+        apiId,
+        resultDataList,
+        HttpStatus.OK,
+        "Cohort hierarchy fetched successfully"
+      );
     } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || "Internal server error";
+        return APIResponse.error(
+          res,
+          apiId,
+          "Internal Server Error",
+          errorMessage,
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
     }
   }
+}
 
   async findCohortDetails(cohortId: string) {
     let whereClause: any = { cohortId: cohortId };
@@ -706,6 +771,7 @@ export class PostgresCohortService {
             cohortId: data.cohortId,
             name: data.name,
             parentId: data.parentId,
+            type:data.type,
             customField: {},
           };
           const getDetails = await this.getCohortCustomFieldDetails(data.cohortId);

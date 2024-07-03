@@ -157,7 +157,7 @@ export class UserCreateDto {
   })
   @ValidateNested({ each: true })
   @Type(() => FieldValuesOptionDto)
-  fieldValues: FieldValuesOptionDto[];
+  customFields: FieldValuesOptionDto[];
 
 
 

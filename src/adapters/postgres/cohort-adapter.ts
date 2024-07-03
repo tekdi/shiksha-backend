@@ -61,7 +61,7 @@ export class PostgresCohortService {
           parentId: data.parentId,
           customField: {}
         };
-        const getDetails = await this.getCohortCustomFieldDetails(data.cohortId,true);
+        const getDetails = await this.getCohortCustomFieldDetails(data.cohortId, true);
         cohortData.customField = getDetails
         result.cohortData.push(cohortData);
       }
@@ -154,7 +154,7 @@ export class PostgresCohortService {
       INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
       WHERE cm."cohortId" = $1;
     `;
-  
+
     let result = await this.cohortMembersRepository.query(query, [userId, fieldOption || false]);
     return result;
   }
@@ -387,7 +387,7 @@ export class PostgresCohortService {
               let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
               try {
 
-                const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+                const fieldVauesRowId = await this.fieldsService.searchFieldValueId(fieldId, cohortId)
                 const rowid = fieldVauesRowId.fieldValuesId;
 
                 let fieldValueUpdateDto: FieldValuesUpdateDto = {
@@ -659,16 +659,16 @@ export class PostgresCohortService {
 
   }
 
-  private async getCohortHierarchy(parentId: string,customField?:Boolean): Promise<any> {
+  private async getCohortHierarchy(parentId: string, customField?: Boolean): Promise<any> {
     const childData = await this.cohortRepository.find({ where: { parentId } });
     const hierarchy = [];
     let customFieldDetails;
     let childHierarchy
     for (const data of childData) {
-      if(customField){
-        childHierarchy = await this.getCohortHierarchy(data.cohortId,customField);
-        customFieldDetails=await this.getCohortCustomFieldDetails(data.cohortId);
-      }else{
+      if (customField) {
+        childHierarchy = await this.getCohortHierarchy(data.cohortId, customField);
+        customFieldDetails = await this.getCohortCustomFieldDetails(data.cohortId);
+      } else {
         childHierarchy = await this.getCohortHierarchy(data.cohortId);
       }
       hierarchy.push({
@@ -676,7 +676,7 @@ export class PostgresCohortService {
         name: data.name,
         parentId: data.parentId,
         type: data.type,
-        customField:customFieldDetails || [],
+        customField: customFieldDetails || [],
         childData: childHierarchy,
       });
     }
@@ -752,10 +752,10 @@ export class PostgresCohortService {
             parentID: cohort.parentId,
             type: cohort.type
           };
-          if(requiredData.customField){
-            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
-            resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
-          }else{
+          if (requiredData.customField) {
+            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId, requiredData.customField);
+            resultData['customField'] = await this.getCohortCustomFieldDetails(cohort.cohortId)
+          } else {
             resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
           }
           resultDataList.push(resultData);

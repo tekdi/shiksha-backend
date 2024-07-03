@@ -33,7 +33,7 @@ export class CohortService {
     @InjectRepository(CohortMembers)
     private cohortMembersRepository: Repository<CohortMembers>,
     private fieldsService: FieldsService
-  ) {}
+  ) { }
 
   public async getCohortsDetails(userData, request: any, response: any) {
     let apiId = "api.concept.getCohortDetails";
@@ -201,8 +201,8 @@ export class CohortService {
           let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
           try {
             const fieldVauesRowId = await this.fieldsService.searchFieldValueId(
-              cohortId,
-              fieldId
+              fieldId,
+              cohortId
             );
             const rowid = fieldVauesRowId.fieldValuesId;
 

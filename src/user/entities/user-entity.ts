@@ -55,7 +55,7 @@ export class User {
   })
   updatedAt: Date;
 
-  @Column()
+  @Column({ nullable: true })
   mobile: number;
 
   @Column({ nullable: true })

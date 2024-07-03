@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Query } from '@nestjs/common';
 import { User } from '../../user/entities/user-entity'
 import { FieldValues } from 'src/fields/entities/fields-values.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserCreateDto } from '../../user/dto/user-create.dto';
 import jwt_decode from "jwt-decode";
 import {
@@ -192,6 +192,7 @@ export class PostgresUserService implements IServicelocator {
   async getUsersDetailsById(userData: UserData, response: any) {
     const apiId = APIID.USER_GET;
     try {
+
       if (!isUUID(userData.userId)) {
         return APIResponse.error(response, apiId, "Bad request", `Please Enter Valid  UUID`, HttpStatus.BAD_REQUEST);
       }
@@ -211,13 +212,15 @@ export class PostgresUserService implements IServicelocator {
 
       let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
-        this.findUserRoles(userData.userId, userData.tenantId)
+        userData.tenantId ? this.findUserRoles(userData.userId, userData.tenantId) : Promise.resolve(null)
       ]);
-      const roleInUpper = (userRole.title).toUpperCase();
 
+      let roleInUpper;
       if (userRole) {
+        roleInUpper = (userRole?.title).toUpperCase();
         userDetails['role'] = userRole.title;
       }
+
 
       if (!userDetails) {
         return APIResponse.error(response, apiId, "Not Found", `User Not Found`, HttpStatus.NOT_FOUND);
@@ -228,10 +231,11 @@ export class PostgresUserService implements IServicelocator {
       }
 
       let customFields;
+
       if (userData?.fieldValue) {
         let context = 'USERS';
         let contextType = roleInUpper;
-        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
+        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, false, true);
       }
 
       result.userData = userDetails;
@@ -422,15 +426,10 @@ export class PostgresUserService implements IServicelocator {
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
 
-      // Check duplicate field entry
-      if (userCreateDto.fieldValues) {
-        let fieldValues = userCreateDto.fieldValues;
-        const validateField = await this.validateFieldValues(fieldValues);
-
-        if (validateField == false) {
-          return APIResponse.error(response, apiId, "Conflict", `Duplicate fieldId found in fieldValues.`, HttpStatus.CONFLICT);
-        }
+      if (userCreateDto.customFields.length > 0) {
+        await this.validateCustomField(userCreateDto, response, apiId);
       }
+
 
 
       // check and validate all fields
@@ -441,46 +440,51 @@ export class PostgresUserService implements IServicelocator {
       const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
-      let resKeycloak = "dd3bed4a-570c-449c-9916-453a8a643111";
+      let resKeycloak = "dd3bed4a-570c-449c-9916-453a8a643112";
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
-      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
-      // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
-      if (checkUserinKeyCloakandDb) {
-        return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
-      }
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-          return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-      );
+      // const keycloakResponse = await getKeycloakAdminToken();
+      // const token = keycloakResponse.data.access_token;
+      // let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      // // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
+      // if (checkUserinKeyCloakandDb) {
+      //   return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
+      // }
+      // resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+      //   (error) => {
+      //     errKeycloak = error.response?.data.errorMessage;
+      //     return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      //   }
+      // );
 
       userCreateDto.userId = resKeycloak;
 
       let result = await this.createUserInDatabase(request, userCreateDto, response);
 
       const createFailures = [];
-      if (userCreateDto.fieldValues) {
+      if (userCreateDto.customFields) {
 
-        if (result && userCreateDto.fieldValues?.length > 0) {
+        if (result && userCreateDto.customFields?.length > 0) {
           let userId = result?.userId;
-          const roles = validatedRoles.map(({ code }) => code.toUpperCase())
+          let roles;
+
+          if (validatedRoles) {
+            roles = validatedRoles?.map(({ code }) => code?.toUpperCase())
+          }
 
           const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
           if (customFields) {
             const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
 
-            for (let fieldValues of userCreateDto.fieldValues) {
 
+            for (let fieldValues of userCreateDto.customFields) {
               const fieldData = {
                 fieldId: fieldValues['fieldId'],
                 value: fieldValues['value']
               }
+
               let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
-            
+
               if (res.correctValue) {
                 if (!result['customFields'])
                   result['customFields'] = [];
@@ -490,7 +494,6 @@ export class PostgresUserService implements IServicelocator {
               }
             }
           }
-
         }
       }
 
@@ -504,6 +507,7 @@ export class PostgresUserService implements IServicelocator {
 
   async validateRequestBody(userCreateDto, response, apiId) {
     const roleData = [];
+    let duplicateTenet = [];
 
     for (const [key, value] of Object.entries(userCreateDto)) {
       if (key === 'email') {
@@ -528,7 +532,7 @@ export class PostgresUserService implements IServicelocator {
       }
     }
 
-    let duplicateTenet = [];
+
     if (userCreateDto.tenantCohortRoleMapping) {
       for (const tenantCohortRoleMapping of userCreateDto?.tenantCohortRoleMapping) {
 
@@ -538,14 +542,14 @@ export class PostgresUserService implements IServicelocator {
           return APIResponse.error(response, apiId, "Bad Request", "Duplicate tenantId detected. Please ensure each tenantId is unique and correct your data.", HttpStatus.BAD_REQUEST);
         }
 
-        if ((tenantId && !roleId) || (!tenantId && roleId) || (tenantId && cohortId && !roleId)) {
+        if ((tenantId && !roleId) || (!tenantId && roleId)) {
           return APIResponse.error(response, apiId, "Bad Request", "Invalid parameters provided. Please ensure that tenantId, roleId, and cohortId (if applicable) are correctly provided.", HttpStatus.BAD_REQUEST);
         }
 
         const [tenantExists, cohortExists, roleExists] = await Promise.all([
           tenantId ? this.tenantsRepository.find({ where: { tenantId } }) : Promise.resolve(null),
           tenantId && cohortId ? this.checkCohort(tenantId, cohortId) : Promise.resolve(null),
-          roleId ? this.roleRepository.find({ where: { roleId } }) : Promise.resolve(null)
+          roleId ? this.roleRepository.find({ where: { roleId, tenantId } }) : Promise.resolve(null)
         ]);
 
         if (tenantExists.length === 0) {
@@ -557,7 +561,7 @@ export class PostgresUserService implements IServicelocator {
         }
 
         if (roleExists.length === 0) {
-          return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist`, HttpStatus.BAD_REQUEST);
+          return APIResponse.error(response, apiId, "Bad Request", `Role Id '${roleId}' does not exist for this tenant '${tenantId}'.`, HttpStatus.BAD_REQUEST);
         }
         duplicateTenet.push(tenantId);
         roleData.push(...roleExists)
@@ -565,9 +569,10 @@ export class PostgresUserService implements IServicelocator {
       if (roleData.length > 0) {
         return roleData;
       }
+    } else {
+      return false;
     }
 
-    return true;
   }
 
   async checkCohort(tenantId: any, cohortData: any) {
@@ -579,7 +584,6 @@ export class PostgresUserService implements IServicelocator {
         notExistCohort.push(cohortId)
       }
     }
-
 
     if (notExistCohort.length > 0) {
       return notExistCohort
@@ -648,20 +652,15 @@ export class PostgresUserService implements IServicelocator {
 
     let result = await this.usersRepository.save(user);
 
-
     if (result && userCreateDto.tenantCohortRoleMapping) {
-
       for (let mapData of userCreateDto.tenantCohortRoleMapping) {
-
         for (let cohortIds of mapData.cohortId) {
-
           let cohortData = {
             userId: result?.userId,
             cohortId: cohortIds
           }
           await this.addCohortMember(cohortData);
         }
-
 
         let tenantRoleMappingData = {
           userId: result?.userId,
@@ -824,16 +823,69 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-  public async validateFieldValues(field_values) {
-    let encounteredKeys = []
-    for (const fieldValue of field_values) {
-      const fieldId = fieldValue['fieldId'];
-      // const [fieldId] = fieldValue.split(":").map(value => value.trim());
+  public async validateCustomField(userCreateDto, response, apiId) {
+
+    let fieldValues = userCreateDto?.customFields;
+    let encounteredKeys = [];
+    let invalidateFields = [];
+    let duplicateFieldKeys = [];
+
+    for (const fieldsData of fieldValues) {
+      const fieldId = fieldsData['fieldId'];
+      let getFieldDetails = await this.fieldsService.getFieldByIdes(fieldId)
+
       if (encounteredKeys.includes(fieldId)) {
-        return false
+        duplicateFieldKeys.push(`${fieldId} - ${getFieldDetails['name']}`)
+      } else {
+        encounteredKeys.push(fieldId)
       }
-      encounteredKeys.push(fieldId);
+
+      let checkValidation = this.fieldsService.validateFieldValue(getFieldDetails, fieldsData['value'])
+
+
+      if (typeof checkValidation === 'object' && 'error' in checkValidation) {
+        invalidateFields.push(`${fieldId}: ${getFieldDetails['name']} - ${checkValidation?.error?.message}`)
+      }
     };
+
+    //Validation for duplicate fields
+    if (duplicateFieldKeys.length > 0) {
+      return APIResponse.error(response, apiId, "Bad Request", `Duplicate fieldId detected: ${duplicateFieldKeys}`, HttpStatus.BAD_REQUEST);
+    }
+
+    //Validation for fields values
+    if (invalidateFields.length > 0) {
+      return APIResponse.error(response, apiId, "Bad Request", `Invalid fields found: ${invalidateFields}`, HttpStatus.BAD_REQUEST);
+    }
+
+    //Verifying whether these fields correspond to their respective roles.
+    let roleIds = userCreateDto?.tenantCohortRoleMapping?.map(userRole => userRole?.roleId);
+
+
+    let contextType;
+    if (roleIds) {
+      let getRoleName = await this.roleRepository.find({
+        where: { roleId: In(roleIds) },
+        select: ["title"]
+      })
+      contextType = getRoleName.map(role => role?.title.toUpperCase())
+    }
+    let context = 'USERS';
+
+    let getFieldIds = await this.fieldsService.getFieldIds(context, contextType)
+
+    const validFieldIds = new Set(getFieldIds.map(field => field.fieldId));
+
+    const invalidFieldIds = userCreateDto.customFields
+      .filter(fieldValue => !validFieldIds.has(fieldValue.fieldId))
+      .map(fieldValue => fieldValue.fieldId);
+
+    if (invalidFieldIds.length > 0) {
+      return APIResponse.error(response, apiId, 'Bad Request', `The following fields are not valid for this user: ${invalidFieldIds.join(', ')}.`,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
   }
 
   public async deleteUserById(userId: string, response: Response) {

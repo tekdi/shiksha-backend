@@ -8,7 +8,7 @@ import { ErrorResponse } from "src/error-response";
 import { Fields } from "../../fields/entities/fields.entity";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { In, IsNull, Repository } from "typeorm";
 import APIResponse from "src/common/responses/response";
 import { APIID } from "src/common/utils/api-id.config";
 import { IServicelocatorfields } from "../fieldsservicelocator";
@@ -53,6 +53,39 @@ export class PostgresFieldsService implements IServicelocatorfields {
             return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
+
+    async getFieldIds(context: string, contextType?: string) {
+
+        const condition: any = {
+            context: context,
+        };
+
+        if (contextType) {
+            condition.contextType = contextType;
+        } else {
+            condition.contextType = IsNull();
+        }
+
+        let result = await this.fieldsRepository.find({
+            where: condition,
+            select: ["fieldId"]
+        })
+        return result;
+    }
+
+    async getFieldByIdes(fieldId: string) {
+        try {
+            const response = await this.fieldsRepository.findOne({
+                where: { fieldId: fieldId }
+            });
+            return response;
+        } catch (e) {
+            return { error: e }
+        }
+    }
+
+
+
 
     async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto, response: Response) {
         const apiId = APIID.FIELDS_SEARCH;
@@ -103,7 +136,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     async createFieldValues(request: any, fieldValuesDto: FieldValuesDto, res: Response) {
         const apiId = APIID.FIELDVALUES_CREATE;
-
 
         try {
             let result = await this.findAndSaveFieldValues(fieldValuesDto);
@@ -171,9 +203,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     }
 
-    async searchFieldValueId(itemId: string, fieldId: string) {
+
+    async searchFieldValueId(fieldId: string, itemId?: string) {
+        const whereClause: any = { fieldId: fieldId };
+        if (itemId) {
+            whereClause.itemId = itemId;
+        }
+
         const response = await this.fieldsValuesRepository.findOne({
-            where: { itemId: itemId, fieldId: fieldId },
+            where: whereClause,
         });
         return response;
     }
@@ -378,16 +416,23 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: result.name
         }));
     }
-    async findCustomFields(context: string, contextType?: string[], getFields?: any) {
+    async findCustomFields(context: string, contextType?: string[], getFields?: string[]) {
         const condition: any = {
             context,
-            ...(contextType?.length ? { contextType: In(contextType.filter(Boolean)) } : {}),
             ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
-        let customFields = await this.fieldsRepository.find({ where: condition })
+        const validContextTypes = contextType?.filter(Boolean);
+        if (validContextTypes?.length) {
+            condition.contextType = In(validContextTypes);
+        } else {
+            condition.contextType = IsNull();
+        }
+
+        const customFields = await this.fieldsRepository.find({ where: condition });
         return customFields;
     }
+
 
     async findFieldValues(contextId: string, context: string) {
         let query = "";
@@ -508,20 +553,22 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
         const fieldValue = data.value;
 
-        const fieldValidity: any = this.validateFieldValue(fieldAttributesAndParams, itemId, fieldValue);
+        // const fieldValidity: any = this.validateFieldValue(fieldAttributesAndParams, fieldValue);
+
+        // console.log(fieldValidity);
 
 
-        if (!fieldValidity?.error) {
-            if (Array.isArray(fieldValue)) {
-                data.value = fieldValue.join(',')
-            }
-        } else {
-            return {
-                correctValue: false,
-                fieldName: fieldAttributesAndParams.name,
-                valueIssue: fieldValidity.error?.message
-            };
-        }
+        // if (!fieldValidity?.error) {
+        //     if (Array.isArray(fieldValue)) {
+        //         data.value = fieldValue.join(',')
+        //     }
+        // } else {
+        //     return {
+        //         correctValue: false,
+        //         fieldName: fieldAttributesAndParams.name,
+        //         valueIssue: fieldValidity.error?.message
+        //     };
+        // }
 
         let result: any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
         let newResult;
@@ -537,13 +584,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    validateFieldValue(field: any, itemId: number, value: any) {
+    validateFieldValue(field: any, value: any) {
         try {
             const fieldInstance = FieldFactory.createField(field.type, field.fieldAttributes, field.fieldParams);
             const isValid = fieldInstance.validate(value);
-
             return isValid;
         } catch (e) {
+            console.log(e);
+
             return { error: e }
         }
     }

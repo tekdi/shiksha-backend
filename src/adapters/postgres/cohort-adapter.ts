@@ -211,13 +211,13 @@ export class PostgresCohortService {
           WHEN $2 = TRUE THEN f."fieldParams"
           ELSE NULL
         END as "fieldParams"
-      FROM public."CohortMembers" cm
+      FROM public."Cohort" c
       LEFT JOIN (
         SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
         FROM public."FieldValues" fv
-      ) fv ON fv."itemId" = cm."cohortId"
+      ) fv ON fv."itemId" = c."cohortId"
       INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
-      WHERE cm."cohortId" = $1;
+      WHERE c."cohortId" = $1;
     `;
   
     let result = await this.cohortMembersRepository.query(query, [userId, fieldOption || false]);
@@ -819,8 +819,8 @@ export class PostgresCohortService {
             type: cohort.type
           };
           if(requiredData.customField){
-            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
             resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
+            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
           }else{
             resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
           }

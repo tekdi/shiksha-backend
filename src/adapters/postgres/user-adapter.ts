@@ -440,21 +440,21 @@ export class PostgresUserService implements IServicelocator {
       const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
-      let resKeycloak = "dd3bed4a-570c-449c-9916-453a8a643112";
+      let resKeycloak = "";
 
-      // const keycloakResponse = await getKeycloakAdminToken();
-      // const token = keycloakResponse.data.access_token;
-      // let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
-      // // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
-      // if (checkUserinKeyCloakandDb) {
-      //   return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
-      // }
-      // resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-      //   (error) => {
-      //     errKeycloak = error.response?.data.errorMessage;
-      //     return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
-      //   }
-      // );
+      const keycloakResponse = await getKeycloakAdminToken();
+      const token = keycloakResponse.data.access_token;
+      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
+      if (checkUserinKeyCloakandDb) {
+        return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
+      }
+      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+        (error) => {
+          errKeycloak = error.response?.data.errorMessage;
+          return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+      );
 
       userCreateDto.userId = resKeycloak;
 

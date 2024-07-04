@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConsoleLogger, HttpStatus, Injectable } from "@nestjs/common";
 import { FieldsDto } from "src/fields/dto/fields.dto";
 import { FieldsSearchDto } from "src/fields/dto/fields-search.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
@@ -436,14 +436,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result
     }
 
-    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: any, requiredFieldOptions?: any) {
+    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: string[], requiredFieldOptions?: Boolean,valuesOptions?:Boolean) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
             this.findFieldValues(id, context),
             this.findCustomFields(context, [contextType], getFields)
         ]);
-
         const filledValuesMap = new Map(filledValues.map(item => [item.fieldId, item.value]));
         if (customFields) {
             for (let data of customFields) {
@@ -479,7 +478,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
                             customField = JSON.parse(readFileSync(filePath, 'utf-8'));
                         }
                     } else {
-                        customField.options = null;
+                        customField.options = [];
                     }
                 } else {
                     if (requiredFieldOptions == true) {
@@ -489,8 +488,20 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 fieldsArr.push(customField);
             }
         }
-
-
+        if (valuesOptions) {
+            let filterData = fieldsArr.filter((item) => item.value !== '');
+            filterData = filterData.map((data) => {
+                let value = data.value; 
+                if (data.options && data.options.length > 0) {
+                    const matchingOptions = data.options.filter((item) => item.value === data.value);
+                    if (matchingOptions.length > 0) {
+                        value = matchingOptions[0].label; 
+                    }
+                }
+                return { ...data, value };
+            });
+            return filterData;
+        }
         return fieldsArr;
     }
 

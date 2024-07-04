@@ -40,142 +40,91 @@ export class PostgresCohortService {
     private fieldsService: PostgresFieldsService,
 
   ) { }
-
-  public async getCohortList(
-    tenantId: string,
-    userId: string,
-    request: any,
-    res: any
-  ) {
-    const apiId = APIID.COHORT_LIST;
-    try {
-      let findCohortId = await this.findCohortName(userId);
-      let result = {
-        cohortData: [],
-      };
-
-      for (let data of findCohortId) {
-        let cohortData = {
-          cohortId: data.cohortId,
-          name: data.name,
-          parentId: data.parentId,
-          customField: {}
-        };
-        const getDetails = await this.getCohortCustomFieldDetails(data.cohortId,true);
-        cohortData.customField = getDetails
-        result.cohortData.push(cohortData);
-      }
-
-      return APIResponse.success(res, apiId, result, (HttpStatus.OK), "Cohort list fetched successfully");
-
-    } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
-
-    }
-  }
-
+  
   public async getCohortsDetails(requiredData, res) {
-    console.log(requiredData);
     const apiId = APIID.COHORT_READ;
-    if(!requiredData.getChildData){
-      try {
-        let cohort = await this.cohortRepository.find({
-          where: {
-            cohortId: requiredData.cohortId
-          }
+
+    try {
+        const cohorts = await this.cohortRepository.find({
+            where: {
+                cohortId: requiredData.cohortId
+            }
         });
-        if (!cohort.length) {
-          return APIResponse.error(
+
+        if (!cohorts.length) {
+            return APIResponse.error(
+                res,
+                apiId,
+                "BAD_REQUEST",
+                `No Cohort Found for this cohort ID`,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (requiredData.getChildData) {
+            return this.handleChildDataResponse(cohorts, requiredData, res, apiId);
+        } else {
+            return this.handleCohortDataResponse(cohorts, res, apiId);
+        }
+    } catch (error) {
+        const errorMessage = error.message || "Internal server error";
+        return APIResponse.error(
             res,
             apiId,
-            "BAD_REQUEST",
-            `No Cohort Found for this cohort ID`,
-            HttpStatus.BAD_REQUEST
-          );
-        }
-        let result = {
-          cohortData: [],
-        };
+            "Internal Server Error",
+            errorMessage,
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+}
 
-        for (let data of cohort) {
-          let cohortData = {
+private async handleCohortDataResponse(cohorts, res, apiId) {
+    let result = { cohortData: [] };
+
+    for (let data of cohorts) {
+        let cohortData = {
             cohortId: data.cohortId,
             name: data.name,
             parentId: data.parentId,
-            type:data.type,
-            customField: {},
-          };
-          const getDetails = await this.getCohortCustomFieldDetails(data.cohortId);
-          cohortData.customField = getDetails;
-          result.cohortData.push(cohortData);
-        }
-
-        return APIResponse.success(
-          res,
-          apiId,
-          result,
-          HttpStatus.OK,
-          "Cohort list fetched successfully"
-        );
-      } catch (error) {
-        const errorMessage = error.message || "Internal server error";
-        return APIResponse.error(
-          res,
-          apiId,
-          "Internal Server Error",
-          errorMessage,
-          HttpStatus.INTERNAL_SERVER_ERROR
-        );
-      }
-    }
-    if(requiredData.getChildData){
-    try {
-      let cohortData = await this.cohortRepository.find(requiredData.cohortId);
-      if (!cohortData) {
-        return APIResponse.error(
-          res,
-          apiId,
-          "BAD_REQUEST",
-          `No Cohort Found for Cohrot ID`,
-          HttpStatus.BAD_REQUEST
-        );
-      }
-      let resultDataList = [];
-      for (let cohort of cohortData) {
-        let resultData = {
-          cohortName: cohort.name,
-          cohortId: cohort.cohortId,
-          parentID: cohort.parentId,
-          type: cohort.type
+            type: data.type,
+            customField: await this.getCohortCustomFieldDetails(data.cohortId)
         };
-        if(requiredData.customField){
-          resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
-          resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
-        }else{
-          resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
-        }
+        result.cohortData.push(cohortData);
+    }
+
+    return APIResponse.success(
+        res,
+        apiId,
+        result,
+        HttpStatus.OK,
+        "Cohort list fetched successfully"
+    );
+}
+
+private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
+    let resultDataList = [];
+
+    for (let cohort of cohorts) {
+        let resultData = {
+            cohortName: cohort.name,
+            cohortId: cohort.cohortId,
+            parentID: cohort.parentId,
+            type: cohort.type,
+            customField: requiredData.customField ? await this.getCohortCustomFieldDetails(cohort.cohortId) : undefined,
+            childData: await this.getCohortHierarchy(cohort.cohortId, requiredData.customField)
+        };
         resultDataList.push(resultData);
-      }
-      return APIResponse.success(
+    }
+
+    return APIResponse.success(
         res,
         apiId,
         resultDataList,
         HttpStatus.OK,
         "Cohort hierarchy fetched successfully"
-      );
-    } catch (error) {
-      const errorMessage = error.message || "Internal server error";
-        return APIResponse.error(
-          res,
-          apiId,
-          "Internal Server Error",
-          errorMessage,
-          HttpStatus.INTERNAL_SERVER_ERROR
-        );
-    }
-  }
+    );
 }
+
 
   async findCohortDetails(cohortId: string) {
     let whereClause: any = { cohortId: cohortId };
@@ -201,28 +150,23 @@ export class PostgresCohortService {
     return result;
   }
 
-  public async getCohortCustomFieldDetails(userId: string, fieldOption?: boolean) {
-    const query = `
-      SELECT DISTINCT 
-        f."label", 
-        fv."value", 
-        f."type", 
-        CASE 
-          WHEN $2 = TRUE THEN f."fieldParams"
-          ELSE NULL
-        END as "fieldParams"
-      FROM public."Cohort" c
-      LEFT JOIN (
-        SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
-        FROM public."FieldValues" fv
-      ) fv ON fv."itemId" = c."cohortId"
-      INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
-      WHERE c."cohortId" = $1;
-    `;
-  
-    let result = await this.cohortMembersRepository.query(query, [userId, fieldOption || false]);
-    return result;
-  }
+  public async getCohortCustomFieldDetails(cohortId: string) {
+    let context = 'COHORT';
+    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, "COHORT", null, true, true);
+    let results = [];
+
+    for (let data of fieldValue) {
+        let result = {
+            name: '',
+            value: ''
+        };
+        result.name = data.name;
+        result.value = data.value;
+        results.push(result);
+    }
+    return results;
+}
+
 
   public async validateFieldValues(field_value_array: string[]) {
     let encounteredKeys = []
@@ -820,7 +764,7 @@ export class PostgresCohortService {
           };
           if(requiredData.customField){
             resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
-            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField);
+            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField,);
           }else{
             resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
           }

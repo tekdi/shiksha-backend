@@ -551,6 +551,10 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     async updateCustomFields(itemId, data, fieldAttributesAndParams) {
 
+        if (Array.isArray(data.value)) {
+            data.value = data.value.join(',')
+        }
+
         let result: any = await this.fieldsValuesRepository.update({ itemId, fieldId: data.fieldId }, { value: data.value });
         let newResult;
         if (result.affected === 0) {
@@ -571,8 +575,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             const isValid = fieldInstance.validate(value);
             return isValid;
         } catch (e) {
-            console.log(e);
-
             return { error: e }
         }
     }

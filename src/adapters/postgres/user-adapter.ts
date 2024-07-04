@@ -868,17 +868,19 @@ export class PostgresUserService implements IServicelocator {
         where: { roleId: In(roleIds) },
         select: ["title"]
       })
-      contextType = getRoleName.map(role => role?.title.toUpperCase())
+      contextType = getRoleName.map(role => role?.title.toUpperCase()).join(', ')
     }
-    let context = 'USERS';
 
+    let context = 'USERS';
     let getFieldIds = await this.fieldsService.getFieldIds(context, contextType)
+
 
     const validFieldIds = new Set(getFieldIds.map(field => field.fieldId));
 
     const invalidFieldIds = userCreateDto.customFields
       .filter(fieldValue => !validFieldIds.has(fieldValue.fieldId))
       .map(fieldValue => fieldValue.fieldId);
+
 
     if (invalidFieldIds.length > 0) {
       return APIResponse.error(response, apiId, 'Bad Request', `The following fields are not valid for this user: ${invalidFieldIds.join(', ')}.`,

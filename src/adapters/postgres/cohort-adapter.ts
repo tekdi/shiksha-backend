@@ -9,11 +9,18 @@ import { CohortCreateDto } from "src/cohort/dto/cohort-create.dto";
 import { CohortUpdateDto } from "src/cohort/dto/cohort-update.dto";
 import { FieldValuesDto } from "src/fields/dto/field-values.dto";
 import { FieldValuesUpdateDto } from "src/fields/dto/field-values-update.dto";
-import { IsNull, Not, Repository, getConnection, getRepository, In } from "typeorm";
+import {
+  IsNull,
+  Not,
+  Repository,
+  getConnection,
+  getRepository,
+  In,
+} from "typeorm";
 import { Cohort } from "src/cohort/entities/cohort.entity";
 import { Fields } from "src/fields/entities/fields.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { PostgresFieldsService } from "./fields-adapter"
+import { PostgresFieldsService } from "./fields-adapter";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
 import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
@@ -24,8 +31,6 @@ import { APIID } from "src/common/utils/api-id.config";
 
 @Injectable()
 export class PostgresCohortService {
-
-
   constructor(
     @InjectRepository(Cohort)
     private cohortRepository: Repository<Cohort>,
@@ -37,109 +42,118 @@ export class PostgresCohortService {
     private fieldsRepository: Repository<Fields>,
     @InjectRepository(UserTenantMapping)
     private UserTenantMappingRepository: Repository<UserTenantMapping>,
-    private fieldsService: PostgresFieldsService,
+    private fieldsService: PostgresFieldsService
+  ) {}
 
-  ) { }
-  
   public async getCohortsDetails(requiredData, res) {
     const apiId = APIID.COHORT_READ;
 
     try {
-        const cohorts = await this.cohortRepository.find({
-            where: {
-                cohortId: requiredData.cohortId
-            }
-        });
+      const cohorts = await this.cohortRepository.find({
+        where: {
+          cohortId: requiredData.cohortId,
+        },
+      });
 
-        if (!cohorts.length) {
-            return APIResponse.error(
-                res,
-                apiId,
-                "BAD_REQUEST",
-                `No Cohort Found for this cohort ID`,
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        if (requiredData.getChildData) {
-            return this.handleChildDataResponse(cohorts, requiredData, res, apiId);
-        } else {
-            return this.handleCohortDataResponse(cohorts, res, apiId);
-        }
-    } catch (error) {
-        const errorMessage = error.message || "Internal server error";
+      if (!cohorts.length) {
         return APIResponse.error(
-            res,
-            apiId,
-            "Internal Server Error",
-            errorMessage,
-            HttpStatus.INTERNAL_SERVER_ERROR
+          res,
+          apiId,
+          "BAD_REQUEST",
+          `No Cohort Found for this cohort ID`,
+          HttpStatus.BAD_REQUEST
         );
-    }
-}
+      }
 
-private async handleCohortDataResponse(cohorts, res, apiId) {
+      if (requiredData.getChildData) {
+        return this.handleChildDataResponse(cohorts, requiredData, res, apiId);
+      } else {
+        return this.handleCohortDataResponse(cohorts, res, apiId);
+      }
+    } catch (error) {
+      const errorMessage = error.message || "Internal server error";
+      return APIResponse.error(
+        res,
+        apiId,
+        "Internal Server Error",
+        errorMessage,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  private async handleCohortDataResponse(cohorts, res, apiId) {
     let result = { cohortData: [] };
 
     for (let data of cohorts) {
-        let cohortData = {
-            cohortId: data.cohortId,
-            name: data.name,
-            parentId: data.parentId,
-            type: data.type,
-            customField: await this.getCohortCustomFieldDetails(data.cohortId)
-        };
-        result.cohortData.push(cohortData);
+      let cohortData = {
+        cohortId: data.cohortId,
+        name: data.name,
+        parentId: data.parentId,
+        type: data.type,
+        customField: await this.getCohortCustomFieldDetails(data.cohortId),
+      };
+      result.cohortData.push(cohortData);
     }
 
     return APIResponse.success(
-        res,
-        apiId,
-        result,
-        HttpStatus.OK,
-        "Cohort list fetched successfully"
+      res,
+      apiId,
+      result,
+      HttpStatus.OK,
+      "Cohort list fetched successfully"
     );
-}
+  }
 
-private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
+  private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
     let resultDataList = [];
 
     for (let cohort of cohorts) {
-        let resultData = {
-            cohortName: cohort.name,
-            cohortId: cohort.cohortId,
-            parentID: cohort.parentId,
-            type: cohort.type,
-            customField: requiredData.customField ? await this.getCohortCustomFieldDetails(cohort.cohortId) : undefined,
-            childData: await this.getCohortHierarchy(cohort.cohortId, requiredData.customField)
-        };
-        resultDataList.push(resultData);
+      let resultData = {
+        cohortName: cohort.name,
+        cohortId: cohort.cohortId,
+        parentID: cohort.parentId,
+        type: cohort.type,
+        customField: requiredData.customField
+          ? await this.getCohortCustomFieldDetails(cohort.cohortId)
+          : undefined,
+        childData: await this.getCohortHierarchy(
+          cohort.cohortId,
+          requiredData.customField
+        ),
+      };
+      resultDataList.push(resultData);
     }
 
     return APIResponse.success(
-        res,
-        apiId,
-        resultDataList,
-        HttpStatus.OK,
-        "Cohort hierarchy fetched successfully"
+      res,
+      apiId,
+      resultDataList,
+      HttpStatus.OK,
+      "Cohort hierarchy fetched successfully"
     );
-}
-
+  }
 
   async findCohortDetails(cohortId: string) {
     let whereClause: any = { cohortId: cohortId };
     let cohortDetails = await this.cohortRepository.findOne({
-      where: whereClause
-    })
+      where: whereClause,
+    });
     return new ReturnResponseBody(cohortDetails);
   }
 
-  public async getCohortDataWithCustomfield(cohortId: string, contextType?: string) {
-    let context = 'COHORT';
-    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, contextType);
-    return fieldValue
+  public async getCohortDataWithCustomfield(
+    cohortId: string,
+    contextType?: string
+  ) {
+    let context = "COHORT";
+    let fieldValue = await this.fieldsService.getFieldValuesData(
+      cohortId,
+      context,
+      contextType
+    );
+    return fieldValue;
   }
-
 
   public async findCohortName(userId: any) {
     let query = `SELECT c."name",c."cohortId",c."parentId",c."type"
@@ -150,37 +164,89 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
     return result;
   }
 
-  public async getCohortCustomFieldDetails(cohortId: string) {
-    let context = 'COHORT';
-    let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, "COHORT", null, true, true);
-    let results = [];
+  //   public async getCohortCustomFieldDetails(cohortId: string) {
+  //     let context = 'COHORT';
+  //     let fieldValue = await this.fieldsService.getFieldValuesData(cohortId, context, "COHORT", null, true, true);
+  //     let results = [];
 
-    for (let data of fieldValue) {
-        let result = {
-            name: '',
-            value: ''
-        };
-        result.name = data.name;
-        result.value = data.value;
-        results.push(result);
-    }
-    return results;
-}
+  //     for (let data of fieldValue) {
+  //         let result = {
+  //             name: '',
+  //             value: ''
+  //         };
+  //         result.name = data.name;
+  //         result.value = data.value;
+  //         results.push(result);
+  //     }
+  //     return results;
+  // }
 
+  public async getCohortCustomFieldDetails(
+    cohortId: string,
+    fieldOption?: boolean
+  ) {
+    const query = `
+    SELECT DISTINCT 
+      f."label", 
+      fv."value", 
+      f."type", 
+      f."fieldParams",
+      f."sourceDetails"
+    FROM public."Cohort" c
+    LEFT JOIN (
+      SELECT DISTINCT ON (fv."fieldId", fv."itemId") fv.*
+      FROM public."FieldValues" fv
+    ) fv ON fv."itemId" = c."cohortId"
+    INNER JOIN public."Fields" f ON fv."fieldId" = f."fieldId"
+    WHERE c."cohortId" = $1;
+  `;
+    let result = await this.cohortMembersRepository.query(query, [cohortId]);
+    result = result.map(async (data) => {
+      if (data?.sourceDetails) {
+        if (data.sourceDetails.source === "fieldparams") {
+          data.fieldParams.options.forEach((option) => {
+            if (data.value === option.value) {
+              data.value = option.label;
+            }
+          });
+        } else if (data.sourceDetails.source === "table") {
+          let labels = await this.fieldsService.findDynamicOptions(
+            data.sourceDetails.table,
+            `value='${data.value}'`
+          );
+          if (labels && labels.length > 0) {
+            data.value = labels[0].label;
+          }
+        } else {
+          data.value = data.value;
+        }
+      }
+      delete data.fieldParams;
+      delete data.sourceDetails;
+      return data;
+    });
+    
+    result = await Promise.all(result);
+    return result;
+  }
 
   public async validateFieldValues(field_value_array: string[]) {
-    let encounteredKeys = []
+    let encounteredKeys = [];
     for (const fieldValue of field_value_array) {
-      const [fieldId] = fieldValue.split(":").map(value => value.trim());
+      const [fieldId] = fieldValue.split(":").map((value) => value.trim());
       if (encounteredKeys.includes(fieldId)) {
         return { valid: false, fieldId: fieldId };
       }
-      encounteredKeys.push(fieldId)
+      encounteredKeys.push(fieldId);
     }
     return { valid: true, fieldId: "true" };
-  };
+  }
 
-  public async createCohort(request: any, cohortCreateDto: CohortCreateDto, res) {
+  public async createCohort(
+    request: any,
+    cohortCreateDto: CohortCreateDto,
+    res
+  ) {
     const apiId = APIID.COHORT_CREATE;
 
     try {
@@ -193,20 +259,23 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           apiId,
           `Duplicate fieldId '${valid.fieldId}' found in fieldValues.`,
           `Duplicate fieldId`,
-          (HttpStatus.CONFLICT)
-        )
+          HttpStatus.CONFLICT
+        );
       }
       const decoded: any = jwt_decode(request.headers.authorization);
-      cohortCreateDto.createdBy = decoded?.sub
-      cohortCreateDto.updatedBy = decoded?.sub
+      cohortCreateDto.createdBy = decoded?.sub;
+      cohortCreateDto.updatedBy = decoded?.sub;
       cohortCreateDto.status = true;
       cohortCreateDto.attendanceCaptureImage = false;
 
       let response;
       if (cohortCreateDto.name && cohortCreateDto.parentId) {
         const existData = await this.cohortRepository.find({
-          where: { name: cohortCreateDto.name, parentId: cohortCreateDto.parentId }
-        })
+          where: {
+            name: cohortCreateDto.name,
+            parentId: cohortCreateDto.parentId,
+          },
+        });
         if (existData.length == 0) {
           response = await this.cohortRepository.save(cohortCreateDto);
         } else {
@@ -214,7 +283,9 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
             const updateData = { status: true };
             const cohortId = existData[0].cohortId;
             await this.cohortRepository.update(cohortId, updateData);
-            const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
+            const cohortData = await this.cohortRepository.find({
+              where: { cohortId: cohortId },
+            });
             response = cohortData[0];
           } else {
             return APIResponse.error(
@@ -222,14 +293,14 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
               apiId,
               `Cohort name already exist for this parent.`,
               `Cohort already exists`,
-              (HttpStatus.CONFLICT)
-            )
+              HttpStatus.CONFLICT
+            );
           }
         }
       } else {
         const existData = await this.cohortRepository.find({
-          where: { name: cohortCreateDto.name }
-        })
+          where: { name: cohortCreateDto.name },
+        });
         if (existData.length === 0) {
           response = await this.cohortRepository.save(cohortCreateDto);
         } else {
@@ -237,7 +308,9 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
             const updateData = { status: true };
             const cohortId = existData[0].cohortId;
             await this.cohortRepository.update(cohortId, updateData);
-            const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
+            const cohortData = await this.cohortRepository.find({
+              where: { cohortId: cohortId },
+            });
             response = cohortData[0];
           } else {
             return APIResponse.error(
@@ -245,8 +318,8 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
               apiId,
               `Cohort name already exists`,
               `Duplicate Cohort name`,
-              (HttpStatus.CONFLICT)
-            )
+              HttpStatus.CONFLICT
+            );
           }
         }
       }
@@ -267,18 +340,29 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
-          const fieldValue = await this.fieldsService.findAndSaveFieldValues(fieldValueDto);
+          const fieldValue = await this.fieldsService.findAndSaveFieldValues(
+            fieldValueDto
+          );
         }
       }
 
-
       response = new ReturnResponseBody(response);
-      return APIResponse.success(res, apiId, response, (HttpStatus.CREATED), "Cohort Created Successfully.");
-
-
+      return APIResponse.success(
+        res,
+        apiId,
+        response,
+        HttpStatus.CREATED,
+        "Cohort Created Successfully."
+      );
     } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || "Internal server error";
+      return APIResponse.error(
+        res,
+        apiId,
+        "Internal Server Error",
+        errorMessage,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -290,7 +374,6 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
   ) {
     const apiId = APIID.COHORT_UPDATE;
     try {
-
       let field_value_array = cohortUpdateDto.fieldValues.split("|");
       let valid = await this.validateFieldValues(field_value_array);
       if (valid && valid?.valid === false) {
@@ -299,13 +382,13 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           apiId,
           `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
           `Duplicate fieldId`,
-          (HttpStatus.CONFLICT)
-        )
+          HttpStatus.CONFLICT
+        );
       }
 
       const decoded: any = jwt_decode(request.headers.authorization);
-      cohortUpdateDto.updatedBy = decoded?.sub
-      cohortUpdateDto.createdBy = decoded?.sub
+      cohortUpdateDto.updatedBy = decoded?.sub;
+      cohortUpdateDto.createdBy = decoded?.sub;
       cohortUpdateDto.status = true;
       let response;
 
@@ -315,8 +398,8 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           apiId,
           `Please Enter valid cohortId(UUID)`,
           `Invalid cohortId`,
-          (HttpStatus.CONFLICT)
-        )
+          HttpStatus.CONFLICT
+        );
       }
 
       const checkData = await this.checkIfCohortExist(cohortId);
@@ -327,8 +410,11 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
 
         // Iterate over all keys in cohortUpdateDto
         for (let key in cohortUpdateDto) {
-          if (cohortUpdateDto.hasOwnProperty(key) && cohortUpdateDto[key] !== null) {
-            if (key !== 'fieldValues') {
+          if (
+            cohortUpdateDto.hasOwnProperty(key) &&
+            cohortUpdateDto[key] !== null
+          ) {
+            if (key !== "fieldValues") {
               updateData[key] = cohortUpdateDto[key];
             } else {
               fieldValueData[key] = cohortUpdateDto[key];
@@ -338,10 +424,11 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
 
         if (cohortUpdateDto.name && cohortUpdateDto.parentId) {
           const existData = await this.cohortRepository.find({
-            where: { name: cohortUpdateDto.name, parentId: cohortUpdateDto.parentId }
-          })
-
-
+            where: {
+              name: cohortUpdateDto.name,
+              parentId: cohortUpdateDto.parentId,
+            },
+          });
 
           if (existData.length == 0) {
             response = await this.cohortRepository.update(cohortId, updateData);
@@ -350,7 +437,9 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
               const updateData = { status: true };
               const cohortId = existData[0].cohortId;
               await this.cohortRepository.update(cohortId, updateData);
-              const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
+              const cohortData = await this.cohortRepository.find({
+                where: { cohortId: cohortId },
+              });
               response = cohortData[0];
             } else {
               return APIResponse.error(
@@ -358,14 +447,14 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
                 apiId,
                 `Cohort name already exist for this parent please choose another name`,
                 `Duplicate cohort name`,
-                (HttpStatus.CONFLICT),
-              )
+                HttpStatus.CONFLICT
+              );
             }
           }
         } else {
           const existData = await this.cohortRepository.find({
-            where: { name: cohortUpdateDto.name }
-          })
+            where: { name: cohortUpdateDto.name },
+          });
 
           if (existData.length == 0) {
             response = await this.cohortRepository.update(cohortId, updateData);
@@ -374,7 +463,9 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
               const updateData = { status: true };
               const cohortId = existData[0].cohortId;
               await this.cohortRepository.update(cohortId, updateData);
-              const cohortData = await this.cohortRepository.find({ where: { cohortId: cohortId } })
+              const cohortData = await this.cohortRepository.find({
+                where: { cohortId: cohortId },
+              });
               response = cohortData[0];
             } else {
               return APIResponse.error(
@@ -382,30 +473,34 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
                 apiId,
                 `Cohort name already exists please choose another name`,
                 `Duplicate cohort name`,
-                (HttpStatus.CONFLICT)
-              )
+                HttpStatus.CONFLICT
+              );
             }
           }
         }
 
-        if (fieldValueData['fieldValues']) {
+        if (fieldValueData["fieldValues"]) {
           if (field_value_array.length > 0) {
-
             for (let i = 0; i < field_value_array.length; i++) {
               let fieldValues = field_value_array[i].split(":");
               let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
               try {
-
-                const fieldVauesRowId = await this.fieldsService.searchFieldValueId(cohortId, fieldId)
+                const fieldVauesRowId =
+                  await this.fieldsService.searchFieldValueId(
+                    cohortId,
+                    fieldId
+                  );
                 const rowid = fieldVauesRowId.fieldValuesId;
 
                 let fieldValueUpdateDto: FieldValuesUpdateDto = {
                   fieldValuesId: rowid,
-                  value: fieldValues[1] ? fieldValues[1].trim() : ""
+                  value: fieldValues[1] ? fieldValues[1].trim() : "",
                 };
-                await this.fieldsService.updateFieldValues(rowid, fieldValueUpdateDto);
+                await this.fieldsService.updateFieldValues(
+                  rowid,
+                  fieldValueUpdateDto
+                );
               } catch {
-
                 let fieldValueDto: FieldValuesDto = {
                   value: fieldValues[1] ? fieldValues[1].trim() : "",
                   itemId: cohortId,
@@ -421,41 +516,53 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           }
         }
 
-        return APIResponse.success(res, apiId, response.affected, (HttpStatus.OK), "Cohort updated successfully.");
-
+        return APIResponse.success(
+          res,
+          apiId,
+          response.affected,
+          HttpStatus.OK,
+          "Cohort updated successfully."
+        );
       } else {
         return APIResponse.error(
           res,
           apiId,
           `Cohort not found`,
           `Cohort not found`,
-          (HttpStatus.NOT_FOUND)
-        )
+          HttpStatus.NOT_FOUND
+        );
       }
     } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
-
+      const errorMessage = error.message || "Internal server error";
+      return APIResponse.error(
+        res,
+        apiId,
+        "Internal Server Error",
+        errorMessage,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
   public async searchCohort(
     tenantId: string,
     request: any,
-    cohortSearchDto: CohortSearchDto, response
+    cohortSearchDto: CohortSearchDto,
+    response
   ) {
     const apiId = APIID.COHORT_LIST;
     try {
-
       let { limit, page, filters } = cohortSearchDto;
 
       let offset = 0;
       if (limit > 0 && page > 0) {
-        offset = (limit) * (page - 1);
+        offset = limit * (page - 1);
       }
-      if (limit === 0) { limit = 200 }
+      if (limit === 0) {
+        limit = 200;
+      }
       const emptyValueKeys = {};
-      let emptyKeysString = '';
+      let emptyKeysString = "";
 
       const MAX_LIMIT = 200;
       const PAGE_LIMIT = 10000000;
@@ -467,8 +574,8 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           apiId,
           `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
           `Limit exceeded`,
-          (HttpStatus.BAD_REQUEST)
-        )
+          HttpStatus.BAD_REQUEST
+        );
       }
 
       if (page > PAGE_LIMIT) {
@@ -477,8 +584,8 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
           apiId,
           `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
           `Page limit exceeded`,
-          (HttpStatus.BAD_REQUEST)
-        )
+          HttpStatus.BAD_REQUEST
+        );
       }
 
       const allowedKeys = ["userId", "cohortId", "name", "parentId"];
@@ -492,12 +599,12 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
               apiId,
               `${key} Invalid key`,
               `Invalid filter key`,
-              (HttpStatus.BAD_REQUEST)
-            )
+              HttpStatus.BAD_REQUEST
+            );
           } else {
-            if (value === '') {
+            if (value === "") {
               emptyValueKeys[key] = value;
-              emptyKeysString += (emptyKeysString ? ', ' : '') + key;
+              emptyKeysString += (emptyKeysString ? ", " : "") + key;
             } else {
               whereClause[key] = value;
             }
@@ -505,119 +612,131 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
         });
       }
 
-      if (whereClause['parentId']) {
-        whereClause['parentId'] = In(whereClause['parentId']);
+      if (whereClause["parentId"]) {
+        whereClause["parentId"] = In(whereClause["parentId"]);
       }
 
       let results = {
         cohortDetails: [],
       };
 
-      let count = 0
+      let count = 0;
 
-      if (whereClause['userId']) {
-        const additionalFields = Object.keys(whereClause).filter(key => key !== 'userId');
+      if (whereClause["userId"]) {
+        const additionalFields = Object.keys(whereClause).filter(
+          (key) => key !== "userId"
+        );
         if (additionalFields.length > 0) {
           // Handle the case where userId is provided along with other fields
           return APIResponse.error(
             response,
             apiId,
             `When filtering by userId, do not include additional fields`,
-            'Invalid filters',
-            (HttpStatus.BAD_REQUEST)
-          )
+            "Invalid filters",
+            HttpStatus.BAD_REQUEST
+          );
         }
 
         let userTenantMapExist = await this.UserTenantMappingRepository.find({
           where: {
             tenantId: tenantId,
-            userId: whereClause['userId']
-          }
-        })
+            userId: whereClause["userId"],
+          },
+        });
         if (userTenantMapExist.length == 0) {
           return APIResponse.error(
             response,
             apiId,
             `User is not mapped for this tenant`,
-            'Invalid combination of userId and tenantId',
-            (HttpStatus.BAD_REQUEST)
-          )
+            "Invalid combination of userId and tenantId",
+            HttpStatus.BAD_REQUEST
+          );
         }
-        const [data, totalCount] = await this.cohortMembersRepository.findAndCount({
-          where: whereClause,
-          skip: offset,
-        });
-        const userExistCohortGroup = data.slice(offset, offset + (limit));
+        const [data, totalCount] =
+          await this.cohortMembersRepository.findAndCount({
+            where: whereClause,
+            skip: offset,
+          });
+        const userExistCohortGroup = data.slice(offset, offset + limit);
         count = totalCount;
 
         for (let data of userExistCohortGroup) {
           let cohortAllData = await this.cohortRepository.findOne({
             where: {
-              cohortId: data?.cohortId
-            }
-          })
+              cohortId: data?.cohortId,
+            },
+          });
 
-          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId);
-          cohortAllData['customFields'] = customFieldsData
+          let customFieldsData = await this.getCohortDataWithCustomfield(
+            data.cohortId
+          );
+          cohortAllData["customFields"] = customFieldsData;
           results.cohortDetails.push(cohortAllData);
         }
       } else {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
-          skip: offset
+          skip: offset,
         });
 
-        const cohortData = data.slice(offset, offset + (limit));
+        const cohortData = data.slice(offset, offset + limit);
         count = totalcount;
 
         for (let data of cohortData) {
-          let customFieldsData = await this.getCohortDataWithCustomfield(data.cohortId, data.type);
-          data['customFields'] = customFieldsData || [];
-          results.cohortDetails.push(data)
+          let customFieldsData = await this.getCohortDataWithCustomfield(
+            data.cohortId,
+            data.type
+          );
+          data["customFields"] = customFieldsData || [];
+          results.cohortDetails.push(data);
         }
       }
 
       if (results.cohortDetails.length > 0) {
-        const totalCount = results.cohortDetails.length
-        return APIResponse.success(response, apiId, { count, results }, (HttpStatus.OK), "Cohort details fetched successfully");
-
+        const totalCount = results.cohortDetails.length;
+        return APIResponse.success(
+          response,
+          apiId,
+          { count, results },
+          HttpStatus.OK,
+          "Cohort details fetched successfully"
+        );
       } else {
         return APIResponse.error(
           response,
           apiId,
           `No data found.`,
-          'No data found.',
-          (HttpStatus.NOT_FOUND)
-        )
+          "No data found.",
+          HttpStatus.NOT_FOUND
+        );
       }
-
-
     } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || "Internal server error";
+      return APIResponse.error(
+        response,
+        apiId,
+        "Internal Server Error",
+        errorMessage,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
-
-  public async updateCohortStatus(
-    cohortId: string,
-    request: any,
-    response
-  ) {
+  public async updateCohortStatus(cohortId: string, request: any, response) {
     const apiId = APIID.COHORT_DELETE;
     try {
       const decoded: any = jwt_decode(request.headers.authorization);
       // const createdBy = decoded?.sub;
-      const updatedBy = decoded?.sub
+      const updatedBy = decoded?.sub;
 
       if (!isUUID(cohortId)) {
         return APIResponse.error(
           response,
           apiId,
           `Invalid Cohort Id format. It must be a valid UUID`,
-          'Invalid cohortId',
-          (HttpStatus.BAD_REQUEST)
-        )
+          "Invalid cohortId",
+          HttpStatus.BAD_REQUEST
+        );
       }
       const checkData = await this.checkIfCohortExist(cohortId);
 
@@ -626,58 +745,72 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
         SET "status" = false,
         "updatedBy" = '${updatedBy}'
         WHERE "cohortId" = $1`;
-        const affectedrows = await this.cohortRepository.query(query, [cohortId]);
-        await this.cohortMembersRepository.delete(
-          { cohortId: cohortId }
+        const affectedrows = await this.cohortRepository.query(query, [
+          cohortId,
+        ]);
+        await this.cohortMembersRepository.delete({ cohortId: cohortId });
+        await this.fieldValuesRepository.delete({ itemId: cohortId });
+
+        return APIResponse.success(
+          response,
+          apiId,
+          affectedrows[1],
+          HttpStatus.OK,
+          "Cohort Deleted Successfully."
         );
-        await this.fieldValuesRepository.delete(
-          { itemId: cohortId }
-        );
-
-
-        return APIResponse.success(response, apiId, affectedrows[1], (HttpStatus.OK), "Cohort Deleted Successfully.");
-
       } else {
         return APIResponse.error(
           response,
           apiId,
           `Cohort not found`,
-          'Invalid cohortId',
-          (HttpStatus.BAD_REQUEST)
-        )
+          "Invalid cohortId",
+          HttpStatus.BAD_REQUEST
+        );
       }
     } catch (error) {
-      const errorMessage = error.message || 'Internal server error';
-      return APIResponse.error(response, apiId, "Internal Server Error", errorMessage, (HttpStatus.INTERNAL_SERVER_ERROR));
+      const errorMessage = error.message || "Internal server error";
+      return APIResponse.error(
+        response,
+        apiId,
+        "Internal Server Error",
+        errorMessage,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
   public async checkIfCohortExist(id: any) {
-
     const existData = await this.cohortRepository.find({
       where: {
         cohortId: id,
-        status: true
-      }
-    })
+        status: true,
+      },
+    });
     if (existData.length !== 0) {
       return true;
     } else {
       return false;
     }
-
   }
 
-  private async getCohortHierarchy(parentId: string,customField?:Boolean): Promise<any> {
+  private async getCohortHierarchy(
+    parentId: string,
+    customField?: Boolean
+  ): Promise<any> {
     const childData = await this.cohortRepository.find({ where: { parentId } });
     const hierarchy = [];
     let customFieldDetails;
-    let childHierarchy
+    let childHierarchy;
     for (const data of childData) {
-      if(customField){
-        childHierarchy = await this.getCohortHierarchy(data.cohortId,customField);
-        customFieldDetails=await this.getCohortCustomFieldDetails(data.cohortId);
-      }else{
+      if (customField) {
+        childHierarchy = await this.getCohortHierarchy(
+          data.cohortId,
+          customField
+        );
+        customFieldDetails = await this.getCohortCustomFieldDetails(
+          data.cohortId
+        );
+      } else {
         childHierarchy = await this.getCohortHierarchy(data.cohortId);
       }
       hierarchy.push({
@@ -685,7 +818,7 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
         name: data.name,
         parentId: data.parentId,
         type: data.type,
-        customField:customFieldDetails || [],
+        customField: customFieldDetails || [],
         childData: childHierarchy,
       });
     }
@@ -715,10 +848,12 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
             cohortId: data.cohortId,
             name: data.name,
             parentId: data.parentId,
-            type:data.type,
+            type: data.type,
             customField: {},
           };
-          const getDetails = await this.getCohortCustomFieldDetails(data.cohortId);
+          const getDetails = await this.getCohortCustomFieldDetails(
+            data.cohortId
+          );
           cohortData.customField = getDetails;
           result.cohortData.push(cohortData);
         }
@@ -760,13 +895,20 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
             cohortName: cohort.name,
             cohortId: cohort.cohortId,
             parentID: cohort.parentId,
-            type: cohort.type
+            type: cohort.type,
           };
-          if(requiredData.customField){
-            resultData['customField']= await this.getCohortCustomFieldDetails(cohort.cohortId)
-            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,requiredData.customField,);
-          }else{
-            resultData['childData'] = await this.getCohortHierarchy(cohort.cohortId,);
+          if (requiredData.customField) {
+            resultData["customField"] = await this.getCohortCustomFieldDetails(
+              cohort.cohortId
+            );
+            resultData["childData"] = await this.getCohortHierarchy(
+              cohort.cohortId,
+              requiredData.customField
+            );
+          } else {
+            resultData["childData"] = await this.getCohortHierarchy(
+              cohort.cohortId
+            );
           }
           resultDataList.push(resultData);
         }
@@ -790,6 +932,3 @@ private async handleChildDataResponse(cohorts, requiredData, res, apiId) {
     }
   }
 }
-
-
-

@@ -436,7 +436,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result
     }
 
-    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: string[], requiredFieldOptions?: Boolean,valuesOptions?:Boolean) {
+    async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: string[], requiredFieldOptions?: Boolean) {
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
@@ -487,20 +487,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
                 }
                 fieldsArr.push(customField);
             }
-        }
-        if (valuesOptions) {
-            let filterData = fieldsArr.filter((item) => item.value !== '');
-            filterData = filterData.map((data) => {
-                let value = data.value; 
-                if (data.options && data.options.length > 0) {
-                    const matchingOptions = data.options.filter((item) => item.value === data.value);
-                    if (matchingOptions.length > 0) {
-                        value = matchingOptions[0].label; 
-                    }
-                }
-                return { ...data, value };
-            });
-            return filterData;
         }
         return fieldsArr;
     }

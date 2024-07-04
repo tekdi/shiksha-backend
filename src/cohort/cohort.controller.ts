@@ -46,6 +46,7 @@ import { CohortUpdateDto } from "./dto/cohort-update.dto";
 import { JwtAuthGuard } from "src/common/guards/keycloak.guard";
 import { AllExceptionsFilter } from "src/common/filters/exception.filter";
 import { APIID } from "src/common/utils/api-id.config";
+import { CustomFieldsValidation } from "@utils/custom-field-validation";
 
 @ApiTags("Cohort")
 @Controller("cohort")
@@ -54,7 +55,7 @@ export class CohortController {
   constructor(private readonly cohortAdapter: CohortAdapter) { }
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_READ))
-  @Get("/read/:cohortId")
+  @Get("/cohortHierarchy/:cohortId")
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: "Cohort details Fetched Successfully" })
   @ApiNotFoundResponse({ description: "Cohort Not Found" })
@@ -66,11 +67,19 @@ export class CohortController {
     @Headers() headers,
     @Param("cohortId") cohortId: string,
     @Req() request: Request,
-    @Res() response: Response
+    @Res() response: Response,
+    @Query("children") children: string,
+    @Query("customField") customField:string
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
-    return await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(cohortId, response);
-
+    const getChildDataValueBoolean = children === 'true';
+    let fieldValueBooelan = customField === 'true'
+    let requiredData = {
+      cohortId: cohortId,
+      getChildData:getChildDataValueBoolean,
+      customField: fieldValueBooelan
+    }
+    return await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(requiredData, response);
   }
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_CREATE))

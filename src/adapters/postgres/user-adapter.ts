@@ -231,7 +231,7 @@ export class PostgresUserService implements IServicelocator {
       if (userData?.fieldValue) {
         let context = 'USERS';
         let contextType = roleInUpper;
-        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
+        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, ['All'], true);
       }
 
       result.userData = userDetails;
@@ -480,7 +480,7 @@ export class PostgresUserService implements IServicelocator {
                 value: fieldValues['value']
               }
               let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
-            
+
               if (res.correctValue) {
                 if (!result['customFields'])
                   result['customFields'] = [];

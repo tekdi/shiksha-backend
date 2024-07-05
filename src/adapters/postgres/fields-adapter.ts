@@ -382,7 +382,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         const condition: any = {
             context,
             ...(contextType?.length ? { contextType: In(contextType.filter(Boolean)) } : {}),
-            ...(getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
+            ...(getFields.includes('All') ? {} : getFields.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
 
         let customFields = await this.fieldsRepository.find({ where: condition })

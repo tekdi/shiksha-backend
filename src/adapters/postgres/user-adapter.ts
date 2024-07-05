@@ -234,7 +234,7 @@ export class PostgresUserService implements IServicelocator {
       if (userData?.fieldValue) {
         let context = 'USERS';
         let contextType = roleInUpper;
-        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType);
+        customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, ['All'], true);
       }
 
       result.userData = userDetails;

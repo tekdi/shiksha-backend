@@ -407,7 +407,6 @@ export class PostgresCohortMembersService {
     }
     let result = await this.usersRepository.query(query);
     return result;
-
   }
 
   public async updateCohortMembers(
@@ -593,5 +592,4 @@ export class PostgresCohortMembersService {
 
     return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, results, HttpStatus.CREATED, "Cohort Members Created Successfully");
   }
-
 }

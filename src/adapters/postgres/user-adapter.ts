@@ -30,6 +30,8 @@ import { IServicelocator } from '../userservicelocator';
 import { PostgresFieldsService } from "./fields-adapter"
 import { PostgresRoleService } from './rbac/role-adapter';
 import { CustomFieldsValidation } from '@utils/custom-field-validation';
+import { NotificationRequest } from '@utils/notification.axios';
+
 
 @Injectable()
 export class PostgresUserService implements IServicelocator {
@@ -55,6 +57,7 @@ export class PostgresUserService implements IServicelocator {
     private roleRepository: Repository<Role>,
     private fieldsService: PostgresFieldsService,
     private readonly postgresRoleService: PostgresRoleService,
+    private readonly notificationRequest: NotificationRequest
     // private cohortMemberService: PostgresCohortMembersService,
   ) { }
 
@@ -421,6 +424,15 @@ export class PostgresUserService implements IServicelocator {
       const decoded: any = jwt_decode(request.headers.authorization);
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
+      // const emailId = decoded?.email;
+      console.log(userCreateDto.createdBy, "cfeatbby");
+
+      let email = await this.usersRepository.findOne({
+        where: { userId: userCreateDto.createdBy }, select
+          : ['email']
+      })
+      console.log(email, "email");
+
 
       // Check duplicate field entry
       if (userCreateDto.fieldValues) {
@@ -492,6 +504,19 @@ export class PostgresUserService implements IServicelocator {
           }
 
         }
+      }
+      // Send Notification if user added as cohort Member
+      if (result && userCreateDto.tenantCohortRoleMapping[0].cohortId &&
+        userCreateDto.tenantCohortRoleMapping[0].cohortId.length > 0 && email.email) {
+        const notificationPayload = {
+          isQueue: false,
+          context: 'USER',
+          replacements: [userCreateDto.name, userCreateDto.username, userCreateDto.password],
+          email: {
+            receipients: [email.email]
+          }
+        };
+        await this.notificationRequest.sendNotification(notificationPayload);
       }
 
       APIResponse.success(response, apiId, { userData: { ...result, createFailures } },

@@ -45,7 +45,7 @@ import { BulkCohortMember } from "./dto/bulkMember-create.dto";
 export class CohortMembersController {
   constructor(
     private readonly cohortMemberAdapter: CohortMembersAdapter
-  ) {}
+  ) { }
 
   //create cohort members
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_MEMBER_CREATE))
@@ -59,6 +59,9 @@ export class CohortMembersController {
   @ApiHeader({
     name: "tenantid",
   })
+  @ApiHeader({
+    name: "deviceid",
+  })
   public async createCohortMembers(
     @Headers() headers,
     @Req() request,
@@ -67,9 +70,10 @@ export class CohortMembersController {
   ) {
     const loginUser = request.user.userId;
     const tenantId = headers["tenantid"];
+    const deviceId = headers["deviceid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .createCohortMembers(loginUser, cohortMembersDto, response, tenantId);
+      .createCohortMembers(loginUser, cohortMembersDto, response, tenantId, deviceId);
     return response.status(result.statusCode).json(result);
   }
 
@@ -202,7 +206,7 @@ export class CohortMembersController {
     const tenantId = headers["tenantid"];
     const result = await this.cohortMemberAdapter
       .buildCohortMembersAdapter()
-      .createBulkCohortMembers(loginUser,bulkcohortMembersDto, response, tenantId);
+      .createBulkCohortMembers(loginUser, bulkcohortMembersDto, response, tenantId);
     return result;
   }
 }

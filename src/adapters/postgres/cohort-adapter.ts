@@ -43,7 +43,7 @@ export class PostgresCohortService {
     @InjectRepository(UserTenantMapping)
     private UserTenantMappingRepository: Repository<UserTenantMapping>,
     private fieldsService: PostgresFieldsService
-  ) {}
+  ) { }
 
   public async getCohortsDetails(requiredData, res) {
     const apiId = APIID.COHORT_READ;
@@ -150,7 +150,9 @@ export class PostgresCohortService {
     let fieldValue = await this.fieldsService.getFieldValuesData(
       cohortId,
       context,
-      contextType
+      contextType,
+      ['All'],
+      true
     );
     return fieldValue;
   }
@@ -225,7 +227,7 @@ export class PostgresCohortService {
       delete data.sourceDetails;
       return data;
     });
-    
+
     result = await Promise.all(result);
     return result;
   }
@@ -250,18 +252,23 @@ export class PostgresCohortService {
     const apiId = APIID.COHORT_CREATE;
 
     try {
-      let field_value_array = cohortCreateDto.fieldValues.split("|");
-      //Check duplicate field
-      let valid = await this.validateFieldValues(field_value_array);
-      if (valid && valid?.valid === false) {
-        return APIResponse.error(
-          res,
-          apiId,
-          `Duplicate fieldId '${valid.fieldId}' found in fieldValues.`,
-          `Duplicate fieldId`,
-          HttpStatus.CONFLICT
-        );
+      let field_value_array = [];
+
+      if (cohortCreateDto.fieldValues) {
+        field_value_array = cohortCreateDto.fieldValues.split("|");
+        //Check duplicate field
+        let valid = await this.validateFieldValues(field_value_array);
+        if (valid && valid?.valid === false) {
+          return APIResponse.error(
+            res,
+            apiId,
+            `Duplicate fieldId '${valid.fieldId}' found in fieldValues.`,
+            `Duplicate fieldId`,
+            HttpStatus.CONFLICT
+          );
+        }
       }
+
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortCreateDto.createdBy = decoded?.sub;
       cohortCreateDto.updatedBy = decoded?.sub;

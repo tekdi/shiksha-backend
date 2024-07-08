@@ -133,7 +133,7 @@ export class PostgresUserService implements IServicelocator {
       });
     }
 
-    let orderingCondition;
+    let orderingCondition = '';
     if (sort && Object.keys(sort).length > 0) {
       orderingCondition = `ORDER BY U."${sort[0]}" ${sort[1]}`;
     }
@@ -171,6 +171,7 @@ export class PostgresUserService implements IServicelocator {
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
       ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition}`
+
 
     let userDetails = await this.usersRepository.query(query);
 

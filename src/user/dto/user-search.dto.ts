@@ -1,10 +1,6 @@
-import { Exclude, Expose } from "class-transformer";
+import { Expose } from "class-transformer";
 import {
-  MaxLength,
   IsNotEmpty,
-  IsEmail,
-  IsString,
-  IsNumber,
   IsObject,
   IsOptional,
   IsArray,
@@ -52,10 +48,8 @@ export class setFilters {
     description: "User Id",
   })
   userId: string;
-
 }
 export class excludeFields {
-
   @ApiProperty({
     type: [String],
     description: "Exclude User IDs",
@@ -113,25 +107,6 @@ enum SortDirection {
   ASC = 'asc',
   DESC = 'desc',
 }
-// export class sortDto {
-//   @ApiProperty({
-//     type: String,
-//     description: "Sort Field",
-//   })
-//   @Expose()
-//   @IsOptional()
-//   @IsString()
-//   sortField: string;
-
-//   @ApiProperty({
-//     enum: SortDirection,
-//     description: "Sort Order",
-//   })
-//   @Expose()
-//   @IsOptional()
-//   @IsEnum(SortDirection)
-//   sortOrder: SortDirection;
-// }
 
 export class UserSearchDto {
   @ApiProperty({
@@ -168,7 +143,7 @@ export class UserSearchDto {
   @IsObject()
   customFieldsFilters: customFieldsFilters
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: excludeFields,
     description: "Filters",
   })
@@ -186,7 +161,7 @@ export class UserSearchDto {
   @ArrayMinSize(2, { message: 'Sort array must contain exactly two elements' })
   @ArrayMaxSize(2, { message: 'Sort array must contain exactly two elements' })
   sort: [string, string];
-  
+
   @ValidateIf((o) => o.sort !== undefined)
   @IsEnum(SortDirection, { each: true, message: 'Sort[1] must be either asc or desc' })
   get sortDirection(): string | undefined {

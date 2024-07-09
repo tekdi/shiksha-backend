@@ -213,12 +213,12 @@ export class PostgresUserService implements IServicelocator {
 
       let [userDetails, userRole] = await Promise.all([
         this.findUserDetails(userData.userId),
-        userData.tenantId ? this.findUserRoles(userData.userId, userData.tenantId) : Promise.resolve(null)
+        userData && userData.tenantId ? this.findUserRoles(userData.userId, userData.tenantId) : Promise.resolve(null)
       ]);
 
       let roleInUpper;
       if (userRole) {
-        roleInUpper = (userRole?.title).toUpperCase();
+        roleInUpper = userRole ? userRole.title.toUpperCase() : null;
         userDetails['role'] = userRole.title;
       }
 
@@ -233,7 +233,7 @@ export class PostgresUserService implements IServicelocator {
 
       let customFields;
 
-      if (userData?.fieldValue) {
+      if (userData && userData?.fieldValue) {
         let context = 'USERS';
         let contextType = roleInUpper;
         customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, false, true);
@@ -427,7 +427,7 @@ export class PostgresUserService implements IServicelocator {
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
 
-      if (userCreateDto.customFields.length > 0) {
+      if (userCreateDto.customFields && userCreateDto.customFields.length > 0) {
         await this.validateCustomField(userCreateDto, response, apiId);
       }
 
@@ -462,37 +462,35 @@ export class PostgresUserService implements IServicelocator {
       let result = await this.createUserInDatabase(request, userCreateDto, response);
 
       const createFailures = [];
-      if (userCreateDto.customFields) {
+      if (result && userCreateDto.customFields && userCreateDto.customFields.length > 0) {
 
-        if (result && userCreateDto.customFields?.length > 0) {
-          let userId = result?.userId;
-          let roles;
+        let userId = result?.userId;
+        let roles;
 
-          if (validatedRoles) {
-            roles = validatedRoles?.map(({ code }) => code?.toUpperCase())
-          }
+        if (validatedRoles) {
+          roles = validatedRoles?.map(({ code }) => code?.toUpperCase())
+        }
 
-          const customFields = await this.fieldsService.findCustomFields("USERS", roles)
+        const customFields = await this.fieldsService.findCustomFields("USERS", roles)
 
-          if (customFields) {
-            const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
+        if (customFields) {
+          const customFieldAttributes = customFields.reduce((fieldDetail, { fieldId, fieldAttributes, fieldParams, name }) => fieldDetail[`${fieldId}`] ? fieldDetail : { ...fieldDetail, [`${fieldId}`]: { fieldAttributes, fieldParams, name } }, {});
 
 
-            for (let fieldValues of userCreateDto.customFields) {
-              const fieldData = {
-                fieldId: fieldValues['fieldId'],
-                value: fieldValues['value']
-              }
+          for (let fieldValues of userCreateDto.customFields) {
+            const fieldData = {
+              fieldId: fieldValues['fieldId'],
+              value: fieldValues['value']
+            }
 
-              let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
+            let res = await this.fieldsService.updateCustomFields(userId, fieldData, customFieldAttributes[fieldData.fieldId]);
 
-              if (res.correctValue) {
-                if (!result['customFields'])
-                  result['customFields'] = [];
-                result["customFields"].push(res);
-              } else {
-                createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
-              }
+            if (res.correctValue) {
+              if (!result['customFields'])
+                result['customFields'] = [];
+              result["customFields"].push(res);
+            } else {
+              createFailures.push(`${fieldData.fieldId}: ${res?.valueIssue} - ${res.fieldName}`)
             }
           }
         }

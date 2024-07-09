@@ -659,7 +659,7 @@ export class PostgresCohortService {
 
   }
 
-  private async getCohortHierarchy(parentId: string, customField?: Boolean): Promise<any> {
+  private async getCohortHierarchy(parentId: string, customField?: boolean): Promise<any> {
     const childData = await this.cohortRepository.find({ where: { parentId } });
     const hierarchy = [];
     let customFieldDetails;

@@ -215,8 +215,8 @@ export class PostgresUserService implements IServicelocator {
       };
 
       let [userDetails, userRole] = await Promise.all([
-        this.findUserDetails(userData.userId),
-        userData && userData.tenantId ? this.findUserRoles(userData.userId, userData.tenantId) : Promise.resolve(null)
+        this.findUserDetails(userData?.userId),
+        userData && userData?.tenantId ? this.findUserRoles(userData?.userId, userData?.tenantId) : Promise.resolve(null)
       ]);
 
       let roleInUpper;
@@ -848,8 +848,7 @@ export class PostgresUserService implements IServicelocator {
   }
 
   public async validateCustomField(userCreateDto, response, apiId) {
-
-    let fieldValues = userCreateDto?.customFields;
+    let fieldValues = userCreateDto ? userCreateDto.customFields : [];
     let encounteredKeys = [];
     let invalidateFields = [];
     let duplicateFieldKeys = [];

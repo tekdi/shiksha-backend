@@ -858,8 +858,7 @@ export class PostgresUserService implements IServicelocator {
     }
 
     //Verifying whether these fields correspond to their respective roles.
-    let roleIds = userCreateDto?.tenantCohortRoleMapping?.map(userRole => userRole?.roleId);
-
+    let roleIds = userCreateDto && userCreateDto.tenantCohortRoleMapping ? userCreateDto.tenantCohortRoleMapping.map(userRole => userRole.roleId) : [];
 
     let contextType;
     if (roleIds) {

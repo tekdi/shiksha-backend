@@ -16,6 +16,7 @@ import { Response } from "express";
 import { readFileSync } from "fs";
 import path, { join } from 'path';
 import { FieldFactory } from "src/fields/fieldValidators/fieldFactory";
+import { SchemaField,Option } from "src/fields/fieldValidators/fieldClass";
 
 @Injectable()
 export class PostgresFieldsService implements IServicelocatorfields {
@@ -87,31 +88,73 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
 
 
-    async searchFields(tenantId: string, request: any, fieldsSearchDto: FieldsSearchDto, response: Response) {
-        const apiId = APIID.FIELDS_SEARCH;
-        try {
-
-            const getConditionalData = await this.search(fieldsSearchDto)
-            const offset = getConditionalData.offset;
-            const limit = getConditionalData.limit;
-            const whereClause = getConditionalData.whereClause;
-
-            const getFieldValue = await this.searchFieldData(offset, limit, whereClause)
-
-
-            const result = {
-                totalCount: getFieldValue.totalCount,
-                fields: getFieldValue.mappedResponse,
-            }
-
-            return await APIResponse.success(response, apiId, result,
-                HttpStatus.OK, 'Fields fetched successfully.')
-
-
-        } catch (e) {
-            const errorMessage = e?.message || 'Something went wrong';
-            return APIResponse.error(response, apiId, "Internal Server Error", `Error : ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR)
+    async searchFields(
+      tenantId: string,
+      request: any,
+      fieldsSearchDto: FieldsSearchDto,
+      response: Response
+    ) {
+      const apiId = APIID.FIELDS_SEARCH;
+      try {
+        let { limit, page, filters } = fieldsSearchDto;
+        if (!limit) {
+          limit = 20;
         }
+  
+        let offset = 0;
+        if (page > 1) {
+          offset = limit * (page - 1);
+        }
+        const fieldKeys = this.fieldsRepository.metadata.columns.map(
+          (column) => column.propertyName
+        );
+        let whereClause: any = { tenantId };
+        if (filters && Object.keys(filters).length > 0) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (fieldKeys.includes(key)) {
+              whereClause[key] = value;
+            } else {
+              return APIResponse.error(
+                response,
+                apiId,
+                "BAD_REQUEST",
+                `Invalid Filter Entered : ${key}`,
+                HttpStatus.BAD_REQUEST
+              );
+            }
+          });
+        }
+        let fieldDataList;
+        fieldDataList = await this.fieldsRepository.find({
+          where: whereClause,
+        });
+        if(!fieldDataList.length){
+          return APIResponse.error(
+            response,
+            apiId,
+            "NOT_FOUND",
+            `Fields not found`,
+            HttpStatus.NOT_FOUND
+          );
+        }
+        let schema = this.mappedFields(fieldDataList);
+        return APIResponse.success(
+          response,
+          apiId,
+          schema,
+          HttpStatus.OK,
+          "Fields fetched successfully."
+        );
+      } catch (error) {
+        const errorMessage = error.message || "Internal server error";
+        return APIResponse.error(
+          response,
+          apiId,
+          "Internal Server Error",
+          errorMessage,
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
     }
 
     async searchFieldData(offset: number, limit: string, searchData: any) {
@@ -582,5 +625,34 @@ export class PostgresFieldsService implements IServicelocatorfields {
             return fieldValue.split(",");
         }
         return fieldValue;
+    }
+
+    mappedFields(fieldDataList){
+      const mappedFields: SchemaField[] = fieldDataList.map((field) => {
+          const options: Option[] = field.options?.map((opt) => ({
+            label: opt.label,
+            value: opt.value,
+          })) || []; 
+        
+          return {
+            label: field.label,
+            name: field.name,
+            type: field.type,
+            isRequired: field?.fieldAttributes?.required,
+            isEditable: field.fieldAttributes?.isEditable ?? null,
+            isPIIField: field.fieldAttributes?.isPIIField ?? null, 
+            placeholder: field.fieldAttributes?.placeholder ?? '', 
+            validation: field.fieldAttributes?.validation || [],
+            options: options,
+            isMultiSelect: field.fieldAttributes?.isMultiSelect ?? false, 
+            maxSelections: field.fieldAttributes?.maxSelections ?? null,
+            hint: field.fieldAttributes?.hint || null,
+            pattern: field?.fieldAttributes?.pattern ?? null,
+            maxLength: field.maxLength ?? null,
+            minLength: field.minLength ?? null,
+            fieldId: field.fieldId ?? null,
+          };
+        });
+      return mappedFields;
     }
 }

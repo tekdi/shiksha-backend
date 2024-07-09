@@ -23,6 +23,8 @@ import APIResponse from "src/common/responses/response";
 import { Response } from "express";
 import { APIID } from 'src/common/utils/api-id.config';
 import { MemberStatus } from "src/cohortMembers/entities/cohort-member.entity";
+import { NotificationRequest } from "@utils/notification.axios";
+
 
 @Injectable()
 export class PostgresCohortMembersService {
@@ -34,7 +36,9 @@ export class PostgresCohortMembersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     @InjectRepository(Cohort)
-    private cohortRepository: Repository<Cohort>
+    private cohortRepository: Repository<Cohort>,
+    private readonly notificationRequest: NotificationRequest
+
   ) { }
 
   async getCohortMembers(cohortId: any, tenantId: any, fieldvalue: any, res: Response) {
@@ -289,7 +293,8 @@ export class PostgresCohortMembersService {
     loginUser: any,
     cohortMembers: CohortMembersDto,
     res: Response,
-    tenantId: string
+    tenantId: string,
+    deviceId: string
   ) {
     const apiId = APIID.COHORT_MEMBER_CREATE;
     try {
@@ -328,6 +333,19 @@ export class PostgresCohortMembersService {
         cohortMembers
       );
 
+      if (deviceId) {
+        // Prepare the notification payload
+        const notificationPayload = {
+          isQueue: false,
+          context: 'COHORT',
+          replacements: [cohortMembers.cohortId],
+          push: {
+            receipients: [deviceId],
+            // to: deviceId,
+          },
+        };
+        await this.notificationRequest.sendNotification(notificationPayload);
+      }
       return APIResponse.success(res, apiId, savedCohortMember, HttpStatus.OK, "Cohort member has been successfully assigned.");
 
     } catch (e) {
@@ -389,7 +407,6 @@ export class PostgresCohortMembersService {
     }
     let result = await this.usersRepository.query(query);
     return result;
-
   }
 
   public async updateCohortMembers(
@@ -508,14 +525,14 @@ export class PostgresCohortMembersService {
       updatedBy: loginUser,
       tenantId: tenantId
     };
-  
+
     for (let userId of cohortMembersDto.userId) {
       const userExists = await this.checkUserExist(userId);
       if (!userExists) {
         errors.push(`User with userId ${userId} does not exist.`);
         continue;
       }
-      
+
       // Handling of Removing Cohort from user
       if (cohortMembersDto.removeCohortId && cohortMembersDto.removeCohortId.length > 0) {
         for (let removeCohortId of cohortMembersDto.removeCohortId) {
@@ -526,10 +543,10 @@ export class PostgresCohortMembersService {
               continue;
             }
             const updateCohort = await this.cohortMembersRepository.update({ userId, cohortId: removeCohortId }, { status: MemberStatus.ARCHIVED });
-            if(updateCohort.affected === 0){
-              results.push({message:`Cohort Id ${removeCohortId} is not mapped to user Id${userId}} `});
-            }else{
-              results.push({message:`Cohort Id ${removeCohortId} status updated for This user Id${userId}} `});
+            if (updateCohort.affected === 0) {
+              results.push({ message: `Cohort Id ${removeCohortId} is not mapped to user Id${userId}} ` });
+            } else {
+              results.push({ message: `Cohort Id ${removeCohortId} status updated for This user Id${userId}} ` });
             }
           } catch (error) {
             errors.push(`Error updating cohort member with userId ${userId} and cohortId ${removeCohortId}: ${error.message}`);
@@ -568,12 +585,11 @@ export class PostgresCohortMembersService {
         }
       }
     }
-  
+
     if (errors.length > 0) {
       return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, { results, errors }, HttpStatus.CREATED, "Cohort Members Created with some errors");
     }
-  
+
     return APIResponse.success(response, APIID.COHORT_MEMBER_CREATE, results, HttpStatus.CREATED, "Cohort Members Created Successfully");
   }
-  
 }

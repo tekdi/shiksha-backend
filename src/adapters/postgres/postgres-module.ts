@@ -17,6 +17,7 @@ import { UserRoleMapping } from "src/rbac/assign-role/entities/assign-role.entit
 import { Role } from "src/rbac/role/entities/role.entity";
 import { PostgresRoleService } from "./rbac/role-adapter";
 import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-privilege.entity";
+import { NotificationRequest } from "@utils/notification.axios";
 
 
 @Module({
@@ -33,7 +34,7 @@ import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-
             Tenants,
             UserRoleMapping,
             Role,
-            RolePrivilegeMapping
+            RolePrivilegeMapping,
         ])
     ],
     providers: [
@@ -41,11 +42,13 @@ import { RolePrivilegeMapping } from "src/rbac/assign-privilege/entities/assign-
         PostgresAttendanceService,
         PostgresFieldsService,
         PostgresRoleService,
+        NotificationRequest
     ],
     exports: [
         PostgresUserService,
         PostgresAttendanceService,
-        PostgresFieldsService
+        PostgresFieldsService,
+        NotificationRequest
     ],
 })
 export class PostgresModule { }

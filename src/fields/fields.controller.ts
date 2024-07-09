@@ -38,7 +38,6 @@ import { APIID } from "src/common/utils/api-id.config";
 
 @ApiTags("Fields")
 @Controller("fields")
-@UseGuards(JwtAuthGuard)
 export class FieldsController {
   constructor(
     private fieldsAdapter: FieldsAdapter,
@@ -47,6 +46,7 @@ export class FieldsController {
   //fields
   //create fields
   @Post("/create")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @UsePipes(new ValidationPipe())
   @ApiCreatedResponse({ description: "Fields has been created successfully." })
@@ -102,6 +102,7 @@ export class FieldsController {
   //create fields values
   @UseFilters(new AllExceptionsFilter(APIID.FIELDVALUES_CREATE))
   @Post("/values/create")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({
     description: "Fields Values has been created successfully.",
@@ -124,6 +125,7 @@ export class FieldsController {
   //search fields values
   @Post("/values/search")
   @ApiBasicAuth("access-token")
+  @UseGuards(JwtAuthGuard)
   @ApiCreatedResponse({ description: "Fields Values list." })
   @ApiBody({ type: FieldValuesSearchDto })
   @ApiForbiddenResponse({ description: "Forbidden" })
@@ -146,6 +148,7 @@ export class FieldsController {
 
   //Get Field Option
   @Get("/getOptions/:fieldName")
+  @UseGuards(JwtAuthGuard)
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Field Options list." })
   @ApiForbiddenResponse({ description: "Forbidden" })

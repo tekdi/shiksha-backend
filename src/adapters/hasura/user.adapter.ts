@@ -30,7 +30,7 @@ export class HasuraUserService implements IServicelocator {
   checkUser(body: any, response: any) {
     throw new Error("Method not implemented.");
   }
-  public async findUserDetails(userID: any, username: String,tenantId:string) {
+  public async findUserDetails(userID: any, username: String, tenantId: string) {
 
   }
   public async getUsersDetailsById(userData: UserData, response: any) { }
@@ -550,78 +550,7 @@ export class HasuraUserService implements IServicelocator {
     userSearchDto: UserSearchDto,
     request: any
   ) {
-    // function to search users within the user tables
-    try {
-      let offset = 0;
-      if (userSearchDto.page > 1) {
-        offset = userSearchDto.limit * userSearchDto.page - 1;
-      }
 
-      const filters = userSearchDto.filters;
-
-      //add tenantid
-      filters["tenantId"] = { _eq: tenantId ? tenantId : "" };
-
-      Object.keys(userSearchDto.filters).forEach((item) => {
-        Object.keys(userSearchDto.filters[item]).forEach((e) => {
-          if (!e.startsWith("_")) {
-            filters[item][`_${e}`] = filters[item][e];
-            delete filters[item][e];
-          }
-        });
-      });
-
-      const data = {
-        query: `query SearchUser($filters:Users_bool_exp,$limit:Int, $offset:Int) {
-        Users_aggregate(where:$filters, limit: $limit, offset: $offset,) {
-          aggregate {
-            count
-          }
-        }
-        Users(where:$filters, limit: $limit, offset: $offset,) {
-          userId
-          name
-          username
-          email
-          district
-          state 
-          address
-          pincode
-          mobile
-          dob
-          role
-          tenantId
-          createdAt
-          updatedAt
-          createdBy
-          updatedBy
-            }
-          }`,
-        variables: {
-          limit: userSearchDto.limit,
-          offset: offset,
-          filters: userSearchDto.filters,
-        },
-      };
-
-      const config = {
-        method: "post",
-        url: process.env.REGISTRYHASURA,
-        headers: {
-          Authorization: request.headers.authorization,
-          "x-hasura-admin-secret": process.env.REGISTRYHASURAADMINSECRET,
-          "Content-Type": "application/json",
-        },
-        data: data,
-      };
-
-      const response = await this.axios(config);
-
-      return response;
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
   }
 
   public async deleteUserById(userId) { }

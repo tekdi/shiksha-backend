@@ -83,13 +83,12 @@ export class PostgresUserService implements IServicelocator {
 
   async findAllUserDetails(userSearchDto) {
 
-    let { limit, page, filters, exclude, sort } = userSearchDto;
-    let offset = 0;
+    let { limit, offset, filters, exclude, sort } = userSearchDto;
     let excludeCohortIdes;
     let excludeUserIdes;
-    if (page > 1) {
-      offset = parseInt(limit) * (page - 1);
-    }
+
+    offset = offset ? `OFFSET ${offset}` : '';
+    limit = limit ? `LIMIT ${limit}` : ''
     let result = {
       getUserDetails: [],
     };
@@ -141,14 +140,18 @@ export class PostgresUserService implements IServicelocator {
       orderingCondition = `ORDER BY U."${sort[0]}" ${sort[1]}`;
     }
 
-    let getUserIdUsingStateDistBlock
+    let getUserIdUsingCustomFields;
     if (Object.keys(searchCustomFields).length > 0) {
-      getUserIdUsingStateDistBlock = await this.fieldsService.getUserIdUsingStateDistBlock(searchCustomFields);
+      getUserIdUsingCustomFields = await this.fieldsService.filterUserUsingCustomFields(searchCustomFields);
+      if (getUserIdUsingCustomFields.length == 0) {
+        return false;
+      }
     }
 
-    if (getUserIdUsingStateDistBlock && getUserIdUsingStateDistBlock.length > 0) {
-      const stateDistBlockUserIds = getUserIdUsingStateDistBlock.map(userId => `'${userId}'`).join(',');
-      whereCondition += `${index > 0 ? ' AND ' : ''} U."userId" IN (${stateDistBlockUserIds})`;
+
+    if (getUserIdUsingCustomFields && getUserIdUsingCustomFields.length > 0) {
+      const userIdsDependsOnCustomFields = getUserIdUsingCustomFields.map(userId => `'${userId}'`).join(',');
+      whereCondition += `${index > 0 ? ' AND ' : ''} U."userId" IN (${userIdsDependsOnCustomFields})`;
       index++;
     }
 
@@ -173,8 +176,7 @@ export class PostgresUserService implements IServicelocator {
       INNER JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
       INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition}`
-
+      ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition} ${offset} ${limit}`
 
     let userDetails = await this.usersRepository.query(query);
 
@@ -184,12 +186,13 @@ export class PostgresUserService implements IServicelocator {
         let contextType = userData.role.toUpperCase();
         let isRequiredFieldOptions = false;
         let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, userSearchDto.fields, isRequiredFieldOptions);
-        userData['customFields'] = customFields
+        userData['customFields'] = customFields;
         result.getUserDetails.push(userData);
       }
     } else {
       result.getUserDetails.push(userDetails);
     }
+
     return result;
   }
 
@@ -430,14 +433,12 @@ export class PostgresUserService implements IServicelocator {
       userCreateDto.createdBy = decoded?.sub
       userCreateDto.updatedBy = decoded?.sub
       // const emailId = decoded?.email;
-      console.log(userCreateDto.createdBy, "cfeatbby");
+
 
       let email = await this.usersRepository.findOne({
         where: { userId: userCreateDto.createdBy }, select
           : ['email']
       })
-      console.log(email, "email");
-
 
       if (userCreateDto.customFields && userCreateDto.customFields.length > 0) {
         await this.validateCustomField(userCreateDto, response, apiId);

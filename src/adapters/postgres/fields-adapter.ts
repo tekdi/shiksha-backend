@@ -387,6 +387,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             HttpStatus.OK, 'Field Values fetched successfully.')
     }
 
+
     async findDynamicOptions(tableName, whereClause?: {}) {
         let query: string;
         let result;
@@ -451,7 +452,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
         return result;
     }
 
-    async getUserIdUsingStateDistBlock(stateDistBlockData: any) {
+    async filterUserUsingCustomFields(stateDistBlockData: any) {
         let searchKey = [];
         let whereCondition = ` WHERE `;
         let index = 0;
@@ -483,6 +484,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
     }
 
     async getFieldValuesData(id: string, context: string, contextType?: string, getFields?: string[], requiredFieldOptions?: Boolean) {
+        requiredFieldOptions = true;
+
         let customField;
         let fieldsArr = [];
         const [filledValues, customFields] = await Promise.all([
@@ -506,34 +509,26 @@ export class PostgresFieldsService implements IServicelocatorfields {
                     value: fieldValue || '',
                 };
 
-                if (requiredFieldOptions == true) {
-                    customField['options'] = data?.fieldParams?.['options'] || {}
-                }
-
-                if (data?.sourceDetails) {
-                    //If the value of the "dependsOn" field is true, do not retrieve values from the "custom table", "fieldParams" and the JSON file also.
-                    if (data?.dependsOn === false) {
-                        if (data?.sourceDetails?.source === 'table') {
-                            let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
-                            customField.options = dynamicOptions;
-                        } else if (data?.sourceDetails?.source === 'jsonFile') {
-                            const filePath = path.join(
-                                process.cwd(),
-                                `${data?.sourceDetails?.filePath}`,
-                            );
-                            customField = JSON.parse(readFileSync(filePath, 'utf-8'));
-                        }
+                if (requiredFieldOptions == true && data?.dependsOn === false) {
+                    if (data?.sourceDetails?.source === 'table') {
+                        let dynamicOptions = await this.findDynamicOptions(data?.sourceDetails?.table);
+                        customField.options = dynamicOptions;
+                    } else if (data?.sourceDetails?.source === 'jsonFile') {
+                        const filePath = path.join(
+                            process.cwd(),
+                            `${data?.sourceDetails?.filePath}`,
+                        );
+                        customField = JSON.parse(readFileSync(filePath, 'utf-8'));
                     } else {
-                        customField.options = [];
-                    }
-                } else {
-                    if (requiredFieldOptions == true) {
                         customField.options = data?.fieldParams?.['options'] || null;
                     }
+                } else {
+                    customField.options = null;
                 }
                 fieldsArr.push(customField);
             }
         }
+
         return fieldsArr;
     }
 

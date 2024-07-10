@@ -119,11 +119,11 @@ export class UserSearchDto {
 
   @ApiProperty({
     type: Number,
-    description: "Page",
+    description: "Offset",
   })
   @Expose()
   @IsOptional()
-  page: number;
+  offset: number;
 
   @ApiProperty({
     type: setFilters,

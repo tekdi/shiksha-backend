@@ -644,13 +644,17 @@ export class PostgresCohortService {
             HttpStatus.BAD_REQUEST
           );
         }
+        const order = {};
+        if (sort && sort.length === 2) {
+          const [sortField, sortOrder] = sort;
+          order[sortField] = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+        }
+
         const [data, totalCount] =
           await this.cohortMembersRepository.findAndCount({
             where: whereClause,
             skip: offset,
-            order: {
-              sort[0]: sort[1], // or 'DESC'
-            },
+            order,
           });
         const userExistCohortGroup = data.slice(offset, offset + limit);
         count = totalCount;

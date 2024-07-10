@@ -133,6 +133,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
         fieldDataList = await this.fieldsRepository.find({
           where: whereClause,
         });
+        for(let data of fieldDataList){
+            if(data?.dependsOn === false && data?.sourceDetails?.source === 'table' || data?.sourceDetails?.source === 'jsonfile' ){
+                let options = await this.findDynamicOptions(data.sourceDetails.table);
+                data.fieldParams = data.fieldParams || {};
+                data.fieldParams.options = options;
+            }
+        }
         if(!fieldDataList.length){
           return APIResponse.error(
             response,
@@ -657,6 +664,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             minLength: field.minLength ?? null,
             fieldId: field.fieldId ?? null,
             dependsOn: field.dependsOn ?? false,
+            sourceDetails: field.sourceDetails ?? null,
           };
         });
       return mappedFields;

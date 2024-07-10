@@ -265,7 +265,6 @@ export class PostgresCohortMembersService {
 
       return APIResponse.success(res, apiId, results, HttpStatus.OK, "Cohort members details fetched successfully.");
 
-
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
       return APIResponse.error(res, apiId, "Internal Server Error", errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);

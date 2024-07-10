@@ -70,7 +70,7 @@ export class PostgresUserService implements IServicelocator {
       let findData = await this.findAllUserDetails(userSearchDto);
 
       if (!findData) {
-        return APIResponse.error(response, apiId, "Bad request", `No Data Found`, HttpStatus.BAD_REQUEST);
+        return APIResponse.error(response, apiId, "Not Found", `No Data Found`, HttpStatus.NOT_FOUND);
       }
 
       return await APIResponse.success(response, apiId, findData,

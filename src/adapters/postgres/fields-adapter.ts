@@ -112,7 +112,12 @@ export class PostgresFieldsService implements IServicelocatorfields {
         if (filters && Object.keys(filters).length > 0) {
           Object.entries(filters).forEach(([key, value]) => {
             if (fieldKeys.includes(key)) {
-              whereClause[key] = value;
+              if (key === 'context' && (value === 'USERS' || value === 'COHORT')) {
+                whereClause['context'] = value;
+                whereClause['contextType'] = IsNull()
+              } else {
+                whereClause[key] = value;
+              }
             } else {
               return APIResponse.error(
                 response,
@@ -133,7 +138,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             response,
             apiId,
             "NOT_FOUND",
-            `Fields not found`,
+            `Fields not found for the search term`,
             HttpStatus.NOT_FOUND
           );
         }
@@ -629,10 +634,10 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
     mappedFields(fieldDataList){
       const mappedFields: SchemaField[] = fieldDataList.map((field) => {
-          const options: Option[] = field.options?.map((opt) => ({
+          const options = field.fieldParams?.options?.map((opt) => ({
             label: opt.label,
             value: opt.value,
-          })) || []; 
+          })) || [];
         
           return {
             label: field.label,
@@ -651,6 +656,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             maxLength: field.maxLength ?? null,
             minLength: field.minLength ?? null,
             fieldId: field.fieldId ?? null,
+            dependsOn: field.dependsOn ?? false,
           };
         });
       return mappedFields;

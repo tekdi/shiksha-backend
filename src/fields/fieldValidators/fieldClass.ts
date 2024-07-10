@@ -34,6 +34,7 @@ export interface SchemaField {
     maxLength?: number;
     minLength?: number;
     fieldId?: string;
+    dependsOn?: boolean
   }
   
   export interface Option {

@@ -185,11 +185,10 @@ export class PostgresCohortMembersService {
         return APIResponse.error(res, apiId, "Bad Request", "Invalid input: TenantId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
 
-      let { limit, page, filters } = cohortMembersSearchDto;
-      let offset = 0;
-      if (page > 1) {
-        offset = limit * (page - 1);
-      }
+      let { limit, offset, filters } = cohortMembersSearchDto;
+
+      offset = offset ? offset : 0;
+      limit = limit ? limit : 0;
 
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {

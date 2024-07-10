@@ -559,12 +559,14 @@ export class PostgresCohortService {
   ) {
     const apiId = APIID.COHORT_LIST;
     try {
-      let { limit, page, filters } = cohortSearchDto;
+      let { limit, offset, filters } = cohortSearchDto;
 
-      let offset = 0;
-      if (limit > 0 && page > 0) {
-        offset = limit * (page - 1);
-      }
+      offset = offset ? offset : 0;
+      limit = limit ? limit : 0;
+      // let offset = 0;
+      // if (limit > 0 && page > 0) {
+      //   offset = limit * (page - 1);
+      // }
       if (limit === 0) {
         limit = 200;
       }
@@ -581,16 +583,6 @@ export class PostgresCohortService {
           apiId,
           `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
           `Limit exceeded`,
-          HttpStatus.BAD_REQUEST
-        );
-      }
-
-      if (page > PAGE_LIMIT) {
-        return APIResponse.error(
-          response,
-          apiId,
-          `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
-          `Page limit exceeded`,
           HttpStatus.BAD_REQUEST
         );
       }

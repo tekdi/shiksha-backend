@@ -559,22 +559,15 @@ export class PostgresCohortService {
   ) {
     const apiId = APIID.COHORT_LIST;
     try {
-      let { limit, offset, filters } = cohortSearchDto;
+      let { limit, sort, offset, filters } = cohortSearchDto;
 
       offset = offset ? offset : 0;
-      limit = limit ? limit : 0;
-      // let offset = 0;
-      // if (limit > 0 && page > 0) {
-      //   offset = limit * (page - 1);
-      // }
-      if (limit === 0) {
-        limit = 200;
-      }
+      limit = limit ? limit : 200;
+
       const emptyValueKeys = {};
       let emptyKeysString = "";
 
       const MAX_LIMIT = 200;
-      const PAGE_LIMIT = 10000000;
 
       // Validate the limit parameter
       if (limit > MAX_LIMIT) {
@@ -655,6 +648,9 @@ export class PostgresCohortService {
           await this.cohortMembersRepository.findAndCount({
             where: whereClause,
             skip: offset,
+            order: {
+              sort[0]: sort[1], // or 'DESC'
+            },
           });
         const userExistCohortGroup = data.slice(offset, offset + limit);
         count = totalCount;

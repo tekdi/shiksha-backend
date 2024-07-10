@@ -141,6 +141,8 @@ export class PostgresUserService implements IServicelocator {
     }
 
     let getUserIdUsingCustomFields;
+
+    //If source config in source details from fields table is not exist then return false 
     if (Object.keys(searchCustomFields).length > 0) {
       getUserIdUsingCustomFields = await this.fieldsService.filterUserUsingCustomFields(searchCustomFields);
       if (getUserIdUsingCustomFields.length == 0) {

@@ -258,14 +258,12 @@ export class PostgresCohortMembersService {
         options,
         order
       );
-      const totalCount = results['userDetails'].length;
-
 
       if (results['userDetails'].length == 0) {
         return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
       }
 
-      return APIResponse.success(res, apiId, { totalCount, results }, HttpStatus.OK, "Cohort members details fetched successfully.");
+      return APIResponse.success(res, apiId, results, HttpStatus.OK, "Cohort members details fetched successfully.");
 
 
     } catch (e) {
@@ -276,18 +274,22 @@ export class PostgresCohortMembersService {
 
   async getCohortMemberUserDetails(where: any, fieldShowHide: any, options: any, order: any) {
     let results = {
-      userDetails: [],
+      totalCount: 0,
+      userDetails: []
     };
 
     let getUserDetails = await this.getUsers(where, options, order);
 
-    for (let data of getUserDetails) {
-      if (fieldShowHide === "false") {
-        results.userDetails.push(data);
-      } else {
-        const fieldValues = await this.getFieldandFieldValues(data.userId);
-        data['customField'] = fieldValues;
-        results.userDetails.push(data);
+    if (getUserDetails.length > 0) {
+      results.totalCount = parseInt(getUserDetails[0].total_count, 10);
+      for (let data of getUserDetails) {
+        if (fieldShowHide === "false") {
+          results.userDetails.push(data);
+        } else {
+          const fieldValues = await this.getFieldandFieldValues(data.userId);
+          data['customField'] = fieldValues;
+          results.userDetails.push(data);
+        }
       }
     }
 
@@ -386,7 +388,7 @@ export class PostgresCohortMembersService {
 
 
     query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, 
-      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
+      CM."status", CM."statusReason",CM."cohortMembershipId", COUNT(*) OVER() AS total_count  FROM public."CohortMembers" CM
       INNER JOIN public."Users" U
       ON CM."userId" = U."userId"
       INNER JOIN public."UserRolesMapping" UR
@@ -418,6 +420,7 @@ export class PostgresCohortMembersService {
     }
 
     let result = await this.usersRepository.query(query);
+
     return result;
   }
 

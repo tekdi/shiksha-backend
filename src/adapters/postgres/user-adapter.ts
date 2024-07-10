@@ -447,7 +447,6 @@ export class PostgresUserService implements IServicelocator {
       }
 
 
-
       // check and validate all fields
       let validatedRoles = await this.validateRequestBody(userCreateDto, response, apiId)
 
@@ -456,21 +455,21 @@ export class PostgresUserService implements IServicelocator {
       const userSchema = new UserCreateDto(userCreateDto);
 
       let errKeycloak = "";
-      let resKeycloak = "";
+      let resKeycloak = "fd1f3812-9dc4-4dd2-886b-ce91cb664fd0";
 
-      const keycloakResponse = await getKeycloakAdminToken();
-      const token = keycloakResponse.data.access_token;
-      let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
-      // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
-      if (checkUserinKeyCloakandDb) {
-        return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
-      }
-      resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
-        (error) => {
-          errKeycloak = error.response?.data.errorMessage;
-          return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-      );
+      // const keycloakResponse = await getKeycloakAdminToken();
+      // const token = keycloakResponse.data.access_token;
+      // let checkUserinKeyCloakandDb = await this.checkUserinKeyCloakandDb(userCreateDto)
+      // // let checkUserinDb = await this.checkUserinKeyCloakandDb(userCreateDto.username);
+      // if (checkUserinKeyCloakandDb) {
+      //   return APIResponse.error(response, apiId, "Forbidden", `User Already Exist`, HttpStatus.FORBIDDEN);
+      // }
+      // resKeycloak = await createUserInKeyCloak(userSchema, token).catch(
+      //   (error) => {
+      //     errKeycloak = error.response?.data.errorMessage;
+      //     return APIResponse.error(response, apiId, "Internal Server Error", `${errKeycloak}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      //   }
+      // );
 
       userCreateDto.userId = resKeycloak;
 
@@ -510,9 +509,10 @@ export class PostgresUserService implements IServicelocator {
           }
         }
       }
+
       // Send Notification if user added as cohort Member
-      if (result && userCreateDto.tenantCohortRoleMapping[0].cohortId &&
-        userCreateDto.tenantCohortRoleMapping[0].cohortId.length > 0 && email.email) {
+      if (result && userCreateDto?.tenantCohortRoleMapping && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId &&
+        userCreateDto?.tenantCohortRoleMapping[0]?.cohortId.length > 0 && email?.email) {
         const notificationPayload = {
           isQueue: false,
           context: 'USER',
@@ -657,7 +657,6 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response) {
 
     const user = new User()
@@ -676,17 +675,20 @@ export class PostgresUserService implements IServicelocator {
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
     }
-
     let result = await this.usersRepository.save(user);
+
+
 
     if (result && userCreateDto.tenantCohortRoleMapping) {
       for (let mapData of userCreateDto.tenantCohortRoleMapping) {
-        for (let cohortIds of mapData.cohortId) {
-          let cohortData = {
-            userId: result?.userId,
-            cohortId: cohortIds
+        if (mapData.cohortId) {
+          for (let cohortIds of mapData.cohortId) {
+            let cohortData = {
+              userId: result?.userId,
+              cohortId: cohortIds
+            }
+            await this.addCohortMember(cohortData);
           }
-          await this.addCohortMember(cohortData);
         }
 
         let tenantRoleMappingData = {

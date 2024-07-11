@@ -199,9 +199,6 @@ export class PostgresUserService implements IServicelocator {
         result.getUserDetails.push(...userDetails);
       }
     }
-
-    console.log(result);
-
     return result;
   }
 

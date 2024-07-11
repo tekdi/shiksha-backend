@@ -233,8 +233,6 @@ export class PostgresCohortService {
   }
 
   public async validateFieldValues(field_value_array: string[]) {
-    console.log("hii");
-
     let encounteredKeys = [];
     for (const fieldValue of field_value_array) {
       const [fieldId] = fieldValue.split(":").map((value) => value.trim());
@@ -255,9 +253,6 @@ export class PostgresCohortService {
 
     try {
       let field_value_array = [];
-
-      console.log("hii1");
-
       if (cohortCreateDto.fieldValues) {
         field_value_array = cohortCreateDto.fieldValues.split("|");
         //Check duplicate field
@@ -339,7 +334,6 @@ export class PostgresCohortService {
 
       if (field_value_array.length > 0) {
         let field_values = [];
-        console.log("hii2");
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
@@ -497,7 +491,6 @@ export class PostgresCohortService {
         if (fieldValueData["fieldValues"]) {
 
           if (field_value_array.length > 0) {
-            console.log("hii4");
             for (let i = 0; i < field_value_array.length; i++) {
               let fieldValues = field_value_array[i].split(":");
               let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";
@@ -622,6 +615,13 @@ export class PostgresCohortService {
         cohortDetails: [],
       };
 
+      let order = {};
+      if (sort && sort.length) {
+        order[sort[0]] = ['ASC', 'DESC'].includes(sort[1].toUpperCase()) ? sort[1].toUpperCase() : 'ASC'
+      } else {
+        order['name'] = 'ASC'
+      }
+
       let count = 0;
 
       if (whereClause["userId"]) {
@@ -654,11 +654,6 @@ export class PostgresCohortService {
             HttpStatus.BAD_REQUEST
           );
         }
-        const order = {};
-        if (sort && sort.length === 2) {
-          const [sortField, sortOrder] = sort;
-          order[sortField] = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-        }
 
         const [data, totalCount] =
           await this.cohortMembersRepository.findAndCount({
@@ -686,6 +681,7 @@ export class PostgresCohortService {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
           skip: offset,
+          order,
         });
 
         const cohortData = data.slice(offset, offset + limit);

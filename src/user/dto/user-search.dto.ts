@@ -154,7 +154,7 @@ export class UserSearchDto {
 
   @ApiPropertyOptional({
     description: "Sort",
-    example: ["createdAt", "asc"]
+    example: ["name", "asc"]
   })
   @IsArray()
   @IsOptional()

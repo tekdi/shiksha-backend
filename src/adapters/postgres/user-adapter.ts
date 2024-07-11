@@ -173,11 +173,11 @@ export class PostgresUserService implements IServicelocator {
 
     let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile 
       FROM  public."Users" U
-      INNER JOIN public."CohortMembers" CM 
+      LEFT JOIN public."CohortMembers" CM 
       ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
+      LEFT JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
+      LEFT JOIN public."Roles" R
       ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition} ${offset} ${limit}`
 
     let userDetails = await this.usersRepository.query(query);

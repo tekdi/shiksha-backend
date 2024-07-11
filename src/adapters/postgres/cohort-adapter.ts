@@ -233,6 +233,8 @@ export class PostgresCohortService {
   }
 
   public async validateFieldValues(field_value_array: string[]) {
+    console.log("hii");
+
     let encounteredKeys = [];
     for (const fieldValue of field_value_array) {
       const [fieldId] = fieldValue.split(":").map((value) => value.trim());
@@ -253,6 +255,8 @@ export class PostgresCohortService {
 
     try {
       let field_value_array = [];
+
+      console.log("hii1");
 
       if (cohortCreateDto.fieldValues) {
         field_value_array = cohortCreateDto.fieldValues.split("|");
@@ -335,7 +339,7 @@ export class PostgresCohortService {
 
       if (field_value_array.length > 0) {
         let field_values = [];
-
+        console.log("hii2");
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
@@ -381,17 +385,21 @@ export class PostgresCohortService {
   ) {
     const apiId = APIID.COHORT_UPDATE;
     try {
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
-      let valid = await this.validateFieldValues(field_value_array);
-      if (valid && valid?.valid === false) {
-        return APIResponse.error(
-          res,
-          apiId,
-          `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
-          `Duplicate fieldId`,
-          HttpStatus.CONFLICT
-        );
+      let field_value_array;
+      if (cohortUpdateDto.fieldValues) {
+        field_value_array = cohortUpdateDto?.fieldValues?.split("|");
+        let valid = await this.validateFieldValues(field_value_array);
+        if (valid && valid?.valid === false) {
+          return APIResponse.error(
+            res,
+            apiId,
+            `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
+            `Duplicate fieldId`,
+            HttpStatus.CONFLICT
+          );
+        }
       }
+
 
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortUpdateDto.updatedBy = decoded?.sub;
@@ -487,7 +495,9 @@ export class PostgresCohortService {
         }
 
         if (fieldValueData["fieldValues"]) {
+
           if (field_value_array.length > 0) {
+            console.log("hii4");
             for (let i = 0; i < field_value_array.length; i++) {
               let fieldValues = field_value_array[i].split(":");
               let fieldId = fieldValues[0] ? fieldValues[0].trim() : "";

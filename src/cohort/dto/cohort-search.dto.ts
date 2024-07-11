@@ -82,7 +82,7 @@ export class CohortSearchDto {
 
   @ApiPropertyOptional({
     description: "Sort",
-    example: ["createdAt", "asc"]
+    example: ["name", "asc"]
   })
   @IsArray()
   @IsOptional()

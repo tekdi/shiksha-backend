@@ -10,7 +10,7 @@ import { FieldValuesCreateDto } from "src/fields/dto/field-values-create.dto";
 export class CohortCreateDto {
   @Expose()
   cohortId: string;
-  
+
   @Expose()
   tenantId: string;
 
@@ -64,7 +64,7 @@ export class CohortCreateDto {
 
   //status
   @Expose()
-  status: boolean;
+  status: string;
 
   //attendanceCaptureImage
   @Expose()

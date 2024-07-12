@@ -2,7 +2,8 @@ import { Exclude, Expose } from "class-transformer";
 import {
   IsNotEmpty,
   IsString,
-  IsOptional
+  IsOptional,
+  IsEnum
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -10,7 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class CohortUpdateDto {
   @Expose()
   cohortId: string;
-  
+
   @Expose()
   tenantId: string;
 
@@ -57,8 +58,20 @@ export class CohortUpdateDto {
   type: string;
 
   //status
+
+  // @Expose()
+  // status: boolean;
+
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "The status of Cohort",
+  })
+  @IsEnum(['active', 'archived', 'inactive'], {
+    message: 'Status must be one of: active, archived, inactive',
+  })
   @Expose()
-  status: boolean;
+  status: string;
 
   //attendanceCaptureImage
   @Expose()

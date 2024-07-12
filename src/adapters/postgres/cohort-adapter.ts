@@ -22,7 +22,7 @@ import { Fields } from "src/fields/entities/fields.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { PostgresFieldsService } from "./fields-adapter";
 import { FieldValues } from "../../fields/entities/fields-values.entity";
-import { CohortMembers } from "src/cohortMembers/entities/cohort-member.entity";
+import { CohortMembers, MemberStatus } from "src/cohortMembers/entities/cohort-member.entity";
 import { ErrorResponseTypeOrm } from "src/error-response-typeorm";
 import { isUUID } from "class-validator";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
@@ -271,7 +271,7 @@ export class PostgresCohortService {
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortCreateDto.createdBy = decoded?.sub;
       cohortCreateDto.updatedBy = decoded?.sub;
-      cohortCreateDto.status = true;
+      cohortCreateDto.status = 'active';
       cohortCreateDto.attendanceCaptureImage = false;
 
       let response;
@@ -285,8 +285,8 @@ export class PostgresCohortService {
         if (existData.length == 0) {
           response = await this.cohortRepository.save(cohortCreateDto);
         } else {
-          if (existData[0].status == false) {
-            const updateData = { status: true };
+          if (existData[0].status == 'archived') {
+            const updateData = { status: 'active' };
             const cohortId = existData[0].cohortId;
             await this.cohortRepository.update(cohortId, updateData);
             const cohortData = await this.cohortRepository.find({
@@ -310,8 +310,8 @@ export class PostgresCohortService {
         if (existData.length === 0) {
           response = await this.cohortRepository.save(cohortCreateDto);
         } else {
-          if (existData[0].status == false) {
-            const updateData = { status: true };
+          if (existData[0].status == 'archived') {
+            const updateData = { status: 'active' };
             const cohortId = existData[0].cohortId;
             await this.cohortRepository.update(cohortId, updateData);
             const cohortData = await this.cohortRepository.find({
@@ -398,7 +398,6 @@ export class PostgresCohortService {
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortUpdateDto.updatedBy = decoded?.sub;
       cohortUpdateDto.createdBy = decoded?.sub;
-      cohortUpdateDto.status = true;
       let response;
 
       if (!isUUID(cohortId)) {
@@ -412,6 +411,9 @@ export class PostgresCohortService {
       }
 
       const checkData = await this.checkIfCohortExist(cohortId);
+      const existingCohorDetails = await this.cohortRepository.findOne({
+        where: { cohortId: cohortId },
+      });
 
       if (checkData === true) {
         let updateData = {};
@@ -442,8 +444,8 @@ export class PostgresCohortService {
           if (existData.length == 0) {
             response = await this.cohortRepository.update(cohortId, updateData);
           } else {
-            if (existData[0].status == false) {
-              const updateData = { status: true };
+            if (existData[0].status == 'archived') {
+              const updateData = { status: 'active' };
               const cohortId = existData[0].cohortId;
               await this.cohortRepository.update(cohortId, updateData);
               const cohortData = await this.cohortRepository.find({
@@ -462,14 +464,14 @@ export class PostgresCohortService {
           }
         } else {
           const existData = await this.cohortRepository.find({
-            where: { name: cohortUpdateDto.name },
+            where: { name: cohortUpdateDto.name ? cohortUpdateDto.name : "" },
           });
 
           if (existData.length == 0) {
             response = await this.cohortRepository.update(cohortId, updateData);
           } else {
-            if (existData[0].status == false) {
-              const updateData = { status: true };
+            if (existData[0].status == 'archived') {
+              const updateData = { status: 'active' };
               const cohortId = existData[0].cohortId;
               await this.cohortRepository.update(cohortId, updateData);
               const cohortData = await this.cohortRepository.find({
@@ -525,6 +527,21 @@ export class PostgresCohortService {
             }
           }
         }
+        if ((cohortUpdateDto.status === 'archived' || cohortUpdateDto.status === 'inactive') && existingCohorDetails.status === 'active') {
+          let memberStatus;
+          if (cohortUpdateDto.status === 'archived') {
+            memberStatus = MemberStatus.ARCHIVED;
+          } else if (cohortUpdateDto.status === 'inactive') {
+            memberStatus = MemberStatus.INACTIVE;
+          }
+
+          if (memberStatus) {
+            await this.cohortMembersRepository.update(
+              { cohortId },
+              { status: memberStatus, updatedBy: cohortUpdateDto.updatedBy }
+            );
+          }
+        }
 
         return APIResponse.success(
           res,
@@ -543,6 +560,8 @@ export class PostgresCohortService {
         );
       }
     } catch (error) {
+      console.log(error);
+
       const errorMessage = error.message || "Internal server error";
       return APIResponse.error(
         res,
@@ -788,7 +807,7 @@ export class PostgresCohortService {
     const existData = await this.cohortRepository.find({
       where: {
         cohortId: id,
-        status: true,
+        status: 'active',
       },
     });
     if (existData.length !== 0) {

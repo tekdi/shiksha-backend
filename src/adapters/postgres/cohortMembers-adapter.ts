@@ -185,11 +185,10 @@ export class PostgresCohortMembersService {
         return APIResponse.error(res, apiId, "Bad Request", "Invalid input: TenantId must be a valid UUID.", HttpStatus.BAD_REQUEST);
       }
 
-      let { limit, page, filters } = cohortMembersSearchDto;
-      let offset = 0;
-      if (page > 1) {
-        offset = limit * (page - 1);
-      }
+      let { limit, sort, offset, filters } = cohortMembersSearchDto;
+
+      offset = offset ? offset : 0;
+      limit = limit ? limit : 0;
 
       const whereClause = {};
       if (filters && Object.keys(filters).length > 0) {
@@ -225,7 +224,6 @@ export class PostgresCohortMembersService {
         }
       }
 
-      // console.log("USER DATA ",userData)
       let results = {};
       let where = [];
       if (whereClause["cohortId"]) {
@@ -248,20 +246,24 @@ export class PostgresCohortMembersService {
         options.push(['offset', offset]);
       }
 
+      const order = {};
+      if (sort) {
+        const [sortField, sortOrder] = sort;
+        order[sortField] = sortOrder;
+      }
+
       results = await this.getCohortMemberUserDetails(
         where,
         "true",
-        options
+        options,
+        order
       );
-      const totalCount = results['userDetails'].length;
-
 
       if (results['userDetails'].length == 0) {
         return APIResponse.error(res, apiId, "Not Found", "Invalid input: No data found.", HttpStatus.NOT_FOUND);
       }
 
-      return APIResponse.success(res, apiId, { totalCount, results }, HttpStatus.OK, "Cohort members details fetched successfully.");
-
+      return APIResponse.success(res, apiId, results, HttpStatus.OK, "Cohort members details fetched successfully.");
 
     } catch (e) {
       const errorMessage = e.message || 'Internal server error';
@@ -269,20 +271,24 @@ export class PostgresCohortMembersService {
     }
   }
 
-  async getCohortMemberUserDetails(where: any, fieldShowHide: any, options: any) {
+  async getCohortMemberUserDetails(where: any, fieldShowHide: any, options: any, order: any) {
     let results = {
-      userDetails: [],
+      totalCount: 0,
+      userDetails: []
     };
 
-    let getUserDetails = await this.getUsers(where, options);
+    let getUserDetails = await this.getUsers(where, options, order);
 
-    for (let data of getUserDetails) {
-      if (fieldShowHide === "false") {
-        results.userDetails.push(data);
-      } else {
-        const fieldValues = await this.getFieldandFieldValues(data.userId);
-        data['customField'] = fieldValues;
-        results.userDetails.push(data);
+    if (getUserDetails.length > 0) {
+      results.totalCount = parseInt(getUserDetails[0].total_count, 10);
+      for (let data of getUserDetails) {
+        if (fieldShowHide === "false") {
+          results.userDetails.push(data);
+        } else {
+          const fieldValues = await this.getFieldandFieldValues(data.userId);
+          data['customField'] = fieldValues;
+          results.userDetails.push(data);
+        }
       }
     }
 
@@ -354,16 +360,15 @@ export class PostgresCohortMembersService {
     }
   }
 
-  async getUsers(where: any, options: any) {
+  async getUsers(where: any, options: any, order: any) {
     let query = ``;
     let whereCase = ``;
-    let optionsCase = ``;
-    let isRoleCondition = 0;
+    let limit, offset;
+
     if (where.length > 0) {
       whereCase = `WHERE `;
       where.forEach((value, index) => {
         if (value[0] === "role") {
-          isRoleCondition = 1;
           whereCase += `R."name"='${value[1]}'`;
         }
         else {
@@ -379,33 +384,42 @@ export class PostgresCohortMembersService {
         }
       });
     }
-    if (options.length > 0) {
-      options.forEach((value, index) => {
-        optionsCase = `${value[0]} ${value[1]} `;
-      })
+
+
+    query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, 
+      CM."status", CM."statusReason",CM."cohortMembershipId", COUNT(*) OVER() AS total_count  FROM public."CohortMembers" CM
+      INNER JOIN public."Users" U
+      ON CM."userId" = U."userId"
+      INNER JOIN public."UserRolesMapping" UR
+      ON UR."userId" = U."userId"
+      INNER JOIN public."Roles" R
+      ON R."roleId" = UR."roleId" ${whereCase}`;
+
+    options.forEach(option => {
+      if (option[0] === 'limit') {
+        limit = option[1];
+      }
+      if (option[0] === 'offset') {
+        offset = option[1];
+      }
+    });
+
+    if (order && Object.keys(order).length > 0) {
+      const orderField = Object.keys(order)[0];
+      const orderDirection = order[orderField].toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      query += ` ORDER BY ${orderField} ${orderDirection}`;
     }
 
-    if (isRoleCondition == 0) {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile, 
-      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
-      INNER JOIN public."Users" U
-      ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
-      ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
+    if (limit !== undefined) {
+      query += ` LIMIT ${limit}`;
     }
-    else {
-      query = `SELECT U."userId", U.username, U.name, R.name AS role, U.district, U.state,U.mobile,
-      CM."status", CM."statusReason",CM."cohortMembershipId"  FROM public."CohortMembers" CM
-      INNER JOIN public."Users" U
-      ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
-      ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
-      ON R."roleId" = UR."roleId" ${whereCase} ${optionsCase}`;
+
+    if (offset !== undefined) {
+      query += ` OFFSET ${offset}`;
     }
+
     let result = await this.usersRepository.query(query);
+
     return result;
   }
 

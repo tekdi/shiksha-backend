@@ -527,10 +527,14 @@ export class PostgresCohortService {
             }
           }
         }
-        if ((cohortUpdateDto.status === 'archived' || cohortUpdateDto.status === 'inactive') && existingCohorDetails.status === 'active') {
+        if ((cohortUpdateDto.status === 'archived' && (existingCohorDetails.status === 'active' || existingCohorDetails.status === 'inactive')) ||
+          (cohortUpdateDto.status === 'active' && (existingCohorDetails.status === 'archived' || existingCohorDetails.status === 'inactive')) ||
+          (cohortUpdateDto.status === 'inactive' && (existingCohorDetails.status === 'active' || existingCohorDetails.status === 'archived'))) {
           let memberStatus;
           if (cohortUpdateDto.status === 'archived') {
             memberStatus = MemberStatus.ARCHIVED;
+          } else if (cohortUpdateDto.status === 'active') {
+            memberStatus = MemberStatus.ACTIVE;
           } else if (cohortUpdateDto.status === 'inactive') {
             memberStatus = MemberStatus.INACTIVE;
           }
@@ -806,8 +810,7 @@ export class PostgresCohortService {
   public async checkIfCohortExist(id: any) {
     const existData = await this.cohortRepository.find({
       where: {
-        cohortId: id,
-        status: 'active',
+        cohortId: id
       },
     });
     if (existData.length !== 0) {

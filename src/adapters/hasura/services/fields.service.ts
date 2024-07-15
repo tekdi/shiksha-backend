@@ -238,7 +238,7 @@ export class FieldsService {
 
       let offset = 0;
       if (fieldsSearchDto.page > 1) {
-        offset = parseInt(fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
+        offset = (fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
       }
 
       let temp_filters = fieldsSearchDto.filters;
@@ -283,7 +283,7 @@ export class FieldsService {
               }
             }`,
         variables: {
-          limit: parseInt(fieldsSearchDto.limit),
+          limit: (fieldsSearchDto.limit),
           offset: offset,
           filters: fieldsSearchDto.filters,
         },

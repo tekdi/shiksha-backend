@@ -27,6 +27,86 @@ export class PostgresFieldsService implements IServicelocatorfields {
         private fieldsValuesRepository: Repository<FieldValues>,
     ) { }
 
+    async getFormCustomField(requiredData ,response){
+        let apiId = 'FormData'
+        try {
+            let whereClause = '(context IS NULL AND "contextType" IS NULL)';
+            let fileread = readFileSync(join(process.cwd(), 'src/utils/corefield.json'), 'utf8');
+            let corefield = JSON.parse(fileread);
+            if (!requiredData.context && !requiredData.contextType) {
+                const result = [...corefield.users, ...corefield.cohort];
+                let data = await this.getFieldData(whereClause);
+                data.push(...result);
+                if(!data){
+                    return APIResponse.error(
+                        response,
+                        apiId,
+                        "NOT_FOUND",
+                        `Fields not found for the search term`,
+                        HttpStatus.NOT_FOUND
+                      );
+                }
+                return APIResponse.success(
+                    response,
+                    apiId,
+                    data,
+                    HttpStatus.OK,
+                    "Fields fetched successfully."
+                  );
+            }
+        
+            if (requiredData.context) {
+                whereClause += ` OR context = '${requiredData.context}' AND "contextType" IS NULL`;
+            }
+        
+            if (requiredData.contextType) {
+                whereClause += ` OR "contextType" = '${requiredData.contextType}'`;
+            }
+            
+            let data = await this.getFieldData(whereClause);
+            if(!data){
+                return APIResponse.error(
+                    response,
+                    apiId,
+                    "NOT_FOUND",
+                    `Fields not found for the search term`,
+                    HttpStatus.NOT_FOUND
+                  );
+            }
+            if(requiredData.context === 'USERS' || requiredData.context === 'COHORT'){
+                let coreFields = corefield[requiredData.context.toLowerCase()];
+                data.push(...coreFields);
+            }
+            return APIResponse.success(
+                response,
+                apiId,
+                data,
+                HttpStatus.OK,
+                "Fields fetched successfully."
+              );
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async getFieldData(whereClause):Promise<any>{
+        let query = `select * from public."Fields" where ${whereClause}`
+        console.log(query);
+        let result = await this.fieldsRepository.query(query);
+        if(!result){
+            return false;
+        }
+        for(let data of result){
+            if(data?.dependsOn === false && data?.sourceDetails?.source === 'table' || data?.sourceDetails?.source === 'jsonfile' ){
+                let options = await this.findDynamicOptions(data.sourceDetails.table);
+                data.fieldParams = data.fieldParams || {};
+                data.fieldParams.options = options;
+            }
+        }
+        let schema = this.mappedFields(result);
+        return schema;
+    }
+
     async createFields(request: any, fieldsDto: FieldsDto, response: Response,) {
         const apiId = APIID.FIELDS_CREATE;
         try {
@@ -108,15 +188,14 @@ export class PostgresFieldsService implements IServicelocatorfields {
         const fieldKeys = this.fieldsRepository.metadata.columns.map(
           (column) => column.propertyName
         );
-        let whereClause: any = { tenantId };
+        let whereClause = `"tenantId" = '${tenantId}'`;
         if (filters && Object.keys(filters).length > 0) {
           Object.entries(filters).forEach(([key, value]) => {
             if (fieldKeys.includes(key)) {
               if (key === 'context' && (value === 'USERS' || value === 'COHORT')) {
-                whereClause['context'] = value;
-                whereClause['contextType'] = IsNull()
+                whereClause += ` AND "context" = '${value}'`;
               } else {
-                whereClause[key] = value;
+                whereClause += ` AND "${key}" = '${value}'`;
               }
             } else {
               return APIResponse.error(
@@ -129,18 +208,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
             }
           });
         }
-        let fieldDataList;
-        fieldDataList = await this.fieldsRepository.find({
-          where: whereClause,
-        });
-        for(let data of fieldDataList){
-            if(data?.dependsOn === false && data?.sourceDetails?.source === 'table' || data?.sourceDetails?.source === 'jsonfile' ){
-                let options = await this.findDynamicOptions(data.sourceDetails.table);
-                data.fieldParams = data.fieldParams || {};
-                data.fieldParams.options = options;
-            }
-        }
-        if(!fieldDataList.length){
+        let fieldData = await this.getFieldData(whereClause);
+        if(!fieldData.length){
           return APIResponse.error(
             response,
             apiId,
@@ -149,15 +218,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
             HttpStatus.NOT_FOUND
           );
         }
-        let schema = this.mappedFields(fieldDataList);
         return APIResponse.success(
           response,
           apiId,
-          schema,
+          fieldData,
           HttpStatus.OK,
           "Fields fetched successfully."
         );
       } catch (error) {
+        console.log(error);
         const errorMessage = error.message || "Internal server error";
         return APIResponse.error(
           response,
@@ -645,6 +714,7 @@ export class PostgresFieldsService implements IServicelocatorfields {
             label: field.label,
             name: field.name,
             type: field.type,
+            coreField: 0,
             isRequired: field?.fieldAttributes?.required,
             isEditable: field.fieldAttributes?.isEditable ?? null,
             isPIIField: field.fieldAttributes?.isPIIField ?? null, 

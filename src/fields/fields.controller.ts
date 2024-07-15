@@ -169,4 +169,26 @@ export class FieldsController {
   ) {
     return await this.fieldsAdapter.buildFieldsAdapter().getFieldOptions(request, fieldName, controllingfieldfk, context, contextType, response);
   }
+
+  @Get("/formFields")
+  @ApiCreatedResponse({ description: "Form Data Fetch" })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @SerializeOptions({
+    strategy: "excludeAll",
+  })
+  @ApiQuery({ name: 'context', required: false })
+  @ApiQuery({ name: 'contextType', required: false })
+  public async getFormData(
+    @Headers() headers,
+    @Req() request: Request,
+    @Query("context") context: string | null = null,
+    @Query("contextType") contextType: string | null = null,
+    @Res() response: Response
+  ) {
+    let requiredData = {
+      context: context || false,
+      contextType: contextType || false
+    }
+    return await this.fieldsAdapter.buildFieldsAdapter().getFormCustomField(requiredData ,response);
+  }
 } 

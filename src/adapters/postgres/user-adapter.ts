@@ -90,7 +90,8 @@ export class PostgresUserService implements IServicelocator {
     offset = offset ? `OFFSET ${offset}` : '';
     limit = limit ? `LIMIT ${limit}` : ''
     let result = {
-      getUserDetails: [],
+      totalCount: 0,
+      getUserDetails: []
     };
 
     let whereCondition = `WHERE`;
@@ -171,7 +172,7 @@ export class PostgresUserService implements IServicelocator {
       whereCondition = '';
     }
 
-    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile 
+    let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile, COUNT(*) OVER() AS total_count 
       FROM  public."Users" U
       INNER JOIN public."CohortMembers" CM 
       ON CM."userId" = U."userId"
@@ -182,19 +183,22 @@ export class PostgresUserService implements IServicelocator {
 
     let userDetails = await this.usersRepository.query(query);
 
-    if (userSearchDto.fields) {
-      for (let userData of userDetails) {
-        let context = 'USERS';
-        let contextType = userData.role.toUpperCase();
-        let isRequiredFieldOptions = false;
-        let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, userSearchDto.fields, isRequiredFieldOptions);
-        userData['customFields'] = customFields;
-        result.getUserDetails.push(userData);
-      }
-    } else {
-      result.getUserDetails.push(userDetails);
-    }
 
+    if (userDetails.length > 0) {
+      result.totalCount = parseInt(userDetails[0].total_count, 10);
+      if (userSearchDto.fields) {
+        for (let userData of userDetails) {
+          let context = 'USERS';
+          let contextType = userData.role.toUpperCase();
+          let isRequiredFieldOptions = false;
+          let customFields = await this.fieldsService.getFieldValuesData(userData.userId, context, contextType, userSearchDto.fields, isRequiredFieldOptions);
+          userData['customFields'] = customFields;
+          result.getUserDetails.push(userData);
+        }
+      } else {
+        result.getUserDetails.push(...userDetails);
+      }
+    }
     return result;
   }
 

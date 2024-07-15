@@ -253,7 +253,6 @@ export class PostgresCohortService {
 
     try {
       let field_value_array = [];
-
       if (cohortCreateDto.fieldValues) {
         field_value_array = cohortCreateDto.fieldValues.split("|");
         //Check duplicate field
@@ -335,7 +334,6 @@ export class PostgresCohortService {
 
       if (field_value_array.length > 0) {
         let field_values = [];
-
         for (let i = 0; i < field_value_array.length; i++) {
           let fieldValues = field_value_array[i].split(":");
           let fieldValueDto: FieldValuesDto = {
@@ -381,17 +379,21 @@ export class PostgresCohortService {
   ) {
     const apiId = APIID.COHORT_UPDATE;
     try {
-      let field_value_array = cohortUpdateDto.fieldValues.split("|");
-      let valid = await this.validateFieldValues(field_value_array);
-      if (valid && valid?.valid === false) {
-        return APIResponse.error(
-          res,
-          apiId,
-          `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
-          `Duplicate fieldId`,
-          HttpStatus.CONFLICT
-        );
+      let field_value_array;
+      if (cohortUpdateDto.fieldValues) {
+        field_value_array = cohortUpdateDto?.fieldValues?.split("|");
+        let valid = await this.validateFieldValues(field_value_array);
+        if (valid && valid?.valid === false) {
+          return APIResponse.error(
+            res,
+            apiId,
+            `Duplicate fieldId '${valid.fieldId}' found in fieldValues`,
+            `Duplicate fieldId`,
+            HttpStatus.CONFLICT
+          );
+        }
       }
+
 
       const decoded: any = jwt_decode(request.headers.authorization);
       cohortUpdateDto.updatedBy = decoded?.sub;
@@ -487,6 +489,7 @@ export class PostgresCohortService {
         }
 
         if (fieldValueData["fieldValues"]) {
+
           if (field_value_array.length > 0) {
             for (let i = 0; i < field_value_array.length; i++) {
               let fieldValues = field_value_array[i].split(":");
@@ -559,20 +562,15 @@ export class PostgresCohortService {
   ) {
     const apiId = APIID.COHORT_LIST;
     try {
-      let { limit, page, filters } = cohortSearchDto;
+      let { limit, sort, offset, filters } = cohortSearchDto;
 
-      let offset = 0;
-      if (limit > 0 && page > 0) {
-        offset = limit * (page - 1);
-      }
-      if (limit === 0) {
-        limit = 200;
-      }
+      offset = offset ? offset : 0;
+      limit = limit ? limit : 200;
+
       const emptyValueKeys = {};
       let emptyKeysString = "";
 
       const MAX_LIMIT = 200;
-      const PAGE_LIMIT = 10000000;
 
       // Validate the limit parameter
       if (limit > MAX_LIMIT) {
@@ -581,16 +579,6 @@ export class PostgresCohortService {
           apiId,
           `Limit exceeds maximum allowed value of ${MAX_LIMIT}`,
           `Limit exceeded`,
-          HttpStatus.BAD_REQUEST
-        );
-      }
-
-      if (page > PAGE_LIMIT) {
-        return APIResponse.error(
-          response,
-          apiId,
-          `Page limit exceeds maximum allowed value of ${PAGE_LIMIT}`,
-          `Page limit exceeded`,
           HttpStatus.BAD_REQUEST
         );
       }
@@ -627,6 +615,13 @@ export class PostgresCohortService {
         cohortDetails: [],
       };
 
+      let order = {};
+      if (sort && sort.length) {
+        order[sort[0]] = ['ASC', 'DESC'].includes(sort[1].toUpperCase()) ? sort[1].toUpperCase() : 'ASC'
+      } else {
+        order['name'] = 'ASC'
+      }
+
       let count = 0;
 
       if (whereClause["userId"]) {
@@ -659,10 +654,12 @@ export class PostgresCohortService {
             HttpStatus.BAD_REQUEST
           );
         }
+
         const [data, totalCount] =
           await this.cohortMembersRepository.findAndCount({
             where: whereClause,
             skip: offset,
+            order,
           });
         const userExistCohortGroup = data.slice(offset, offset + limit);
         count = totalCount;
@@ -684,6 +681,7 @@ export class PostgresCohortService {
         const [data, totalcount] = await this.cohortRepository.findAndCount({
           where: whereClause,
           skip: offset,
+          order,
         });
 
         const cohortData = data.slice(offset, offset + limit);

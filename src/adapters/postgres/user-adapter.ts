@@ -511,8 +511,8 @@ export class PostgresUserService implements IServicelocator {
       }
 
       // Send Notification if user added as cohort Member
-      if (result && userCreateDto?.tenantCohortRoleMapping && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId &&
-        userCreateDto?.tenantCohortRoleMapping[0]?.cohortId.length > 0 && email?.email) {
+      if (result && userCreateDto?.tenantCohortRoleMapping && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId.length > 0 && email && email.email) {
+
         const notificationPayload = {
           isQueue: false,
           context: 'USER',

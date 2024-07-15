@@ -87,7 +87,7 @@ export class tenantCohortRoleMappingDto {
   })
   @Expose()
   @IsOptional()
-  @IsObject()
+  @IsUUID()
   tenantId: string;
 
   @ApiProperty({
@@ -108,7 +108,7 @@ export class tenantCohortRoleMappingDto {
   })
   @Expose()
   @IsOptional()
-  @IsObject()
+  @IsUUID()
   roleId: string;
 }
 

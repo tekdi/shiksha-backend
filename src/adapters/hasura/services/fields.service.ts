@@ -8,11 +8,11 @@ import { ErrorResponse } from "src/error-response";
 
 @Injectable()
 export class FieldsService {
-  constructor() {}
+  constructor() { }
 
   //fields
-  async createFields(request:any,fieldsDto: FieldsDto) {
-    try{
+  async createFields(request: any, fieldsDto: FieldsDto) {
+    try {
       var axios = require("axios");
 
       //add render json object
@@ -54,7 +54,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -124,12 +124,12 @@ export class FieldsService {
   }
 
   public async getFieldsContext(
-    request:any,
+    request: any,
     tenantId: string,
     context: string,
     contextId: string
   ) {
-    try{
+    try {
       var axios = require("axios");
 
       var data = {
@@ -223,7 +223,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -233,9 +233,8 @@ export class FieldsService {
   }
 
   async searchFields(request: any, tenantId: string, fieldsSearchDto: FieldsSearchDto) {
-    try{
+    try {
       var axios = require("axios");
-
       let offset = 0;
       if (fieldsSearchDto.page > 1) {
         offset = (fieldsSearchDto.limit) * (fieldsSearchDto.page - 1);
@@ -301,7 +300,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -440,7 +439,7 @@ export class FieldsService {
     if (payload.label) {
       fieldSchema.coreSchema["title"] = payload.label;
     }
- 
+
     if (payload.pattern) {
       fieldSchema.coreSchema["pattern"] = payload.pattern;
     }
@@ -474,7 +473,7 @@ export class FieldsService {
 
   //field values
   async createFieldValues(request: any, fieldValuesDto: FieldValuesDto) {
-    try{
+    try {
       var axios = require("axios");
 
       let query = "";
@@ -511,7 +510,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -637,8 +636,8 @@ export class FieldsService {
     return response;
   }
 
-  async searchFieldValues(request:any, fieldValuesSearchDto: FieldValuesSearchDto) {
-    try{
+  async searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto) {
+    try {
       var axios = require("axios");
 
       let offset = 0;
@@ -689,7 +688,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",
@@ -698,8 +697,8 @@ export class FieldsService {
     }
   }
 
-  async searchFieldValuesFilter(request:any,filter: any) {
-    try{
+  async searchFieldValuesFilter(request: any, filter: any) {
+    try {
       let obj_filter = [];
       Object.keys(filter).forEach((item) => {
         Object.keys(filter[item]).forEach((e) => {
@@ -739,7 +738,7 @@ export class FieldsService {
 
       const response = await axios(config);
       return response;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return new ErrorResponse({
         errorCode: "400",

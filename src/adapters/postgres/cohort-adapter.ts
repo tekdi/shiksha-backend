@@ -163,7 +163,7 @@ export class PostgresCohortService {
     let query = `SELECT c."name",c."cohortId",c."parentId",c."type"
     FROM public."CohortMembers" AS cm
     LEFT JOIN public."Cohort" AS c ON cm."cohortId" = c."cohortId"
-    WHERE cm."userId"=$1 AND c.status=true`;
+    WHERE cm."userId"=$1 AND c.status='active'`;
     let result = await this.cohortMembersRepository.query(query, [userId]);
     return result;
   }
@@ -705,7 +705,7 @@ export class PostgresCohortService {
 
       if (checkData === true) {
         let query = `UPDATE public."Cohort"
-        SET "status" = false,
+        SET "status" = 'archived',
         "updatedBy" = '${updatedBy}'
         WHERE "cohortId" = $1`;
         const affectedrows = await this.cohortRepository.query(query, [

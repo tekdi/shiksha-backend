@@ -99,12 +99,18 @@ export class CohortUpdateDto {
 
   //fieldValues
   @ApiPropertyOptional({
-    type: [FieldValuesOptionDto],
+    type: String,
     description: "The fieldValues Object",
   })
-  @ValidateNested({ each: true })
-  @Type(() => FieldValuesOptionDto)
-  customFields: FieldValuesOptionDto[];
+  @Expose()
+  fieldValues: string;
+  // @ApiPropertyOptional({
+  //   type: [FieldValuesOptionDto],
+  //   description: "The fieldValues Object",
+  // })
+  // @ValidateNested({ each: true })
+  // @Type(() => FieldValuesOptionDto)
+  // customFields: FieldValuesOptionDto[];
 
 
   constructor(obj?: Partial<CohortUpdateDto>) {

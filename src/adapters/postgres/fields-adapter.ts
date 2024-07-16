@@ -88,7 +88,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
             console.log(error);
         }
     }
-    public async validateCustomField(userCreateDto, response, apiId) {
+
+    public async validateCustomField(userCreateDto) {
         let fieldValues = userCreateDto ? userCreateDto.customFields : [];
         let encounteredKeys = [];
         let invalidateFields = [];
@@ -96,44 +97,40 @@ export class PostgresFieldsService implements IServicelocatorfields {
 
         for (const fieldsData of fieldValues) {
             const fieldId = fieldsData['fieldId'];
-            let getFieldDetails = await this.getFieldByIdes(fieldId)
+            let getFieldDetails = await this.getFieldByIdes(fieldId);
+
             if (encounteredKeys.includes(fieldId)) {
-                duplicateFieldKeys.push(`${fieldId} - ${getFieldDetails['name']}`)
+                duplicateFieldKeys.push(`${fieldId} - ${getFieldDetails['name']}`);
             } else {
-                encounteredKeys.push(fieldId)
+                encounteredKeys.push(fieldId);
             }
 
-            let checkValidation = this.validateFieldValue(getFieldDetails, fieldsData['value'])
+            let checkValidation = this.validateFieldValue(getFieldDetails, fieldsData['value']);
+
             if (typeof checkValidation === 'object' && 'error' in checkValidation) {
-                invalidateFields.push(`${fieldId}: ${getFieldDetails['name']} - ${checkValidation?.error?.message}`)
+                invalidateFields.push(`${fieldId}: ${getFieldDetails['name']} - ${checkValidation?.error?.message}`);
             }
-        };
+        }
 
-        //Validation for duplicate fields
+        // Validation for duplicate fields
         if (duplicateFieldKeys.length > 0) {
-            return APIResponse.error(response, apiId, "Bad Request", `Duplicate fieldId detected: ${duplicateFieldKeys}`, HttpStatus.BAD_REQUEST);
+            return {
+                isValid: false,
+                error: `Duplicate fieldId detected: ${duplicateFieldKeys}`,
+            };
         }
 
-        //Validation for fields values
+        // Validation for fields values
         if (invalidateFields.length > 0) {
-            return APIResponse.error(response, apiId, "Bad Request", `Invalid fields found: ${invalidateFields}`, HttpStatus.BAD_REQUEST);
+            return {
+                isValid: false,
+                error: `Invalid fields found: ${invalidateFields}`,
+            };
         }
 
-        //Verifying whether these fields correspond to their respective roles.
-        // let roleIds = userCreateDto && userCreateDto.tenantCohortRoleMapping ? userCreateDto.tenantCohortRoleMapping.map(userRole => userRole.roleId) : [];
-
-        let contextType;
-        // if (roleIds) {
-        //   let getRoleName = await this.roleRepository.find({
-        //     where: { roleId: In(roleIds) },
-        //     select: ["title"]
-        //   })
-        //   contextType = getRoleName.map(role => role?.title.toUpperCase()).join(', ')
-        // }
-
+        let contextType = userCreateDto.type
         let context = 'COHORT';
-        let getFieldIds = await this.getFieldIds(context, contextType)
-
+        let getFieldIds = await this.getFieldIds(context, contextType);
 
         const validFieldIds = new Set(getFieldIds.map(field => field.fieldId));
 
@@ -141,13 +138,15 @@ export class PostgresFieldsService implements IServicelocatorfields {
             .filter(fieldValue => !validFieldIds.has(fieldValue.fieldId))
             .map(fieldValue => fieldValue.fieldId);
 
-
-        // if (invalidFieldIds.length > 0) {
-        //   return APIResponse.error(response, apiId, 'Bad Request', `The following fields are not valid for this user: ${invalidFieldIds.join(', ')}.`,
-        //     HttpStatus.BAD_REQUEST
-        //   );
-        // }
-
+        if (invalidFieldIds.length > 0) {
+            return {
+                isValid: false,
+                error: `The following fields are not valid for this user: ${invalidFieldIds.join(', ')}.`,
+            };
+        }
+        return {
+            isValid: true,
+        };
     }
 
     async getFieldData(whereClause): Promise<any> {
@@ -608,8 +607,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             ...(contextType?.length ? { contextType: In(contextType.filter(Boolean)) } : {}),
             ...(getFields?.includes('All') ? {} : getFields?.length ? { name: In(getFields.filter(Boolean)) } : {})
         };
-        console.log(condition, "condition");
-
 
         const validContextTypes = contextType?.filter(Boolean);
         if (validContextTypes?.length) {

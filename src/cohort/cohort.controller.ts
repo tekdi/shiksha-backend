@@ -69,14 +69,14 @@ export class CohortController {
     @Req() request: Request,
     @Res() response: Response,
     @Query("children") children: string,
-    @Query("customField") customField:string
+    @Query("customField") customField: string
   ) {
     // const tenantId = headers["tenantid"];   Can be Used In future
     const getChildDataValueBoolean = children === 'true';
     let fieldValueBooelan = customField === 'true'
     let requiredData = {
       cohortId: cohortId,
-      getChildData:getChildDataValueBoolean,
+      getChildData: getChildDataValueBoolean,
       customField: fieldValueBooelan
     }
     return await this.cohortAdapter.buildCohortAdapter().getCohortsDetails(requiredData, response);
@@ -84,7 +84,7 @@ export class CohortController {
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_CREATE))
   @Post("/create")
-  @ApiConsumes("multipart/form-data")
+  // @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort has been created successfully." })
   @ApiBadRequestResponse({ description: "Bad request." })
@@ -157,7 +157,6 @@ export class CohortController {
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_UPDATE))
   @Put("/update/:cohortId")
-  @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @UseInterceptors(
     FileInterceptor("image", {
@@ -172,7 +171,7 @@ export class CohortController {
   @ApiOkResponse({ description: "Cohort has been updated successfully" })
   @ApiBadRequestResponse({ description: "Bad request." })
   @ApiInternalServerErrorResponse({ description: "Internal Server Error." })
-
+  @UsePipes(new ValidationPipe({ transform: true }))
   public async updateCohort(
     @Param("cohortId") cohortId: string,
     @Req() request: Request,
@@ -214,7 +213,7 @@ export class CohortController {
   @ApiQuery({ name: "children", required: false, type: Boolean })
   @ApiQuery({ name: "customField", required: false, type: Boolean })
   public async getCohortsHierarachyData(
-    @Request() request:Request,
+    @Request() request: Request,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query("children") children: string,
     @Query("customField") customField: string | null = null,
@@ -225,9 +224,9 @@ export class CohortController {
     let fieldValueBooelan = customField === 'true'
     let requiredData = {
       userId: userId,
-      getChildData:getChildDataValueBoolean,
+      getChildData: getChildDataValueBoolean,
       customField: fieldValueBooelan
     }
-    return await this.cohortAdapter.buildCohortAdapter().getCohortHierarchyData(requiredData,response)
+    return await this.cohortAdapter.buildCohortAdapter().getCohortHierarchyData(requiredData, response)
   }
 }

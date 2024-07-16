@@ -70,7 +70,7 @@ export class PostgresUserService implements IServicelocator {
       let findData = await this.findAllUserDetails(userSearchDto);
 
       if (!findData) {
-        return APIResponse.error(response, apiId, "Bad request", `No Data Found`, HttpStatus.BAD_REQUEST);
+        return APIResponse.error(response, apiId, "Not Found", `No Data Found`, HttpStatus.NOT_FOUND);
       }
 
       return await APIResponse.success(response, apiId, findData,
@@ -174,11 +174,11 @@ export class PostgresUserService implements IServicelocator {
 
     let query = `SELECT U."userId", U.username, U.name, R.name AS role, U.mobile, COUNT(*) OVER() AS total_count 
       FROM  public."Users" U
-      INNER JOIN public."CohortMembers" CM 
+      LEFT JOIN public."CohortMembers" CM 
       ON CM."userId" = U."userId"
-      INNER JOIN public."UserRolesMapping" UR
+      LEFT JOIN public."UserRolesMapping" UR
       ON UR."userId" = U."userId"
-      INNER JOIN public."Roles" R
+      LEFT JOIN public."Roles" R
       ON R."roleId" = UR."roleId" ${whereCondition} GROUP BY U."userId", R."name" ${orderingCondition} ${offset} ${limit}`
 
     let userDetails = await this.usersRepository.query(query);
@@ -451,7 +451,6 @@ export class PostgresUserService implements IServicelocator {
       }
 
 
-
       // check and validate all fields
       let validatedRoles = await this.validateRequestBody(userCreateDto, response, apiId)
 
@@ -514,9 +513,10 @@ export class PostgresUserService implements IServicelocator {
           }
         }
       }
+
       // Send Notification if user added as cohort Member
-      if (result && userCreateDto.tenantCohortRoleMapping[0].cohortId &&
-        userCreateDto.tenantCohortRoleMapping[0].cohortId.length > 0 && email.email) {
+      if (result && userCreateDto?.tenantCohortRoleMapping && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId && userCreateDto?.tenantCohortRoleMapping[0]?.cohortId.length > 0 && email && email.email) {
+
         const notificationPayload = {
           isQueue: false,
           context: 'USER',
@@ -661,7 +661,6 @@ export class PostgresUserService implements IServicelocator {
     }
   }
 
-
   async createUserInDatabase(request: any, userCreateDto: UserCreateDto, response: Response) {
 
     const user = new User()
@@ -680,17 +679,20 @@ export class PostgresUserService implements IServicelocator {
     if (userCreateDto?.dob) {
       user.dob = new Date(userCreateDto.dob);
     }
-
     let result = await this.usersRepository.save(user);
+
+
 
     if (result && userCreateDto.tenantCohortRoleMapping) {
       for (let mapData of userCreateDto.tenantCohortRoleMapping) {
-        for (let cohortIds of mapData.cohortId) {
-          let cohortData = {
-            userId: result?.userId,
-            cohortId: cohortIds
+        if (mapData.cohortId) {
+          for (let cohortIds of mapData.cohortId) {
+            let cohortData = {
+              userId: result?.userId,
+              cohortId: cohortIds
+            }
+            await this.addCohortMember(cohortData);
           }
-          await this.addCohortMember(cohortData);
         }
 
         let tenantRoleMappingData = {

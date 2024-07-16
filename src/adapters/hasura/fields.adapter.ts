@@ -18,6 +18,9 @@ export class HasuraFieldsService implements IServicelocatorfields {
     private httpService: HttpService,
     private fieldsService: FieldsService
   ) { }
+  getFormCustomField(requiredData: any, response: any) {
+    throw new Error("Method not implemented.");
+  }
 
   //fields
   public async createFields(request: any, fieldsDto: FieldsDto) {

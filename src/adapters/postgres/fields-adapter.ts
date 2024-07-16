@@ -89,8 +89,9 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
-    public async validateCustomField(userCreateDto) {
-        let fieldValues = userCreateDto ? userCreateDto.customFields : [];
+    //Check cohort Create API Custom field
+    public async validateCustomField(cohortCreateDto) {
+        let fieldValues = cohortCreateDto ? cohortCreateDto.customFields : [];
         let encounteredKeys = [];
         let invalidateFields = [];
         let duplicateFieldKeys = [];
@@ -128,13 +129,13 @@ export class PostgresFieldsService implements IServicelocatorfields {
             };
         }
 
-        let contextType = userCreateDto.type
+        let contextType = cohortCreateDto.type
         let context = 'COHORT';
         let getFieldIds = await this.getFieldIds(context, contextType);
 
         const validFieldIds = new Set(getFieldIds.map(field => field.fieldId));
 
-        const invalidFieldIds = userCreateDto.customFields
+        const invalidFieldIds = cohortCreateDto.customFields
             .filter(fieldValue => !validFieldIds.has(fieldValue.fieldId))
             .map(fieldValue => fieldValue.fieldId);
 

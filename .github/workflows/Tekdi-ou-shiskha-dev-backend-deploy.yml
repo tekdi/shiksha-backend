@@ -20,23 +20,23 @@ jobs:
       - name: Deploy to Server 1
         uses: easingthemes/ssh-deploy@main
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY_ALT_DEV_TEKDI_OU }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS_ALT_DEV_TEKDI_OU }}
-          REMOTE_USER: ${{ secrets.USERNAME_ALT_DEV_TEKDI_OU }}
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY_SHIKSHA_DEV_TEKDI_OU }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS_SHIKSHA_DEV_TEKDI_OU }}
+          REMOTE_USER: ${{ secrets.USERNAME_SHIKSHA_DEV_TEKDI_OU }}
        
 
       - name: Set up SSH key
         run: |
          mkdir -p ~/.ssh
-         echo "${{ secrets.EC2_SSH_KEY_ALT_DEV_TEKDI_OU }}" > ~/.ssh/id_rsa
+         echo "${{ secrets.EC2_SSH_KEY_SHIKSHA_DEV_TEKDI_OU }}" > ~/.ssh/id_rsa
          chmod 600 ~/.ssh/id_rsa
          # Add the SSH key to the known_hosts file (replace hostname with your actual hostname)
-         ssh-keyscan -H ${{ secrets.HOST_DNS_ALT_DEV_TEKDI_OU }} >> ~/.ssh/known_hosts
+         ssh-keyscan -H ${{ secrets.HOST_DNS_SHIKSHA_DEV_TEKDI_OU }} >> ~/.ssh/known_hosts
          sudo apt-get install sshpass
 
       - name: Deploy to server
         run: |
-          sshpass -p '${{ secrets.EC2_SSH_KEY_ALT_DEV_TEKDI_OU }}' ssh -v -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ALT_DEV_TEKDI_OU }}@${{ secrets.HOST_DNS_ALT_DEV_TEKDI_OU }} <<'ENDSSH'
+          sshpass -p '${{ secrets.EC2_SSH_KEY_SHIKSHA_DEV_TEKDI_OU }}' ssh -v -o StrictHostKeyChecking=no ${{ secrets.USERNAME_SHIKSHA_DEV_TEKDI_OU }}@${{ secrets.HOST_DNS_SHIKSHA_DEV_TEKDI_OU }} <<'ENDSSH'
           cd /home/ubuntu/shiksha-backend
           ./deploy.sh
           ENDSSH

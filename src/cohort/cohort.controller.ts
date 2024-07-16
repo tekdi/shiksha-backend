@@ -84,7 +84,7 @@ export class CohortController {
 
   @UseFilters(new AllExceptionsFilter(APIID.COHORT_CREATE))
   @Post("/create")
-  @ApiConsumes("multipart/form-data")
+  // @ApiConsumes("multipart/form-data")
   @ApiBasicAuth("access-token")
   @ApiCreatedResponse({ description: "Cohort has been created successfully." })
   @ApiBadRequestResponse({ description: "Bad request." })

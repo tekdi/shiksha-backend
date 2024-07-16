@@ -1,11 +1,13 @@
-import { Exclude, Expose } from "class-transformer";
+import { Exclude, Expose, Type } from "class-transformer";
 import {
   IsNotEmpty,
   IsString,
   IsOptional,
-  IsEnum
+  IsEnum,
+  ValidateNested
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FieldValuesOptionDto } from "src/user/dto/user-create.dto";
 
 
 export class CohortUpdateDto {
@@ -63,10 +65,11 @@ export class CohortUpdateDto {
   // status: boolean;
 
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: String,
     description: "The status of Cohort",
   })
+  @IsOptional()
   @IsEnum(['active', 'archived', 'inactive'], {
     message: 'Status must be one of: active, archived, inactive',
   })
@@ -96,11 +99,12 @@ export class CohortUpdateDto {
 
   //fieldValues
   @ApiPropertyOptional({
-    type: String,
+    type: [FieldValuesOptionDto],
     description: "The fieldValues Object",
   })
-  @Expose()
-  fieldValues: string;
+  @ValidateNested({ each: true })
+  @Type(() => FieldValuesOptionDto)
+  customFields: FieldValuesOptionDto[];
 
 
   constructor(obj?: Partial<CohortUpdateDto>) {

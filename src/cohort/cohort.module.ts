@@ -13,9 +13,11 @@ import { PostgresModule } from "src/adapters/postgres/postgres-module";
 import { PostgresCohortService } from "src/adapters/postgres/cohort-adapter";
 import { UserTenantMapping } from "src/userTenantMapping/entities/user-tenant-mapping.entity";
 import { PostgresFieldsService } from "src/adapters/postgres/fields-adapter";
+import { Role } from "src/rbac/role/entities/role.entity";
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Cohort, FieldValues, Fields, CohortMembers, UserTenantMapping]),
+    TypeOrmModule.forFeature([Cohort, FieldValues, Fields, CohortMembers, UserTenantMapping, Role]),
     HttpModule,
     HasuraModule,
     PostgresModule

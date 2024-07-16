@@ -75,37 +75,41 @@ export class excludeFields {
   cohortIds?: string[];
 }
 
-export class customFieldsFilters {
-  @ApiProperty({
-    type: Boolean,
-    description: 'getCustomFields',
-    default: false,
-  })
-  @Expose()
-  @IsOptional()
-  getCustomFields: boolean = false;
+enum SortDirection {
+  ASC = 'asc',
+  DESC = 'desc',
+}
 
-  @ApiProperty({
-    type: Boolean,
-    description: 'Is Required Field Options',
-    default: false,
+export class tenantCohortRoleMappingDto {
+  @ApiPropertyOptional({
+    type: String,
+    description: "Tenant Id",
   })
   @Expose()
   @IsOptional()
-  isRequiredFieldOptions: boolean = false;
+  @IsUUID()
+  tenantId: string;
 
   @ApiProperty({
     type: [String],
-    description: 'Custom Fields Name',
+    description: "Cohort Id",
     default: [],
   })
   @Expose()
   @IsOptional()
-  customFieldsName: string[];
-}
-enum SortDirection {
-  ASC = 'asc',
-  DESC = 'desc',
+  @IsArray()
+  @IsNotEmpty({ each: true })
+  @IsUUID(undefined, { each: true })
+  cohortId?: string[];
+
+  @ApiPropertyOptional({
+    type: String,
+    description: "Role Id",
+  })
+  @Expose()
+  @IsOptional()
+  @IsUUID()
+  roleId: string;
 }
 
 export class UserSearchDto {
@@ -135,13 +139,23 @@ export class UserSearchDto {
   filters: setFilters;
 
   @ApiProperty({
-    type: customFieldsFilters,
-    description: "Custom Fields Filters",
+    type: [String],
+    description: 'Custom Fields Name',
+    default: [],
+  })
+  @Expose()
+  @IsOptional()
+  customFieldsName: string[];
+
+
+  @ApiPropertyOptional({
+    type: tenantCohortRoleMappingDto,
+    description: "Tenant Cohort RoleMapping",
   })
   @Expose()
   @IsOptional()
   @IsObject()
-  customFieldsFilters: customFieldsFilters
+  tenantCohortRoleMapping: tenantCohortRoleMappingDto;
 
   @ApiPropertyOptional({
     type: excludeFields,

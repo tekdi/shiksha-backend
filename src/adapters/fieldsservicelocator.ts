@@ -18,5 +18,6 @@ export interface IServicelocatorfields {
   searchFieldValues(request: any, fieldValuesSearchDto: FieldValuesSearchDto, response: Response);
   updateFieldValues(id: string, request: any, fieldValuesDto: FieldValuesDto);
   getFieldOptions(request: any, fieldName: string, controllingfieldfk: string, context: string, contextType: string, response: Response);
+  getFormCustomField(requiredData ,response);
 
 }

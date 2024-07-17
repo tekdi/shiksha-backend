@@ -95,8 +95,8 @@ export class PostgresFieldsService implements IServicelocatorfields {
         }
     }
 
-    //Check cohort Create API Custom field
-    public async validateCustomField(cohortCreateDto) {
+    //validate cohort Create/update API Custom field
+    public async validateCustomField(cohortCreateDto, contextType) {
         let fieldValues = cohortCreateDto ? cohortCreateDto.customFields : [];
         let encounteredKeys = [];
         let invalidateFields = [];
@@ -135,7 +135,6 @@ export class PostgresFieldsService implements IServicelocatorfields {
             };
         }
 
-        let contextType = cohortCreateDto.type
         let context = 'COHORT';
         let getFieldIds = await this.getFieldIds(context, contextType);
 

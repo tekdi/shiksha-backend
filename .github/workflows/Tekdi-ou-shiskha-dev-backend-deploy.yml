@@ -3,7 +3,7 @@ name: Deploy to  Tekdi-ou-shiskha-backend
 on: 
   push:  
     branches:
-      - altv1
+      - main
 jobs: 
   build:
     name: Generate Build and Deploy to DEV
